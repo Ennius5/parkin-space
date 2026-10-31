@@ -105,6 +105,22 @@ func test_hard_impact_emits_dent() -> void:
 		assert_almost(costs[0], ShiftLedger.dent_cost(300.0), 5.0)
 
 
+func test_ship_to_ship_collision_charged_once() -> void:
+	var mover := _spawn("medium_shuttle", Vector2(200, 400))
+	var idle := _spawn("medium_shuttle", Vector2(200, 400 - 100 - 20))
+	var costs: Array[int] = []
+	var record := func(_s: Ship, cost: int) -> void: costs.append(cost)
+	mover.dented.connect(record)
+	idle.dented.connect(record)
+	mover.linear_velocity = Vector2(0, -260)
+	await _frames(40)
+	assert_eq(costs.size(), 1, "costs=%s" % [costs])
+	if costs.size() == 1:
+		assert_almost(costs[0], ShiftLedger.dent_cost(260.0), 5.0)
+	mover.queue_free()
+	idle.queue_free()
+
+
 func test_soft_bump_no_dent() -> void:
 	var costs := await _ram_wall(80.0)
 	assert_eq(costs.size(), 0, "costs=%s" % [costs])

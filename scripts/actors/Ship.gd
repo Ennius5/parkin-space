@@ -89,11 +89,25 @@ func _on_body_entered(other: Node) -> void:
 	if is_parked:
 		return
 	var other_velocity := Vector2.ZERO
-	if other is RigidBody2D:
+	if other is Ship:
+		var other_ship := other as Ship
+		if not _pays_for_collision_with(other_ship):
+			return
+		other_velocity = other_ship._prev_velocity  # pre-impact on both sides, so both agree
+	elif other is RigidBody2D:
 		other_velocity = (other as RigidBody2D).linear_velocity
 	var cost := ShiftLedger.dent_cost((_prev_velocity - other_velocity).length())
 	if cost > 0:
 		dented.emit(self, cost)
+
+
+## Exactly one ship pays for a ship-to-ship collision: the driven one, else the one with the lower id.
+func _pays_for_collision_with(other: Ship) -> bool:
+	if other.is_parked:
+		return true  # parked ships never report collisions
+	if is_driven != other.is_driven:
+		return is_driven
+	return get_instance_id() < other.get_instance_id()
 
 
 func _input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> void:

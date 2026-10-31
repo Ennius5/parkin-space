@@ -129,6 +129,23 @@ func test_ship_resting_in_space_gets_parked() -> void:
 	_restore_state()
 
 
+func test_tap_right_after_done_does_not_select() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var first: Ship = level.get_node("Ships").get_child(0)
+	var second := level.spawn_next_customer()
+	second.global_position += Vector2(0, 300)  # don't overlap the first ship at the entrance
+	level.select_ship(first)
+	level.release_ship()
+	level.select_ship(second)  # same touch that pressed Done
+	assert_eq(level.driven_ship, null)
+	await tree.create_timer(0.4).timeout
+	level.select_ship(second)
+	assert_eq(level.driven_ship, second, "later taps select normally")
+	level.queue_free()
+	_restore_state()
+
+
 func test_ship_selection_ignored_while_driving() -> void:
 	_setup_state()
 	var level := await _make_level()

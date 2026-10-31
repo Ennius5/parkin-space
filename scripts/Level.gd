@@ -6,6 +6,7 @@ extends Node2D
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
 const ENTRANCE_CLEAR_RADIUS := 120.0
+const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
 
 @export var level_number: int = 1
 @export var goal_text: String = ""
@@ -25,6 +26,7 @@ var _arrival_timer := 0.0
 var _trackers: Dictionary = {}  # Ship -> ParkTracker
 var _ended := false
 var _drive_hint_shown := false
+var _released_at_msec := -RESELECT_DELAY_MS
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -72,9 +74,12 @@ func spawn_next_customer() -> Ship:
 	return ship
 
 
-## Takes control of a ship. Ignored while already driving: press Done first.
+## Takes control of a ship. Ignored while already driving (press Done first)
+## and for a moment after Done, so the same touch doesn't grab a ship under the button.
 func select_ship(ship: Ship) -> void:
 	if _ended or ship.is_parked or driven_ship != null:
+		return
+	if Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
 		return
 	driven_ship = ship
 	ship.set_driven(true)
@@ -87,6 +92,7 @@ func select_ship(ship: Ship) -> void:
 func release_ship() -> void:
 	if driven_ship:
 		driven_ship.set_driven(false)
+		_released_at_msec = Time.get_ticks_msec()
 	driven_ship = null
 	_lot_camera.make_current()
 	_controls.set_driving(false)
