@@ -1,0 +1,123 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/Level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="2_spec"]
+[ext_resource type="Resource" path="res://resources/ships/light_scout.tres" id="3_light"]
+[ext_resource type="Resource" path="res://resources/ships/medium_shuttle.tres" id="4_medium"]
+[ext_resource type="PackedScene" path="res://scenes/actors/ParkingSpace.tscn" id="5_space"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ShipControls.tscn" id="7_ctrl"]
+
+[sub_resource type="RectangleShape2D" id="shape_WallTop"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallBottom"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallLeft"]
+size = Vector2(40, 1480)
+
+[sub_resource type="RectangleShape2D" id="shape_WallRight"]
+size = Vector2(40, 1480)
+
+[sub_resource type="RectangleShape2D" id="shape_Island"]
+size = Vector2(700, 120)
+
+[node name="Level01" type="Node2D"]
+script = ExtResource("1_level")
+goal_text = "Park 4 ships before the shift ends"
+customer_queue = Array[ExtResource("2_spec")]([ExtResource("3_light"), ExtResource("4_medium"), ExtResource("3_light"), ExtResource("4_medium")])
+shift_seconds = 180.0
+base_pay = 100
+silver_target = 150
+gold_target = 170
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.12, 0.13, 0.18, 1)
+polygon = PackedVector2Array(0, 0, 2400, 0, 2400, 1400, 0, 1400)
+
+[node name="IslandFloor" type="Polygon2D" parent="."]
+color = Color(0.3, 0.32, 0.38, 1)
+polygon = PackedVector2Array(850, 640, 1550, 640, 1550, 760, 850, 760)
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, -20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
+shape = SubResource("shape_WallTop")
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, 1420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
+shape = SubResource("shape_WallBottom")
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(-20, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
+shape = SubResource("shape_WallLeft")
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(2420, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
+shape = SubResource("shape_WallRight")
+
+[node name="Island" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Island"]
+shape = SubResource("shape_Island")
+
+[node name="Spaces" type="Node2D" parent="."]
+
+[node name="A1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(700, 250)
+space_class = 1
+label = "A1"
+
+[node name="A2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(820, 250)
+space_class = 1
+label = "A2"
+
+[node name="B1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1300, 1200)
+rotation = 1.570796
+space_class = 0
+label = "B1"
+
+[node name="B2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1450, 1200)
+rotation = 1.570796
+space_class = 0
+label = "B2"
+
+[node name="C1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1900, 450)
+rotation = 0.785398
+space_class = 1
+label = "C1"
+
+[node name="C2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(2070, 450)
+rotation = 0.785398
+space_class = 1
+label = "C2"
+
+[node name="Ships" type="Node2D" parent="."]
+
+[node name="Entrance" type="Marker2D" parent="."]
+position = Vector2(140, 700)
+rotation = 1.570796
+
+[node name="LotCamera" type="Camera2D" parent="."]
+position = Vector2(1200, 700)
+zoom = Vector2(0.5, 0.5)
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="Controls" parent="." instance=ExtResource("7_ctrl")]

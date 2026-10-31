@@ -1,0 +1,82 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Pay" type="Label" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = 560.0
+offset_bottom = 68.0
+theme_override_font_sizes/font_size = 30
+text = "Pay ₵100   Earned ₵0"
+
+[node name="Customers" type="Label" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 68.0
+offset_right = 560.0
+offset_bottom = 112.0
+theme_override_font_sizes/font_size = 30
+text = "Parked 0 / 0"
+
+[node name="Goal" type="Label" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 24.0
+offset_right = 300.0
+offset_bottom = 68.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 30
+text = "Goal"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Time" type="Label" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 24.0
+offset_right = -40.0
+offset_bottom = 68.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 36
+text = "3:00"
+horizontal_alignment = 2
+
+[node name="Hint" type="Label" parent="Root"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 76.0
+offset_right = 320.0
+offset_bottom = 126.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+text = "Hint"
+horizontal_alignment = 1

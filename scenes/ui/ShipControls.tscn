@@ -1,0 +1,127 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/ShipControls.gd" id="1_ctrl"]
+
+[sub_resource type="Gradient" id="g_btn"]
+colors = PackedColorArray(1, 1, 1, 0.35, 1, 1, 1, 0.15)
+
+[sub_resource type="GradientTexture2D" id="1_sq"]
+gradient = SubResource("g_btn")
+width = 120
+height = 120
+fill_to = Vector2(0, 1)
+
+[sub_resource type="GradientTexture2D" id="2_wide"]
+gradient = SubResource("g_btn")
+width = 240
+height = 120
+fill_to = Vector2(0, 1)
+
+[node name="ShipControls" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1_ctrl")
+
+[node name="Buttons" type="Node2D" parent="."]
+
+[node name="Left" type="Node2D" parent="Buttons"]
+position = Vector2(40, 680)
+
+[node name="Right" type="Node2D" parent="Buttons"]
+position = Vector2(1240, 680)
+
+[node name="Fwd" type="TouchScreenButton" parent="Buttons/Left"]
+position = Vector2(130, -380)
+texture_normal = SubResource("1_sq")
+action = "thrust_forward"
+
+[node name="Label" type="Label" parent="Buttons/Left/Fwd"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Fwd"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Left" type="TouchScreenButton" parent="Buttons/Left"]
+position = Vector2(0, -250)
+texture_normal = SubResource("1_sq")
+action = "strafe_left"
+
+[node name="Label" type="Label" parent="Buttons/Left/Left"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Left"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Right" type="TouchScreenButton" parent="Buttons/Left"]
+position = Vector2(260, -250)
+texture_normal = SubResource("1_sq")
+action = "strafe_right"
+
+[node name="Label" type="Label" parent="Buttons/Left/Right"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Right"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Back" type="TouchScreenButton" parent="Buttons/Left"]
+position = Vector2(130, -120)
+texture_normal = SubResource("1_sq")
+action = "thrust_back"
+
+[node name="Label" type="Label" parent="Buttons/Left/Back"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Back"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RotL" type="TouchScreenButton" parent="Buttons/Right"]
+position = Vector2(-260, -120)
+texture_normal = SubResource("1_sq")
+action = "rotate_left"
+
+[node name="Label" type="Label" parent="Buttons/Right/RotL"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Rot L"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RotR" type="TouchScreenButton" parent="Buttons/Right"]
+position = Vector2(-120, -120)
+texture_normal = SubResource("1_sq")
+action = "rotate_right"
+
+[node name="Label" type="Label" parent="Buttons/Right/RotR"]
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Rot R"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Done" type="TouchScreenButton" parent="Buttons/Right"]
+position = Vector2(-260, -250)
+texture_normal = SubResource("2_wide")
+
+[node name="Label" type="Label" parent="Buttons/Right/Done"]
+offset_right = 240.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "Done"
+horizontal_alignment = 1
+vertical_alignment = 1
