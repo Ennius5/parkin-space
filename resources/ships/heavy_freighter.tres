@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="1_spec"]
+
+[resource]
+script = ExtResource("1_spec")
+ship_class = 2
+display_name = "Freighter"
+mass = 6.0
+thrust = 1000.0
+strafe_thrust = 650.0
+torque = 12000.0
+hull_size = Vector2(90, 160)
