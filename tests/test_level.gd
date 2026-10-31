@@ -139,7 +139,10 @@ func test_tap_right_after_done_does_not_select() -> void:
 	level.release_ship()
 	level.select_ship(second)  # same touch that pressed Done
 	assert_eq(level.driven_ship, null)
-	await tree.create_timer(0.4).timeout
+	# Wait on real time: the code measures wall-clock ms, and scene timers can run ahead of it headless.
+	var released_at := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - released_at < Level.RESELECT_DELAY_MS + 50:
+		await tree.process_frame
 	level.select_ship(second)
 	assert_eq(level.driven_ship, second, "later taps select normally")
 	level.queue_free()

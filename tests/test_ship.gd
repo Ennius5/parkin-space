@@ -1,7 +1,8 @@
 extends TestCase
 
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
-const ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
+const ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right",
+	"rotate_left", "rotate_right", "brake", "stop_rotation"]
 
 
 func _spawn(spec_name: String, pos := Vector2(200, 400)) -> Ship:
@@ -119,6 +120,71 @@ func test_ship_to_ship_collision_charged_once() -> void:
 		assert_almost(costs[0], ShiftLedger.dent_cost(260.0), 5.0)
 	mover.queue_free()
 	idle.queue_free()
+
+
+func test_no_damping_keeps_drift_and_spin() -> void:
+	var ship := _spawn("light_scout")
+	ship.linear_velocity = Vector2(100, 0)
+	ship.angular_velocity = 1.0
+	await _frames(60)
+	assert_almost(ship.linear_velocity.length(), 100.0, 0.5)
+	assert_almost(ship.angular_velocity, 1.0, 0.01)
+	ship.queue_free()
+
+
+func _frames_until(ship: Ship, action: String, done: Callable, limit := 300) -> int:
+	ship.set_driven(true)
+	Input.action_press(action)
+	var n := 0
+	while not done.call() and n < limit:
+		await tree.physics_frame
+		n += 1
+	_release_all()
+	return n
+
+
+func test_brake_stops_drift_to_parking_speed() -> void:
+	var ship := _spawn("light_scout")
+	ship.linear_velocity = Vector2(150, -80)
+	var n := await _frames_until(ship, "brake",
+		func() -> bool: return ship.linear_velocity.length() < ParkingRules.MAX_PARK_SPEED)
+	assert_true(n < 300, "never stopped")
+	await _frames(10)
+	assert_true(ship.linear_velocity.length() < ParkingRules.MAX_PARK_SPEED, "stays stopped")
+	ship.queue_free()
+
+
+func test_stop_rotation_stops_spin() -> void:
+	var ship := _spawn("light_scout")
+	ship.angular_velocity = -2.0
+	var n := await _frames_until(ship, "stop_rotation",
+		func() -> bool: return absf(ship.angular_velocity) < ParkingRules.MAX_PARK_SPIN)
+	assert_true(n < 300, "never stopped spinning")
+	ship.queue_free()
+
+
+func test_heavy_ship_brakes_slower_than_light() -> void:
+	var light := _spawn("light_scout", Vector2(200, 300))
+	light.linear_velocity = Vector2(200, 0)
+	var light_frames := await _frames_until(light, "brake",
+		func() -> bool: return light.linear_velocity.length() < ParkingRules.MAX_PARK_SPEED)
+	light.queue_free()
+	var heavy := _spawn("heavy_freighter", Vector2(200, 600))
+	heavy.linear_velocity = Vector2(200, 0)
+	var heavy_frames := await _frames_until(heavy, "brake",
+		func() -> bool: return heavy.linear_velocity.length() < ParkingRules.MAX_PARK_SPEED)
+	heavy.queue_free()
+	assert_true(heavy_frames > light_frames, "heavy %d vs light %d frames" % [heavy_frames, light_frames])
+
+
+func test_brake_ignored_when_not_driven() -> void:
+	var ship := _spawn("light_scout")
+	ship.linear_velocity = Vector2(100, 0)
+	Input.action_press("brake")
+	await _frames(30)
+	_release_all()
+	assert_almost(ship.linear_velocity.length(), 100.0, 0.5)
+	ship.queue_free()
 
 
 func test_soft_bump_no_dent() -> void:

@@ -27,8 +27,11 @@ var _prev_velocity := Vector2.ZERO
 func _ready() -> void:
 	mass = spec.mass
 	gravity_scale = 0.0
-	linear_damp = 0.3
-	angular_damp = 2.0
+	# No damping at all: ships drift and spin until the pilot brakes.
+	linear_damp_mode = DAMP_MODE_REPLACE
+	angular_damp_mode = DAMP_MODE_REPLACE
+	linear_damp = 0.0
+	angular_damp = 0.0
 	contact_monitor = true
 	max_contacts_reported = 4
 	input_pickable = true
@@ -50,6 +53,18 @@ func _physics_process(_delta: float) -> void:
 	apply_central_force(forward * Input.get_axis("thrust_back", "thrust_forward") * spec.thrust)
 	apply_central_force(right * Input.get_axis("strafe_left", "strafe_right") * spec.strafe_thrust)
 	apply_torque(Input.get_axis("rotate_left", "rotate_right") * spec.torque)
+
+
+## Brakes fire counter-thrust at the ship's own strength, so heavy ships take longer to stop.
+func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
+	if not is_driven:
+		return
+	if Input.is_action_pressed("brake"):
+		var decel := spec.thrust / mass
+		state.linear_velocity = state.linear_velocity.move_toward(Vector2.ZERO, decel * state.step)
+	if Input.is_action_pressed("stop_rotation"):
+		var spin_decel := spec.torque * state.inverse_inertia
+		state.angular_velocity = move_toward(state.angular_velocity, 0.0, spin_decel * state.step)
 
 
 func set_driven(on: bool) -> void:

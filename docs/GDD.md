@@ -10,7 +10,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 ## 3. Core mechanic and touch controls
 **Every few seconds:** nudge a drifting ship with short thruster bursts to line it up with a parking space, then stop it inside the space.
 
-**Physics:** zero gravity on a flat plane (`RigidBody2D`, gravity off, light damping). Ships keep drifting until thrusters stop them.
+**Physics:** zero gravity on a flat plane (`RigidBody2D`, gravity off, no damping). Ships keep drifting and spinning until the pilot brakes. Brakes fire counter-thrust at the ship's own strength, so heavy ships take longer to stop.
 
 **Ship classes** (each class has its own size, mass and parking-space size; ships within a class can have quirks):
 | Class | Size / handling | Example ships |
@@ -26,7 +26,9 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | Input (driving) | Action |
 |---|---|
 | Left pad: ▲ ▼ ◀ ▶ | Thrust forward / backward, strafe left / right |
+| Left pad centre: STOP (hold) | Brake: counter-thrust until the ship stops drifting |
 | Right: ⟲ ⟳ | Rotate left / right |
+| Right: Stop Spin (hold) | Counter-rotate until the ship stops spinning |
 | Done | Release the ship, return to lot view |
 | Pause | Pause menu |
 
