@@ -1,0 +1,14 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Builds and signing keys (never commit)
+export/
+*.apk
+*.aab
+*.ipa
+*.keystore
+*.jks
+
+# Plan execution scratch
+.superpowers/
