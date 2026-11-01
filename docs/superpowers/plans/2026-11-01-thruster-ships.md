@@ -134,7 +134,7 @@ Layouts. Positions are in px from the hull centre. Each row lists position → d
 - Modify: `scripts/actors/Ship.gd` (`_draw`)
 - Test: screenshot of a driven ship with flames (throwaway scene, `--write-movie`), and a 300-frame headless run of Level01 with no errors
 
-- [ ] **Step 1:** In `_draw`, for each index in `firing`, draw a flame triangle from the thruster position pointing opposite `direction`. Length = clamp(force / 10, 6, 28) px, colour orange with a yellow core. Draw it whether or not the ship has a texture.
+- [ ] **Step 1:** In `_draw`, for each index in `firing`, draw a flame triangle from the thruster position pointing opposite `direction`. Length = clamp(force / 10, 12, 28) px, colour orange with a yellow core. Draw it whether or not the ship has a texture.
 - [ ] **Step 2:** Take a screenshot of the scout with thrust_forward held. Expected: a flame behind the main engine.
 - [ ] **Step 3:** Run `t.sh`. Expected: ALL TESTS PASSED. Then export with `--export-debug "Android" export/parkin-space.apk`. Expected: exit 0. Install with `adb` if a phone is connected.
 - [ ] **Step 4: Commit** `feat: thruster flames`.

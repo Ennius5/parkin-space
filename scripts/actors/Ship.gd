@@ -126,8 +126,29 @@ func hull_points() -> PackedVector2Array:
 
 
 func _draw() -> void:
-	if spec == null or spec.texture:
+	if spec == null:
 		return
+	if spec.texture == null:
+		_draw_placeholder_hull()
+	for i in firing:
+		_draw_flame(spec.thrusters[i])
+
+
+## Exhaust points away from the push; bigger thrusters get longer flames.
+func _draw_flame(t: ThrusterSpec) -> void:
+	var back := -t.direction.normalized()
+	var side := back.orthogonal()
+	var length := clampf(t.force / 10.0, 12.0, 28.0)
+	var width := length * 0.3
+	draw_colored_polygon(PackedVector2Array([
+		t.position + side * width, t.position + back * length, t.position - side * width,
+	]), Color(1.0, 0.5, 0.1, 0.9))
+	draw_colored_polygon(PackedVector2Array([
+		t.position + side * width * 0.5, t.position + back * length * 0.55, t.position - side * width * 0.5,
+	]), Color(1.0, 0.95, 0.5))
+
+
+func _draw_placeholder_hull() -> void:
 	var h := spec.hull_size / 2
 	draw_rect(Rect2(-h, spec.hull_size), CLASS_COLORS[spec.ship_class])
 	draw_colored_polygon(PackedVector2Array([
