@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/Level.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="2_spec"]
 [ext_resource type="Resource" path="res://resources/ships/light_scout.tres" id="3_light"]
 [ext_resource type="Resource" path="res://resources/ships/medium_shuttle.tres" id="4_medium"]
+[ext_resource type="Resource" path="res://resources/ships/ManipulatorDrone.tres" id="10_drone"]
 [ext_resource type="PackedScene" path="res://scenes/actors/ParkingSpace.tscn" id="5_space"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="6_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ShipControls.tscn" id="7_ctrl"]
@@ -26,7 +27,7 @@ size = Vector2(700, 120)
 [node name="Level01" type="Node2D"]
 script = ExtResource("1_level")
 goal_text = "Park 4 ships before the shift ends"
-customer_queue = Array[ExtResource("2_spec")]([ExtResource("3_light"), ExtResource("4_medium"), ExtResource("3_light"), ExtResource("4_medium")])
+customer_queue = Array[ExtResource("2_spec")]([ExtResource("10_drone"), ExtResource("4_medium"), ExtResource("3_light"), ExtResource("4_medium")])
 shift_seconds = 180.0
 base_pay = 100
 silver_target = 150
