@@ -1,5 +1,6 @@
 extends SceneTree
-## Builds resources/ships/<name>.tres from the pixel-art layers in art/ships/<light|medium|heavy>/.
+## Builds resources/ships/<Name>.tres from the pixel-art layers in art/ships/<light|medium|heavy>/<Name>/,
+## one folder per ship holding <Name>.png and its _paint, _lights and _thrusters layers.
 ## Run --import first so new PNGs have textures, then:
 ##   godot --headless --path . -s res://tools/build_ships.gd
 ## Exit code = number of ships with errors (those ships are not written).
@@ -27,12 +28,17 @@ func _init() -> void:
 		if not DirAccess.dir_exists_absolute(dir):
 			continue
 		for file in DirAccess.get_files_at(dir):
-			if not file.ends_with(".png"):
-				continue
-			var ship_name := file.get_basename()
-			if LAYER_SUFFIXES.any(func(s: String) -> bool: return ship_name.ends_with(s)):
-				continue
-			if _build_ship(dir, ship_name, CLASSES[folder]):
+			if file.ends_with(".png"):
+				print("
+note: %s%s is not in a ship folder; move it to %s%s/" % [dir, file, dir, file.get_basename()])
+		for ship_name in DirAccess.get_directories_at(dir):
+			var ship_dir := dir + ship_name + "/"
+			if not FileAccess.file_exists(ship_dir + ship_name + ".png"):
+				print("
+== %s
+  ERROR: the folder has no %s.png (the base layer must match the folder name)" % [ship_name, ship_name])
+				failed += 1
+			elif _build_ship(ship_dir, ship_name, CLASSES[folder]):
 				built += 1
 			else:
 				failed += 1
@@ -49,6 +55,9 @@ func _image(path: String) -> Image:
 func _build_ship(dir: String, ship_name: String, ship_class: ShipSpec.ShipClass) -> bool:
 	print("\n== %s (%s)" % [ship_name, ShipSpec.ShipClass.keys()[ship_class].to_lower()])
 	var base := _image(dir + ship_name + ".png")
+	if base == null or base.is_empty():
+		print("  ERROR: could not read %s.png (still saving, or not a PNG?)" % ship_name)
+		return false
 	var markers := _image(dir + ship_name + "_thrusters.png")
 	var errors := PackedStringArray()
 	if markers == null:
@@ -74,7 +83,13 @@ func _build_ship(dir: String, ship_name: String, ship_class: ShipSpec.ShipClass)
 		return false
 
 	var out_path := OUT_DIR + ship_name + ".tres"
-	var spec: ShipSpec = load(out_path) if ResourceLoader.exists(out_path) else ShipSpec.new()
+	var spec: ShipSpec = null
+	if FileAccess.file_exists(out_path):
+		spec = ResourceLoader.load(out_path, "", ResourceLoader.CACHE_MODE_IGNORE) as ShipSpec
+		if spec == null:
+			print("  note: the old %s could not be loaded (moved art?); writing a fresh one" % out_path.get_file())
+	if spec == null:
+		spec = ShipSpec.new()
 	if spec.display_name == "":
 		spec.display_name = ship_name.replace("_", " ").capitalize()
 	spec.ship_class = ship_class

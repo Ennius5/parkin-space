@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/light/ManipulatorDrone/ManipulatorDrone_lights.png" id="1_88wnh"]
+[ext_resource type="Texture2D" path="res://art/ships/light/ManipulatorDrone/ManipulatorDrone_paint.png" id="2_h0l4n"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_hww3b"]
+[ext_resource type="Texture2D" path="res://art/ships/light/ManipulatorDrone/ManipulatorDrone.png" id="4_a4rbc"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_xd5v3"]
+
+[sub_resource type="Resource" id="Resource_88wnh"]
+script = ExtResource("5_xd5v3")
+position = Vector2(0, 29)
+force = 260.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_h0l4n"]
+script = ExtResource("5_xd5v3")
+position = Vector2(-8, -13)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_hww3b"]
+script = ExtResource("5_xd5v3")
+position = Vector2(8, -13)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_a4rbc"]
+script = ExtResource("5_xd5v3")
+position = Vector2(-15, 13)
+direction = Vector2(1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_xd5v3"]
+script = ExtResource("5_xd5v3")
+position = Vector2(15, 13)
+direction = Vector2(-1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_vrnib"]
+script = ExtResource("5_xd5v3")
+position = Vector2(-13, -10)
+direction = Vector2(1, 0)
+force = 26.470588235294116
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_f33we"]
+script = ExtResource("5_xd5v3")
+position = Vector2(13, 24)
+direction = Vector2(-1, 0)
+force = 26.470588235294116
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_w3bsp"]
+script = ExtResource("5_xd5v3")
+position = Vector2(13, -10)
+direction = Vector2(-1, 0)
+force = 26.470588235294116
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_sbm2e"]
+script = ExtResource("5_xd5v3")
+position = Vector2(-13, 24)
+direction = Vector2(1, 0)
+force = 26.470588235294116
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_hww3b")
+display_name = "Manipulator Drone"
+center_of_mass = Vector2(0, 14)
+inertia = 411.5794183445195
+thrusters = Array[ExtResource("5_xd5v3")]([SubResource("Resource_88wnh"), SubResource("Resource_h0l4n"), SubResource("Resource_hww3b"), SubResource("Resource_a4rbc"), SubResource("Resource_xd5v3"), SubResource("Resource_vrnib"), SubResource("Resource_f33we"), SubResource("Resource_w3bsp"), SubResource("Resource_sbm2e")])
+hull_polygon = PackedVector2Array(-14, -28, -16, -28, -16, -12, -14, -12, -14, -8, -16, -8, -16, -6, -10, -6, -10, -8, -6, -8, -6, -4, -8, -4, -8, 2, -10, 2, -10, 4, -16, 4, -16, 10, -14, 10, -14, 16, -16, 16, -16, 20, -14, 20, -14, 22, -12, 22, -12, 26, -14, 26, -14, 28, -10, 28, -10, 26, -6, 26, -6, 30, -4, 30, -4, 28, 4, 28, 4, 30, 6, 30, 6, 26, 10, 26, 10, 28, 14, 28, 14, 26, 12, 26, 12, 22, 14, 22, 14, 20, 16, 20, 16, 16, 14, 16, 14, 10, 16, 10, 16, 4, 10, 4, 10, 2, 8, 2, 8, -4, 6, -4, 6, -8, 10, -8, 10, -6, 16, -6, 16, -8, 14, -8, 14, -12, 16, -12, 16, -28, 14, -28, 14, -30, 6, -30, 6, -28, 10, -28, 10, -26, 12, -26, 12, -14, 10, -14, 10, -12, 6, -12, 6, -14, 2, -14, 2, -12, -2, -12, -2, -14, -6, -14, -6, -12, -10, -12, -10, -14, -12, -14, -12, -26, -10, -26, -10, -28, -6, -28, -6, -30, -14, -30)
+texture = ExtResource("4_a4rbc")
+paint_texture = ExtResource("2_h0l4n")
+lights_texture = ExtResource("1_88wnh")

@@ -83,7 +83,7 @@ Title → Main Menu (Play, Settings, Credits) → Mode Select (Offline / Online)
 
 ## 10. Art and sound style; asset sources and licenses
 - **Art:** bright, cartoony 2D top-down. Ships hand-drawn by the developer in Krita/LibreSprite (original). Asteroids, wrecks and lot props from Kenney space packs (CC0) or original. Parking spaces as pulsing green outlines, sized and labeled L / M / H.
-- **Ship art pipeline:** pixel art at half scale (1 art pixel = 2×2 game pixels), nose up, transparent background. Max canvas per class: Light 20×32, Medium 30×50, Heavy 44×80 art px. Three designs per class; each design is up to four same-size PNGs in `art/ships/<light|medium|heavy>/`:
+- **Ship art pipeline:** pixel art at half scale (1 art pixel = 2×2 game pixels), nose up, transparent background. Max canvas per class: Light 20×32, Medium 30×50, Heavy 44×80 art px. Three designs per class; each design has its own folder `art/ships/<light|medium|heavy>/<Name>/` with up to four same-size PNGs named after the folder (plus any source file such as `.pdn`):
   - `<name>.png`: base art. Its outline becomes the collision shape and the shape used for parking checks.
   - `<name>_paint.png` (optional): paintable areas in greys, tinted with each customer's random paint colour.
   - `<name>_lights.png` (optional): glowing parts, drawn additively. On while driven, slow blink while waiting, dim when parked.

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dxgvi2bpl88hn"
-path="res://.godot/imported/sample_scout.png-0ee920d3491ab86f524f6d59d21b3721.ctex"
+uid="uid://c1ikocpqs1yd7"
+path="res://.godot/imported/sample_scout_lights.png-fc88da04ddaab54c9d3fa9f0d9294800.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ships/light/sample_scout.png"
-dest_files=["res://.godot/imported/sample_scout.png-0ee920d3491ab86f524f6d59d21b3721.ctex"]
+source_file="res://art/ships/light/sample_scout/sample_scout_lights.png"
+dest_files=["res://.godot/imported/sample_scout_lights.png-fc88da04ddaab54c9d3fa9f0d9294800.ctex"]
 
 [params]
 

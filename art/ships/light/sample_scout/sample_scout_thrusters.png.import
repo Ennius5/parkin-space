@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1ikocpqs1yd7"
-path="res://.godot/imported/sample_scout_lights.png-7229da601a001dc885bb5ccace95a0d5.ctex"
+uid="uid://cfonkir4bt1l2"
+path="res://.godot/imported/sample_scout_thrusters.png-74faaaf16b9283f82c05b3957ef8a7da.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ships/light/sample_scout_lights.png"
-dest_files=["res://.godot/imported/sample_scout_lights.png-7229da601a001dc885bb5ccace95a0d5.ctex"]
+source_file="res://art/ships/light/sample_scout/sample_scout_thrusters.png"
+dest_files=["res://.godot/imported/sample_scout_thrusters.png-74faaaf16b9283f82c05b3957ef8a7da.ctex"]
 
 [params]
 

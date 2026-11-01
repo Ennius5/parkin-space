@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cfonkir4bt1l2"
-path="res://.godot/imported/sample_scout_thrusters.png-cdf6175e313b8751079f34b11c864f19.ctex"
+uid="uid://bexq42jvrjt06"
+path="res://.godot/imported/ManipulatorDrone_paint.png-bf0b8edbd46fb190959b7ed9b9085ffa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ships/light/sample_scout_thrusters.png"
-dest_files=["res://.godot/imported/sample_scout_thrusters.png-cdf6175e313b8751079f34b11c864f19.ctex"]
+source_file="res://art/ships/light/ManipulatorDrone/ManipulatorDrone_paint.png"
+dest_files=["res://.godot/imported/ManipulatorDrone_paint.png-bf0b8edbd46fb190959b7ed9b9085ffa.ctex"]
 
 [params]
 

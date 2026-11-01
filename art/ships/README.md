@@ -1,6 +1,6 @@
 # Ship art guide
 
-Put each design in the folder for its class: `light/`, `medium/` or `heavy/`. Then run the build (see the end of this guide) and the ship appears as `resources/ships/<name>.tres`.
+Give each design **its own folder** inside its class folder, named after the ship: `light/ManipulatorDrone/`, `medium/…/` or `heavy/…/`. Then run the build (see the end of this guide) and the ship appears as `resources/ships/<Name>.tres`. Source files like `.pdn` can live in the same folder; they're left out of the game.
 
 ## Canvas
 
@@ -25,7 +25,18 @@ All layers are the **same canvas size** and line up exactly. Export each one as 
 | `<name>_lights.png` | Glowing parts (windows, nav lights, engine glow) in full colour. On while driven, a slow blink while waiting, dim when parked. | No |
 | `<name>_thrusters.png` | Thruster markers (below). The build reads this layer; the game never shows it. | Yes |
 
-Example: `light/scout_a.png`, `light/scout_a_paint.png`, `light/scout_a_lights.png`, `light/scout_a_thrusters.png`.
+Example:
+
+```
+light/ManipulatorDrone/
+  ManipulatorDrone.png
+  ManipulatorDrone_paint.png
+  ManipulatorDrone_lights.png
+  ManipulatorDrone_thrusters.png
+  ManipulatorDrone.pdn        (your source file, optional)
+```
+
+The base PNG must have the same name as the folder.
 
 ## Thruster markers
 
