@@ -10,14 +10,18 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 ## 3. Core mechanic and touch controls
 **Every few seconds:** nudge a drifting ship with short thruster bursts to line it up with a parking space, then stop it inside the space.
 
-**Physics:** zero gravity on a flat plane (`RigidBody2D`, gravity off, no damping). Ships keep drifting and spinning until the pilot brakes. Brakes fire counter-thrust at the ship's own strength, so heavy ships take longer to stop.
+**Physics:** zero gravity on a flat plane (`RigidBody2D`, gravity off, no damping). Ships keep drifting and spinning until the pilot brakes.
+
+**Thrusters:** every ship is a mass (with its own centre of mass) pushed by thrusters placed on its hull. Each thruster has a position, a push direction, a force, and the buttons that fire it. A held button fires its thrusters, and each one pushes the ship at its own position. A thruster that isn't lined up with the centre of mass also turns the ship, so each ship's handling comes from its thruster layout. Firing thrusters show a flame.
+
+**Brakes:** STOP and Stop Spin are automatic. STOP brakes at the combined force of the thrusters that point against the drift; Stop Spin uses the combined turning force of the thrusters that turn against the spin. Both stop the ship cleanly without adding new spin. A ship with weak retro thrusters takes longer to stop from full speed.
 
 **Ship classes** (each class has its own size, mass and parking-space size; ships within a class can have quirks):
 | Class | Size / handling | Example ships |
 |---|---|---|
-| Light | Small, responsive, easy to overshoot | Scout pod, courier |
-| Medium | Balanced | Shuttle, round saucer (spins fast) |
-| Heavy | Long and wide, slow to start and stop | Freighter, lopsided junker (drifts to one side) |
+| Light | Small, responsive, easy to overshoot | Scout pod (all thrusters lined up: clean and predictable), courier |
+| Medium | Balanced | Shuttle (strong main engine, weak retro thrusters, strafing swings the nose slightly), round saucer (spins fast) |
+| Heavy | Long and wide, slow to start and stop | Freighter (cargo-heavy tail, weak rotation thrusters, strafing leaves a twist), lopsided junker (drifts to one side) |
 
 **Two modes:**
 - **Lot view (ship select):** fixed camera shows the whole lot. Tap a ship to take control. Waiting ships, retrieval requests and tier cards are shown here.
@@ -26,9 +30,9 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | Input (driving) | Action |
 |---|---|
 | Left pad: ▲ ▼ ◀ ▶ | Thrust forward / backward, strafe left / right |
-| Left pad centre: STOP (hold) | Brake: counter-thrust until the ship stops drifting |
+| Left pad centre: STOP (hold) | Brake: fire the thrusters that oppose the drift until the ship stops |
 | Right: ⟲ ⟳ | Rotate left / right |
-| Right: Stop Spin (hold) | Counter-rotate until the ship stops spinning |
+| Right: Stop Spin (hold) | Fire the thrusters that oppose the spin until the ship stops spinning |
 | Done | Release the ship, return to lot view |
 | Pause | Pause menu |
 
