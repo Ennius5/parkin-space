@@ -6,7 +6,7 @@ extends Resource
 @export var position: Vector2 = Vector2.ZERO
 @export var direction: Vector2 = Vector2.UP  # the way it pushes the ship; normalised before use
 @export var force: float = 100.0
-@export var actions: PackedStringArray = []  # Input Map actions that fire it
+@export var actions := PackedStringArray()  # Input Map actions that fire it
 
 
 ## Force vector in ship-local space.
