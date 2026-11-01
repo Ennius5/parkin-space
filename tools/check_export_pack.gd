@@ -3,12 +3,16 @@ extends SceneTree
 ## Usage: godot --headless --path . --export-pack "Android" <dir>/check.pck
 ##        cd <dir> && godot --headless --main-pack check.pck -s res://tools/check_export_pack.gd
 
-const SHIPS := ["light_scout", "medium_shuttle", "heavy_freighter"]
-
-
 func _init() -> void:
 	var problems := 0
-	for ship_name in SHIPS:
+	var ships := PackedStringArray()
+	for file in DirAccess.get_files_at("res://resources/ships/"):
+		if file.ends_with(".tres") or file.ends_with(".tres.remap"):
+			ships.append(file.trim_suffix(".remap").get_basename())
+	if ships.is_empty():
+		print("FAIL no ship resources found")
+		problems += 1
+	for ship_name in ships:
 		var spec := load("res://resources/ships/%s.tres" % ship_name) as ShipSpec
 		if spec == null or spec.thrusters.is_empty():
 			print("FAIL %s: no thrusters" % ship_name)

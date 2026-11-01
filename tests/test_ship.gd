@@ -310,3 +310,75 @@ func test_freighter_is_slow_to_stop_spinning() -> void:
 		func() -> bool: return absf(ship.angular_velocity) < ParkingRules.MAX_PARK_SPIN)
 	assert_true(n > 90, "stopped in %d frames" % n)
 	ship.queue_free()
+
+
+func _triangle_spec() -> ShipSpec:
+	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	spec.hull_polygon = PackedVector2Array([Vector2(0, -32), Vector2(20, 32), Vector2(-20, 32)])
+	return spec
+
+
+func _spawn_spec(spec: ShipSpec, pos := Vector2(200, 400)) -> Ship:
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = spec
+	ship.position = pos
+	tree.root.add_child(ship)
+	return ship
+
+
+func test_polygon_spec_uses_collision_polygon() -> void:
+	var ship := _spawn_spec(_triangle_spec())
+	var polys := ship.find_children("*", "CollisionPolygon2D", false, false)
+	assert_eq(polys.size(), 1)
+	if polys.size() == 1:
+		assert_false((polys[0] as CollisionPolygon2D).disabled)
+		assert_eq((polys[0] as CollisionPolygon2D).polygon.size(), 3)
+	assert_true((ship.get_node("CollisionShape2D") as CollisionShape2D).disabled, "rectangle disabled")
+	ship.queue_free()
+
+
+func test_hull_points_use_polygon() -> void:
+	var ship := _spawn_spec(_triangle_spec(), Vector2(100, 100))
+	var pts := ship.hull_points()
+	assert_eq(pts.size(), 4)
+	if pts.size() == 4:
+		assert_eq(pts[0], Vector2(100, 68))
+		assert_eq(pts[3], Vector2(100, 100))
+	ship.queue_free()
+
+
+func test_paint_color_tints_paint_layer() -> void:
+	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	spec.paint_texture = PlaceholderTexture2D.new()
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = spec
+	ship.paint_color = Color.RED
+	tree.root.add_child(ship)
+	var paint := ship.get_node("Paint") as Sprite2D
+	assert_true(paint.visible)
+	assert_eq(paint.modulate, Color.RED)
+	ship.queue_free()
+	var plain := _spawn("light_scout")
+	assert_false((plain.get_node("Paint") as Sprite2D).visible, "no paint texture → hidden")
+	plain.queue_free()
+
+
+func test_lights_levels() -> void:
+	var ship := _spawn("light_scout")
+	for i in 20:
+		var level := ship.lights_level()
+		assert_true(level >= 0.3 and level <= 1.0, "waiting level %s" % level)
+		await tree.process_frame
+	ship.set_driven(true)
+	assert_eq(ship.lights_level(), 1.0)
+	ship.set_parked()
+	assert_eq(ship.lights_level(), 0.25)
+	ship.queue_free()
+
+
+func test_spec_inertia_applied() -> void:
+	var spec := _triangle_spec()
+	spec.inertia = 321.0
+	var ship := _spawn_spec(spec)
+	assert_eq(ship.inertia, 321.0)
+	ship.queue_free()

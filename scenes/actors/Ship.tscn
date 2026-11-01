@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/Ship.gd" id="1_ship"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
+blend_mode = 1
 
 [node name="Ship" type="RigidBody2D"]
 gravity_scale = 0.0
@@ -10,6 +13,13 @@ max_contacts_reported = 4
 script = ExtResource("1_ship")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="Paint" type="Sprite2D" parent="."]
+visible = false
+
+[node name="Lights" type="Sprite2D" parent="."]
+visible = false
+material = SubResource("CanvasItemMaterial_add")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 

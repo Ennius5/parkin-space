@@ -15,6 +15,7 @@ const CLASS_COLORS := {
 }
 
 @export var spec: ShipSpec
+var paint_color := Color.WHITE  # set before the ship enters the tree
 
 var is_driven: bool = false
 var is_parked: bool = false
@@ -23,6 +24,8 @@ var firing := PackedInt32Array()  # indices into spec.thrusters that fired this 
 var _prev_velocity := Vector2.ZERO
 
 @onready var _sprite: Sprite2D = $Sprite2D
+@onready var _paint: Sprite2D = $Paint
+@onready var _lights: Sprite2D = $Lights
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _drive_camera: Camera2D = $DriveCamera
 
@@ -31,6 +34,8 @@ func _ready() -> void:
 	mass = spec.mass
 	center_of_mass_mode = CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = spec.center_of_mass
+	if spec.inertia > 0.0:
+		inertia = spec.inertia
 	gravity_scale = 0.0
 	# No damping at all: ships drift and spin until the pilot brakes.
 	linear_damp_mode = DAMP_MODE_REPLACE
@@ -43,10 +48,37 @@ func _ready() -> void:
 	var rect := RectangleShape2D.new()
 	rect.size = spec.hull_size
 	_collision.shape = rect
-	if spec.texture:
-		_sprite.texture = spec.texture
-		_sprite.scale = spec.hull_size / spec.texture.get_size()
+	if spec.hull_polygon.size() >= 3:
+		var outline := CollisionPolygon2D.new()
+		outline.polygon = spec.hull_polygon
+		add_child(outline)
+		_collision.disabled = true
+	_show_layer(_sprite, spec.texture)
+	_show_layer(_paint, spec.paint_texture)
+	_paint.modulate = paint_color
+	_show_layer(_lights, spec.lights_texture)
 	body_entered.connect(_on_body_entered)
+
+
+func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
+	sprite.visible = texture != null
+	if texture:
+		sprite.texture = texture
+		sprite.scale = spec.hull_size / texture.get_size()
+
+
+func _process(_delta: float) -> void:
+	if _lights.visible:
+		_lights.modulate.a = lights_level()
+
+
+## Lights: full while driven, a slow blink while waiting for a valet, dim once parked.
+func lights_level() -> float:
+	if is_parked:
+		return 0.25
+	if is_driven:
+		return 1.0
+	return 0.65 + 0.35 * sin(Time.get_ticks_msec() / 1000.0 * PI)
 
 
 func _physics_process(_delta: float) -> void:
@@ -117,10 +149,12 @@ func set_parked() -> void:
 	modulate = Color(1, 1, 1, 0.7)
 
 
-## Hull corners and centre in global coordinates, used for parking checks.
+## Outline (or hull corners) and centre in global coordinates, used for parking checks.
 func hull_points() -> PackedVector2Array:
 	var h := spec.hull_size / 2
 	var local := [Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y), Vector2.ZERO]
+	if spec.hull_polygon.size() >= 3:
+		local = Array(spec.hull_polygon) + [Vector2.ZERO]
 	var pts := PackedVector2Array()
 	for p in local:
 		pts.append(global_transform * p)
