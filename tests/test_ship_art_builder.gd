@@ -216,3 +216,31 @@ func test_twist_warning_names_both_rows_when_com_between_rows() -> void:
 		_mark(m, p.x, p.y, MAGENTA)
 	var r := ShipArtBuilder.build(_rect_image(10, 16), m, LIGHT)
 	assert_true(" ".join(r["warnings"]).contains("between art rows 7 and 8"), "warnings=%s" % r["warnings"])
+
+
+func test_inertia_from_pixels() -> void:
+	var r := ShipArtBuilder.build(_rect_image(10, 16), _basic_markers(), LIGHT)
+	# Solid 20x32 game-px rectangle, mass 1, centred: (20^2 + 32^2) / 12.
+	assert_almost(r["inertia"], (400.0 + 1024.0) / 12.0, 0.01)
+
+
+func test_marker_outside_hull_pushes_toward_hull() -> void:
+	var base := _blank(12, 16)
+	base.fill_rect(Rect2i(1, 0, 10, 16), Color.GRAY)  # hull with one empty column each side
+	var m := _blank(12, 16)
+	_mark(m, 11, 8, GREEN)  # just outside the right edge
+	var r := ShipArtBuilder.build(base, m, LIGHT)
+	var side := _find(r, Vector2((11.5 - 6.0) * 2.0, (8.5 - 8.0) * 2.0))
+	assert_true(side != null, "side thruster found")
+	if side:
+		assert_eq(side.direction, Vector2(-1, 0))
+		assert_eq(side.actions, PackedStringArray(["strafe_left"]))
+	assert_true(" ".join(r["warnings"]).contains("transparent"), "warnings=%s" % r["warnings"])
+
+
+func test_corner_only_islands_warn_about_corners() -> void:
+	var base := _blank(10, 16)
+	base.fill_rect(Rect2i(0, 0, 5, 8), Color.GRAY)
+	base.fill_rect(Rect2i(5, 8, 5, 8), Color.GRAY)  # touches the first block only at a corner
+	var r := ShipArtBuilder.build(base, _blank(10, 16), LIGHT)
+	assert_true(" ".join(r["warnings"]).contains("corner"), "warnings=%s" % r["warnings"])

@@ -82,6 +82,7 @@ func _build_ship(dir: String, ship_name: String, ship_class: ShipSpec.ShipClass)
 	spec.hull_size = result["hull_size"]
 	spec.hull_polygon = result["hull_polygon"]
 	spec.center_of_mass = result["center_of_mass"]
+	spec.inertia = result["inertia"]
 	spec.thrusters = result["thrusters"]
 	spec.texture = load(dir + ship_name + ".png")
 	spec.paint_texture = load(dir + ship_name + "_paint.png") if FileAccess.file_exists(dir + ship_name + "_paint.png") else null

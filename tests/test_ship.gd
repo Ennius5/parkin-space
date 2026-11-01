@@ -374,3 +374,11 @@ func test_lights_levels() -> void:
 	ship.set_parked()
 	assert_eq(ship.lights_level(), 0.25)
 	ship.queue_free()
+
+
+func test_spec_inertia_applied() -> void:
+	var spec := _triangle_spec()
+	spec.inertia = 321.0
+	var ship := _spawn_spec(spec)
+	assert_eq(ship.inertia, 321.0)
+	ship.queue_free()

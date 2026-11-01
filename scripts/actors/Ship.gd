@@ -34,6 +34,8 @@ func _ready() -> void:
 	mass = spec.mass
 	center_of_mass_mode = CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = spec.center_of_mass
+	if spec.inertia > 0.0:
+		inertia = spec.inertia
 	gravity_scale = 0.0
 	# No damping at all: ships drift and spin until the pilot brakes.
 	linear_damp_mode = DAMP_MODE_REPLACE

@@ -12,7 +12,7 @@ Draw pixel art at **half scale**: one art pixel shows as 2×2 game pixels. Draw 
 | Medium | 30 × 50 |
 | Heavy | 44 × 80 |
 
-Designs can be smaller than the maximum and don't need to be symmetrical.
+Designs can be smaller than the maximum and don't need to be symmetrical. Keep the ship in **one piece**: pixels that touch only at a corner count as separate parts, and only the largest part collides. Join parts with a pixel that shares an edge.
 
 ## Layers
 
@@ -45,7 +45,9 @@ Every ship needs at least one red, one blue, green on both sides, and yellow tha
 - **Side thrusters** (green) close to the centre-of-mass row strafe cleanly. Further away, strafing also turns the ship. The build warns when the turn is strong and names the row to aim for.
 - **Rotation thrusters** (yellow) work best far from the centre of mass, near the nose and tail.
 - **An off-centre main engine** makes Fwd turn the ship. That's a fine quirk for a junker.
+- Draw markers on the ship's pixels. A marker just outside the hull still works: it pushes toward the hull, with a warning.
 - Any other colour in the thruster layer is ignored, with a warning. Turn off anti-aliasing for this layer.
+- The `.tres` files are generated: each build overwrites them, except the display name. Change the art and rebuild instead of editing them.
 
 ## Build
 

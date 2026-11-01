@@ -72,6 +72,7 @@ actions = PackedStringArray("rotate_left")
 script = ExtResource("3_t6dcl")
 display_name = "Sample Scout"
 center_of_mass = Vector2(0, 4.2735863)
+inertia = 348.40313683403366
 thrusters = Array[ExtResource("5_t1q0e")]([SubResource("Resource_sl8et"), SubResource("Resource_prhjo"), SubResource("Resource_t6dcl"), SubResource("Resource_h7vbw"), SubResource("Resource_t1q0e"), SubResource("Resource_s3y17"), SubResource("Resource_hyylr"), SubResource("Resource_hr1es"), SubResource("Resource_6bwpo")])
 hull_polygon = PackedVector2Array(-4, -28, -6, -28, -6, -26, -8, -26, -8, -22, -12, -20, -12, 4, -20, 4, -20, 22, -12, 22, -12, 32, 12, 32, 12, 22, 20, 22, 20, 4, 12, 4, 12, -20, 10, -20, 10, -22, 8, -22, 8, -26, 4, -28, 4, -32, -4, -32)
 texture = ExtResource("4_h7vbw")
