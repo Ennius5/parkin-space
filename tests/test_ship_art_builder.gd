@@ -183,3 +183,36 @@ func test_stray_colours_warn() -> void:
 	var r := ShipArtBuilder.build(_rect_image(10, 16), m, LIGHT)
 	var joined := " ".join(r["warnings"])
 	assert_true(joined.contains("1 pixel"), "warnings=%s" % r["warnings"])
+
+
+func test_strong_strafe_twist_warns_with_com_row() -> void:
+	var m := _basic_markers()
+	_mark(m, 0, 8, Color(0, 0, 0, 0))
+	_mark(m, 9, 8, Color(0, 0, 0, 0))
+	_mark(m, 0, 1, GREEN)  # far ahead of the centre of mass (row 8)
+	_mark(m, 9, 1, GREEN)
+	var r := ShipArtBuilder.build(_rect_image(10, 16), m, LIGHT)
+	var joined := " ".join(r["warnings"])
+	assert_true(joined.contains("strafe") and joined.contains("between art rows 7 and 8"), "warnings=%s" % r["warnings"])
+	var clean := ShipArtBuilder.build(_rect_image(10, 16), _basic_markers(), LIGHT)
+	assert_false(" ".join(clean["warnings"]).contains("strafe"), "small twist is fine: %s" % clean["warnings"])
+
+
+func test_two_by_two_magenta_marks_centre_between_pixels() -> void:
+	var m := _basic_markers()
+	for p in [Vector2i(4, 7), Vector2i(5, 7), Vector2i(4, 8), Vector2i(5, 8)]:
+		_mark(m, p.x, p.y, MAGENTA)
+	var r := ShipArtBuilder.build(_rect_image(10, 16), m, LIGHT)
+	assert_eq(r["center_of_mass"], Vector2(0, 0), "exact canvas centre")
+
+
+func test_twist_warning_names_both_rows_when_com_between_rows() -> void:
+	var m := _basic_markers()
+	_mark(m, 0, 8, Color(0, 0, 0, 0))
+	_mark(m, 9, 8, Color(0, 0, 0, 0))
+	_mark(m, 0, 1, GREEN)
+	_mark(m, 9, 1, GREEN)
+	for p in [Vector2i(4, 7), Vector2i(5, 7), Vector2i(4, 8), Vector2i(5, 8)]:
+		_mark(m, p.x, p.y, MAGENTA)
+	var r := ShipArtBuilder.build(_rect_image(10, 16), m, LIGHT)
+	assert_true(" ".join(r["warnings"]).contains("between art rows 7 and 8"), "warnings=%s" % r["warnings"])

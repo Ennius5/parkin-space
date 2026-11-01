@@ -16,6 +16,8 @@ const KIND_COLORS := {
 	Kind.COM: Color8(255, 0, 255),
 }
 
+const TWIST_WARN_SHARE := 0.5  # warn when strafing turns the ship this hard compared to rotating
+
 ## Force per button (torque for rotation) shared by that button's thrusters, and mass, per class.
 const BUDGETS := {
 	ShipSpec.ShipClass.LIGHT: {"fwd": 260.0, "back": 180.0, "strafe": 180.0, "torque": 900.0, "mass": 1.0},
@@ -91,6 +93,19 @@ static func build(base: Image, markers: Image, ship_class: ShipSpec.ShipClass) -
 			spec.force = per_pixel * t["pixels"]
 			spec.actions = PackedStringArray([action])
 			thrusters.append(spec)
+
+	var com_art_y := com_local.y / ART_SCALE + size.y / 2.0
+	var com_row := "art row %d" % int(floor(com_art_y))
+	if is_equal_approx(com_art_y, roundf(com_art_y)):  # centre of mass sits on the line between two rows
+		com_row = "the line between art rows %d and %d" % [int(com_art_y) - 1, int(com_art_y)]
+	for action in ["strafe_left", "strafe_right"]:
+		var twist := 0.0
+		for t in thrusters:
+			if t.actions.has(action):
+				twist += t.torque_about(com_local)
+		if absf(twist) > budget["torque"] * TWIST_WARN_SHARE:
+			warnings.append("%s turns the ship %d%% as hard as rotating; move the green markers closer to %s (the centre of mass)"
+					% [action.replace("_", " "), roundi(absf(twist) / budget["torque"] * 100.0), com_row])
 
 	return {
 		"hull_size": size * ART_SCALE,

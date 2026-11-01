@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/light/sample_scout_lights.png" id="1_sl8et"]
+[ext_resource type="Texture2D" path="res://art/ships/light/sample_scout_paint.png" id="2_prhjo"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_t6dcl"]
+[ext_resource type="Texture2D" path="res://art/ships/light/sample_scout.png" id="4_h7vbw"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_t1q0e"]
+
+[sub_resource type="Resource" id="Resource_sl8et"]
+script = ExtResource("5_t1q0e")
+position = Vector2(0, 31)
+force = 260.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_prhjo"]
+script = ExtResource("5_t1q0e")
+position = Vector2(-7, -19)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_t6dcl"]
+script = ExtResource("5_t1q0e")
+position = Vector2(7, -19)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_h7vbw"]
+script = ExtResource("5_t1q0e")
+position = Vector2(-11, 5)
+direction = Vector2(1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_t1q0e"]
+script = ExtResource("5_t1q0e")
+position = Vector2(11, 5)
+direction = Vector2(-1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_s3y17"]
+script = ExtResource("5_t1q0e")
+position = Vector2(-11, -15)
+direction = Vector2(1, 0)
+force = 28.125
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_hyylr"]
+script = ExtResource("5_t1q0e")
+position = Vector2(19, 17)
+direction = Vector2(-1, 0)
+force = 28.125
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_hr1es"]
+script = ExtResource("5_t1q0e")
+position = Vector2(11, -15)
+direction = Vector2(-1, 0)
+force = 28.125
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_6bwpo"]
+script = ExtResource("5_t1q0e")
+position = Vector2(-19, 17)
+direction = Vector2(1, 0)
+force = 28.125
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_t6dcl")
+display_name = "Sample Scout"
+center_of_mass = Vector2(0, 4.2735863)
+thrusters = Array[ExtResource("5_t1q0e")]([SubResource("Resource_sl8et"), SubResource("Resource_prhjo"), SubResource("Resource_t6dcl"), SubResource("Resource_h7vbw"), SubResource("Resource_t1q0e"), SubResource("Resource_s3y17"), SubResource("Resource_hyylr"), SubResource("Resource_hr1es"), SubResource("Resource_6bwpo")])
+hull_polygon = PackedVector2Array(-4, -28, -6, -28, -6, -26, -8, -26, -8, -22, -12, -20, -12, 4, -20, 4, -20, 22, -12, 22, -12, 32, 12, 32, 12, 22, 20, 22, 20, 4, 12, 4, 12, -20, 10, -20, 10, -22, 8, -22, 8, -26, 4, -28, 4, -32, -4, -32)
+texture = ExtResource("4_h7vbw")
+paint_texture = ExtResource("2_prhjo")
+lights_texture = ExtResource("1_sl8et")
