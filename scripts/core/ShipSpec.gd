@@ -10,4 +10,7 @@ enum ShipClass { LIGHT, MEDIUM, HEAVY }
 @export var hull_size: Vector2 = Vector2(40, 64)  # width x length in pixels, nose at -Y
 @export var center_of_mass: Vector2 = Vector2.ZERO  # pixels from the hull centre
 @export var thrusters: Array[ThrusterSpec] = []
+@export var hull_polygon: PackedVector2Array = []  # traced outline in pixels; empty = hull_size rectangle
 @export var texture: Texture2D  # null = placeholder drawing
+@export var paint_texture: Texture2D  # greys tinted with the customer's paint colour; optional
+@export var lights_texture: Texture2D  # glowing parts, drawn additively; optional

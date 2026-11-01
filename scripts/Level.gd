@@ -3,6 +3,11 @@ extends Node2D
 ## Runs one shift: spawns customers, switches between lot view and driving, detects parking,
 ## tracks pay and ends the level. Each level scene only changes the exported values and layout.
 
+## Random customer paint jobs, multiplied over the grey paint layer.
+const PAINT_COLORS: Array[Color] = [
+	Color(0.9, 0.25, 0.25), Color(0.25, 0.55, 0.95), Color(0.3, 0.8, 0.4), Color(0.95, 0.75, 0.2),
+	Color(0.7, 0.4, 0.9), Color(0.95, 0.5, 0.15), Color(0.9, 0.9, 0.92), Color(0.2, 0.75, 0.8),
+]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
 const ENTRANCE_CLEAR_RADIUS := 120.0
@@ -65,6 +70,7 @@ func spawn_next_customer() -> Ship:
 		return null
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
+	ship.paint_color = PAINT_COLORS.pick_random()
 	ship.global_position = _entrance.global_position
 	ship.rotation = _entrance.global_rotation
 	_next_customer += 1

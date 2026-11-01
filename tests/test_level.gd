@@ -159,3 +159,12 @@ func test_ship_selection_ignored_while_driving() -> void:
 	assert_eq(level.driven_ship, first)
 	level.queue_free()
 	_restore_state()
+
+
+func test_customers_get_a_paint_color() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship: Ship = level.get_node("Ships").get_child(0)
+	assert_true(Level.PAINT_COLORS.has(ship.paint_color), "paint=%s" % ship.paint_color)
+	level.queue_free()
+	_restore_state()
