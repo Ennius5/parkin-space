@@ -190,3 +190,99 @@ func test_brake_ignored_when_not_driven() -> void:
 func test_soft_bump_no_dent() -> void:
 	var costs := await _ram_wall(80.0)
 	assert_eq(costs.size(), 0, "costs=%s" % [costs])
+
+
+func test_center_of_mass_from_spec() -> void:
+	var ship := _spawn("heavy_freighter")
+	assert_eq(ship.center_of_mass_mode, RigidBody2D.CENTER_OF_MASS_MODE_CUSTOM)
+	assert_eq(ship.center_of_mass, Vector2(0, 20))
+	ship.queue_free()
+
+
+func test_off_centre_thruster_spins_ship() -> void:
+	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	var t := ThrusterSpec.new()
+	t.position = Vector2(10, 30)
+	t.direction = Vector2(0, -1)
+	t.force = 100.0
+	t.actions = PackedStringArray(["thrust_forward"])
+	var only: Array[ThrusterSpec] = [t]
+	spec.thrusters = only
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = spec
+	ship.position = Vector2(200, 400)
+	tree.root.add_child(ship)
+	ship.set_driven(true)
+	Input.action_press("thrust_forward")
+	await _frames(20)
+	_release_all()
+	assert_true(ship.angular_velocity < 0.0, "w=%s" % ship.angular_velocity)
+	assert_true(ship.linear_velocity.y < 0.0, "v=%s" % ship.linear_velocity)
+	ship.queue_free()
+
+
+func test_thruster_fires_only_for_its_actions() -> void:
+	var ship := _spawn("light_scout")
+	ship.set_driven(true)
+	Input.action_press("strafe_right")
+	await _frames(10)
+	var firing := ship.firing
+	_release_all()
+	assert_true(firing.size() > 0, "nothing fired")
+	for i in firing:
+		assert_true(ship.spec.thrusters[i].actions.has("strafe_right"), "thruster %d" % i)
+	assert_true(ship.linear_velocity.x > 0.0, "v=%s" % ship.linear_velocity)
+	ship.queue_free()
+
+
+func _frames_to_brake(spec_name: String, velocity: Vector2) -> int:
+	var ship := _spawn(spec_name)
+	ship.linear_velocity = velocity
+	var n := await _frames_until(ship, "brake",
+		func() -> bool: return ship.linear_velocity.length() < ParkingRules.MAX_PARK_SPEED)
+	ship.queue_free()
+	return n
+
+
+func test_weak_retro_brakes_forward_slower_than_sideways() -> void:
+	var forward := await _frames_to_brake("medium_shuttle", Vector2(0, -150))
+	var sideways := await _frames_to_brake("medium_shuttle", Vector2(150, 0))
+	assert_true(forward > sideways, "forward %d vs sideways %d frames" % [forward, sideways])
+
+
+func test_brake_flames_oppose_drift() -> void:
+	var ship := _spawn("light_scout")
+	ship.linear_velocity = Vector2(0, -150)
+	ship.set_driven(true)
+	Input.action_press("brake")
+	await _frames(3)
+	var firing := ship.firing
+	_release_all()
+	assert_true(firing.size() > 0, "no brake flames")
+	for i in firing:
+		assert_true(ship.spec.thrusters[i].push_along(Vector2(0, 1)) > 0.0, "thruster %d" % i)
+	ship.queue_free()
+
+
+func test_brake_at_rest_is_quiet() -> void:
+	var ship := _spawn("light_scout")
+	ship.set_driven(true)
+	Input.action_press("brake")
+	Input.action_press("stop_rotation")
+	await _frames(10)
+	var firing := ship.firing
+	_release_all()
+	assert_eq(firing.size(), 0, "firing=%s" % firing)
+	assert_eq(ship.linear_velocity, Vector2.ZERO)
+	assert_eq(ship.angular_velocity, 0.0)
+	ship.queue_free()
+
+
+func test_not_driven_never_fires() -> void:
+	var ship := _spawn("light_scout")
+	Input.action_press("thrust_forward")
+	await _frames(5)
+	var firing := ship.firing
+	_release_all()
+	assert_eq(firing.size(), 0)
+	ship.queue_free()

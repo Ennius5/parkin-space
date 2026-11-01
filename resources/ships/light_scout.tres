@@ -68,7 +68,4 @@ actions = PackedStringArray("rotate_left")
 [resource]
 script = ExtResource("1_spec")
 display_name = "Scout Pod"
-thrust = 260.0
-strafe_thrust = 180.0
-torque = 900.0
 thrusters = Array[ExtResource("2_cvk6c")]([SubResource("Resource_chtbn"), SubResource("Resource_lcb0o"), SubResource("Resource_sx1te"), SubResource("Resource_l022f"), SubResource("Resource_dfrs4"), SubResource("Resource_bpil0"), SubResource("Resource_cbmg3"), SubResource("Resource_thxnt"), SubResource("Resource_8cb7w")])
