@@ -1,13 +1,71 @@
-[gd_resource type="Resource" script_class="ShipSpec" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="1_spec"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="2_cvk6c"]
+
+[sub_resource type="Resource" id="Resource_chtbn"]
+script = ExtResource("2_cvk6c")
+position = Vector2(0, 30)
+force = 260.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_lcb0o"]
+script = ExtResource("2_cvk6c")
+position = Vector2(-12, -30)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_sx1te"]
+script = ExtResource("2_cvk6c")
+position = Vector2(12, -30)
+direction = Vector2(0, 1)
+force = 90.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_l022f"]
+script = ExtResource("2_cvk6c")
+position = Vector2(-20, 0)
+direction = Vector2(1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_dfrs4"]
+script = ExtResource("2_cvk6c")
+position = Vector2(20, 0)
+direction = Vector2(-1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_bpil0"]
+script = ExtResource("2_cvk6c")
+position = Vector2(-20, -28)
+direction = Vector2(1, 0)
+force = 16.0
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_cbmg3"]
+script = ExtResource("2_cvk6c")
+position = Vector2(20, 28)
+direction = Vector2(-1, 0)
+force = 16.0
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_thxnt"]
+script = ExtResource("2_cvk6c")
+position = Vector2(20, -28)
+direction = Vector2(-1, 0)
+force = 16.0
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_8cb7w"]
+script = ExtResource("2_cvk6c")
+position = Vector2(-20, 28)
+direction = Vector2(1, 0)
+force = 16.0
+actions = PackedStringArray("rotate_left")
 
 [resource]
 script = ExtResource("1_spec")
-ship_class = 0
 display_name = "Scout Pod"
-mass = 1.0
-thrust = 260.0
-strafe_thrust = 180.0
-torque = 900.0
-hull_size = Vector2(40, 64)
+thrusters = Array[ExtResource("2_cvk6c")]([SubResource("Resource_chtbn"), SubResource("Resource_lcb0o"), SubResource("Resource_sx1te"), SubResource("Resource_l022f"), SubResource("Resource_dfrs4"), SubResource("Resource_bpil0"), SubResource("Resource_cbmg3"), SubResource("Resource_thxnt"), SubResource("Resource_8cb7w")])

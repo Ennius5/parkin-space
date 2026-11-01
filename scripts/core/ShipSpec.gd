@@ -7,8 +7,7 @@ enum ShipClass { LIGHT, MEDIUM, HEAVY }
 @export var ship_class: ShipClass = ShipClass.LIGHT
 @export var display_name: String = ""
 @export var mass: float = 1.0
-@export var thrust: float = 100.0  # forward/back force
-@export var strafe_thrust: float = 100.0  # sideways force
-@export var torque: float = 1000.0
 @export var hull_size: Vector2 = Vector2(40, 64)  # width x length in pixels, nose at -Y
+@export var center_of_mass: Vector2 = Vector2.ZERO  # pixels from the hull centre
+@export var thrusters: Array[ThrusterSpec] = []
 @export var texture: Texture2D  # null = placeholder drawing

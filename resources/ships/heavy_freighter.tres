@@ -1,13 +1,95 @@
-[gd_resource type="Resource" script_class="ShipSpec" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="1_spec"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="2_4mkjw"]
+
+[sub_resource type="Resource" id="Resource_fjxrb"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-30, 78)
+force = 500.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_qfmeo"]
+script = ExtResource("2_4mkjw")
+position = Vector2(30, 78)
+force = 500.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_c3k8c"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-30, -78)
+direction = Vector2(0, 1)
+force = 200.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_7qpmm"]
+script = ExtResource("2_4mkjw")
+position = Vector2(30, -78)
+direction = Vector2(0, 1)
+force = 200.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_jrxpy"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-45, -50)
+direction = Vector2(1, 0)
+force = 300.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_ee2c1"]
+script = ExtResource("2_4mkjw")
+position = Vector2(45, -50)
+direction = Vector2(-1, 0)
+force = 300.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_8b8gc"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-45, 60)
+direction = Vector2(1, 0)
+force = 350.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_8vu6e"]
+script = ExtResource("2_4mkjw")
+position = Vector2(45, 60)
+direction = Vector2(-1, 0)
+force = 350.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_da141"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-45, -76)
+direction = Vector2(1, 0)
+force = 60.0
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_2ujas"]
+script = ExtResource("2_4mkjw")
+position = Vector2(45, 76)
+direction = Vector2(-1, 0)
+force = 60.0
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_ffm12"]
+script = ExtResource("2_4mkjw")
+position = Vector2(45, -76)
+direction = Vector2(-1, 0)
+force = 60.0
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_fy1ak"]
+script = ExtResource("2_4mkjw")
+position = Vector2(-45, 76)
+direction = Vector2(1, 0)
+force = 60.0
+actions = PackedStringArray("rotate_left")
 
 [resource]
 script = ExtResource("1_spec")
 ship_class = 2
 display_name = "Freighter"
 mass = 6.0
-thrust = 1000.0
-strafe_thrust = 650.0
-torque = 12000.0
 hull_size = Vector2(90, 160)
+center_of_mass = Vector2(0, 20)
+thrusters = Array[ExtResource("2_4mkjw")]([SubResource("Resource_fjxrb"), SubResource("Resource_qfmeo"), SubResource("Resource_c3k8c"), SubResource("Resource_7qpmm"), SubResource("Resource_jrxpy"), SubResource("Resource_ee2c1"), SubResource("Resource_8b8gc"), SubResource("Resource_8vu6e"), SubResource("Resource_da141"), SubResource("Resource_2ujas"), SubResource("Resource_ffm12"), SubResource("Resource_fy1ak")])

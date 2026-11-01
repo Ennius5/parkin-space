@@ -1,11 +1,13 @@
 class_name Ship
 extends RigidBody2D
-## A customer's spaceship. Zero gravity; the player drives it with thruster input actions.
-## The nose points local -Y.
+## A customer's spaceship: a mass pushed by the thrusters in its spec. Zero gravity.
+## Each held input action fires its thrusters at their hull positions. The nose points local -Y.
 
 signal dented(ship: Ship, cost: int)
 signal selected(ship: Ship)
 
+const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
+const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
 	ShipSpec.ShipClass.MEDIUM: Color(0.98, 0.85, 0.3),
@@ -16,6 +18,7 @@ const CLASS_COLORS := {
 
 var is_driven: bool = false
 var is_parked: bool = false
+var firing := PackedInt32Array()  # indices into spec.thrusters that fired this physics frame
 
 var _prev_velocity := Vector2.ZERO
 
@@ -26,6 +29,8 @@ var _prev_velocity := Vector2.ZERO
 
 func _ready() -> void:
 	mass = spec.mass
+	center_of_mass_mode = CENTER_OF_MASS_MODE_CUSTOM
+	center_of_mass = spec.center_of_mass
 	gravity_scale = 0.0
 	# No damping at all: ships drift and spin until the pilot brakes.
 	linear_damp_mode = DAMP_MODE_REPLACE
@@ -46,25 +51,57 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_prev_velocity = linear_velocity
-	if not is_driven:
-		return
-	var forward := -global_transform.y.normalized()
-	var right := global_transform.x.normalized()
-	apply_central_force(forward * Input.get_axis("thrust_back", "thrust_forward") * spec.thrust)
-	apply_central_force(right * Input.get_axis("strafe_left", "strafe_right") * spec.strafe_thrust)
-	apply_torque(Input.get_axis("rotate_left", "rotate_right") * spec.torque)
+	var was_firing := firing
+	firing = PackedInt32Array()
+	if is_driven:
+		_fire_thrusters()
+	if firing != was_firing:
+		queue_redraw()
 
 
-## Brakes fire counter-thrust at the ship's own strength, so heavy ships take longer to stop.
+func _fire_thrusters() -> void:
+	var held := PackedStringArray()
+	for action in DRIVE_ACTIONS:
+		if Input.is_action_pressed(action):
+			held.append(action)
+	var braking := Input.is_action_pressed("brake") and linear_velocity.length() > 0.5
+	var stopping_spin := Input.is_action_pressed("stop_rotation") and absf(angular_velocity) > 0.01
+	var against_drift := _local_against_drift()
+	var spin_sign := -signf(angular_velocity)
+	for i in spec.thrusters.size():
+		var t := spec.thrusters[i]
+		if t.fires_for(held):
+			apply_force(global_transform.basis_xform(t.push()), global_transform.basis_xform(t.position))
+			firing.append(i)
+		elif braking and t.push_along(against_drift) > 0.0:
+			firing.append(i)  # brake thrusters only show a flame; _integrate_forces does the braking
+		elif stopping_spin and t.fires_for(ROTATE_ACTIONS) and t.torque_about(spec.center_of_mass) * spin_sign > 0.0:
+			firing.append(i)
+
+
+## STOP gets its strength from the thrusters that oppose the drift; Stop Spin from the rotation
+## thrusters that oppose the spin. Both change velocity directly so they never add spin or side force.
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if not is_driven:
 		return
-	if Input.is_action_pressed("brake"):
-		var decel := spec.thrust / mass
-		state.linear_velocity = state.linear_velocity.move_toward(Vector2.ZERO, decel * state.step)
-	if Input.is_action_pressed("stop_rotation"):
-		var spin_decel := spec.torque * state.inverse_inertia
-		state.angular_velocity = move_toward(state.angular_velocity, 0.0, spin_decel * state.step)
+	if Input.is_action_pressed("brake") and state.linear_velocity.length() > 0.0:
+		var against := global_transform.basis_xform_inv(-state.linear_velocity).normalized()
+		var brake_force := 0.0
+		for t in spec.thrusters:
+			brake_force += t.push_along(against)
+		state.linear_velocity = state.linear_velocity.move_toward(Vector2.ZERO, brake_force / mass * state.step)
+	if Input.is_action_pressed("stop_rotation") and state.angular_velocity != 0.0:
+		var spin_sign := -signf(state.angular_velocity)
+		var spin_torque := 0.0
+		for t in spec.thrusters:
+			if t.fires_for(ROTATE_ACTIONS):
+				spin_torque += maxf(0.0, t.torque_about(spec.center_of_mass) * spin_sign)
+		state.angular_velocity = move_toward(state.angular_velocity, 0.0, spin_torque * state.inverse_inertia * state.step)
+
+
+## Unit vector in ship-local space pointing against the current drift (zero when still).
+func _local_against_drift() -> Vector2:
+	return global_transform.basis_xform_inv(-linear_velocity).normalized()
 
 
 func set_driven(on: bool) -> void:
@@ -91,8 +128,29 @@ func hull_points() -> PackedVector2Array:
 
 
 func _draw() -> void:
-	if spec == null or spec.texture:
+	if spec == null:
 		return
+	if spec.texture == null:
+		_draw_placeholder_hull()
+	for i in firing:
+		_draw_flame(spec.thrusters[i])
+
+
+## Exhaust points away from the push; bigger thrusters get longer flames.
+func _draw_flame(t: ThrusterSpec) -> void:
+	var back := -t.direction.normalized()
+	var side := back.orthogonal()
+	var length := clampf(t.force / 10.0, 12.0, 28.0)
+	var width := length * 0.3
+	draw_colored_polygon(PackedVector2Array([
+		t.position + side * width, t.position + back * length, t.position - side * width,
+	]), Color(1.0, 0.5, 0.1, 0.9))
+	draw_colored_polygon(PackedVector2Array([
+		t.position + side * width * 0.5, t.position + back * length * 0.55, t.position - side * width * 0.5,
+	]), Color(1.0, 0.95, 0.5))
+
+
+func _draw_placeholder_hull() -> void:
 	var h := spec.hull_size / 2
 	draw_rect(Rect2(-h, spec.hull_size), CLASS_COLORS[spec.ship_class])
 	draw_colored_polygon(PackedVector2Array([
