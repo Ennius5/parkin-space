@@ -286,3 +286,27 @@ func test_not_driven_never_fires() -> void:
 	_release_all()
 	assert_eq(firing.size(), 0)
 	ship.queue_free()
+
+
+func test_stop_spin_uses_rotation_thrusters_only() -> void:
+	var ship := _spawn("heavy_freighter")
+	ship.angular_velocity = 1.0
+	ship.set_driven(true)
+	Input.action_press("stop_rotation")
+	await _frames(3)
+	var firing := ship.firing
+	_release_all()
+	assert_true(firing.size() > 0, "no spin flames")
+	for i in firing:
+		var actions := ship.spec.thrusters[i].actions
+		assert_true(actions.has("rotate_left") or actions.has("rotate_right"), "thruster %d: %s" % [i, actions])
+	ship.queue_free()
+
+
+func test_freighter_is_slow_to_stop_spinning() -> void:
+	var ship := _spawn("heavy_freighter")
+	ship.angular_velocity = 1.0
+	var n := await _frames_until(ship, "stop_rotation",
+		func() -> bool: return absf(ship.angular_velocity) < ParkingRules.MAX_PARK_SPIN)
+	assert_true(n > 90, "stopped in %d frames" % n)
+	ship.queue_free()

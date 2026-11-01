@@ -16,7 +16,7 @@
 - No damping. Gravity stays off.
 - STOP and Stop Spin change velocity directly (`move_toward` in `_integrate_forces`). They never add spin or side force.
 - STOP strength = Σ max(0, dir̂·d̂) × force ÷ mass, where d̂ is the local direction opposite the drift.
-- Stop Spin strength = Σ max(0, torque × −sign(ω)) × inverse_inertia.
+- Stop Spin strength = Σ max(0, torque × −sign(ω)) × inverse_inertia, summed over the rotation thrusters only (actions rotate_left / rotate_right). Changed after the final review.
 - Buttons, touch layout, parking rules, ledger, levels and save file do not change.
 - Test command: `bash .superpowers/sdd/2026-11-01-thruster-ships/t.sh`. Pass = `ALL TESTS PASSED`.
 

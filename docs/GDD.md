@@ -14,7 +14,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 
 **Thrusters:** every ship is a mass (with its own centre of mass) pushed by thrusters placed on its hull. Each thruster has a position, a push direction, a force, and the buttons that fire it. A held button fires its thrusters, and each one pushes the ship at its own position. A thruster that isn't lined up with the centre of mass also turns the ship, so each ship's handling comes from its thruster layout. Firing thrusters show a flame.
 
-**Brakes:** STOP and Stop Spin are automatic. STOP brakes at the combined force of the thrusters that point against the drift; Stop Spin uses the combined turning force of the thrusters that turn against the spin. Both stop the ship cleanly without adding new spin. A ship with weak retro thrusters takes longer to stop from full speed.
+**Brakes:** STOP and Stop Spin are automatic. STOP brakes at the combined force of the thrusters that point against the drift; Stop Spin uses the combined turning force of the rotation thrusters that turn against the spin, so a ship with weak rotation thrusters is slow to stop spinning as well as slow to start. Both stop the ship cleanly without adding new spin. A ship with weak retro thrusters takes longer to stop from full speed.
 
 **Ship classes** (each class has its own size, mass and parking-space size; ships within a class can have quirks):
 | Class | Size / handling | Example ships |

@@ -7,6 +7,7 @@ signal dented(ship: Ship, cost: int)
 signal selected(ship: Ship)
 
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
+const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
 	ShipSpec.ShipClass.MEDIUM: Color(0.98, 0.85, 0.3),
@@ -74,12 +75,12 @@ func _fire_thrusters() -> void:
 			firing.append(i)
 		elif braking and t.push_along(against_drift) > 0.0:
 			firing.append(i)  # brake thrusters only show a flame; _integrate_forces does the braking
-		elif stopping_spin and t.torque_about(spec.center_of_mass) * spin_sign > 0.0:
+		elif stopping_spin and t.fires_for(ROTATE_ACTIONS) and t.torque_about(spec.center_of_mass) * spin_sign > 0.0:
 			firing.append(i)
 
 
-## STOP and Stop Spin get their strength from the thrusters that oppose the drift or spin,
-## and change velocity directly so they never add spin or side force.
+## STOP gets its strength from the thrusters that oppose the drift; Stop Spin from the rotation
+## thrusters that oppose the spin. Both change velocity directly so they never add spin or side force.
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if not is_driven:
 		return
@@ -93,7 +94,8 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 		var spin_sign := -signf(state.angular_velocity)
 		var spin_torque := 0.0
 		for t in spec.thrusters:
-			spin_torque += maxf(0.0, t.torque_about(spec.center_of_mass) * spin_sign)
+			if t.fires_for(ROTATE_ACTIONS):
+				spin_torque += maxf(0.0, t.torque_about(spec.center_of_mass) * spin_sign)
 		state.angular_velocity = move_toward(state.angular_velocity, 0.0, spin_torque * state.inverse_inertia * state.step)
 
 
