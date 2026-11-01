@@ -4,7 +4,6 @@ extends RigidBody2D
 ## Each held input action fires its thrusters at their hull positions. The nose points local -Y.
 
 signal dented(ship: Ship, cost: int)
-signal selected(ship: Ship)
 
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
 const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
@@ -44,7 +43,6 @@ func _ready() -> void:
 	angular_damp = 0.0
 	contact_monitor = true
 	max_contacts_reported = 4
-	input_pickable = true
 	var rect := RectangleShape2D.new()
 	rect.size = spec.hull_size
 	_collision.shape = rect
@@ -70,6 +68,15 @@ func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
 func _process(_delta: float) -> void:
 	if _lights.visible:
 		_lights.modulate.a = lights_level()
+
+
+## The colour a player sees on this ship: its paint, or the class colour for placeholder art.
+func swatch_color() -> Color:
+	if spec.paint_texture:
+		return paint_color
+	if spec.texture == null:
+		return CLASS_COLORS[spec.ship_class]
+	return Color(0.6, 0.6, 0.65)  # unpainted art
 
 
 ## Lights: full while driven, a slow blink while waiting for a valet, dim once parked.
@@ -215,10 +222,3 @@ func _pays_for_collision_with(other: Ship) -> bool:
 	if is_driven != other.is_driven:
 		return is_driven
 	return get_instance_id() < other.get_instance_id()
-
-
-func _input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> void:
-	var tapped: bool = event is InputEventScreenTouch and event.pressed
-	var clicked: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	if tapped or clicked:
-		selected.emit(self)

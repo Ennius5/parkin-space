@@ -382,3 +382,18 @@ func test_spec_inertia_applied() -> void:
 	var ship := _spawn_spec(spec)
 	assert_eq(ship.inertia, 321.0)
 	ship.queue_free()
+
+
+func test_swatch_color_matches_what_is_drawn() -> void:
+	var placeholder := _spawn("medium_shuttle")
+	placeholder.paint_color = Color.GREEN
+	assert_eq(placeholder.swatch_color(), Ship.CLASS_COLORS[ShipSpec.ShipClass.MEDIUM], "placeholder shows its class colour")
+	placeholder.queue_free()
+	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	spec.paint_texture = PlaceholderTexture2D.new()
+	var painted: Ship = SHIP_SCENE.instantiate()
+	painted.spec = spec
+	painted.paint_color = Color.RED
+	tree.root.add_child(painted)
+	assert_eq(painted.swatch_color(), Color.RED)
+	painted.queue_free()

@@ -12,6 +12,7 @@ const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
 const ENTRANCE_CLEAR_RADIUS := 120.0
 const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
+const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on screen) are candidates
 
 @export var level_number: int = 1
 @export var goal_text: String = ""
@@ -39,6 +40,7 @@ var _released_at_msec := -RESELECT_DELAY_MS
 @onready var _lot_camera: Camera2D = $LotCamera
 @onready var _hud: HUD = $HUD
 @onready var _controls: ShipControls = $Controls
+@onready var _picker: ShipPicker = $ShipPicker
 
 
 func _ready() -> void:
@@ -46,6 +48,7 @@ func _ready() -> void:
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
 	_controls.done_pressed.connect(release_ship)
+	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
@@ -76,8 +79,66 @@ func spawn_next_customer() -> Ship:
 	_next_customer += 1
 	_ships.add_child(ship)
 	ship.dented.connect(_on_ship_dented)
-	ship.selected.connect(select_ship)
 	return ship
+
+
+## Lot view: a tap picks the one ship near it, or lists them when there's a choice.
+## A tap while the list is open closes it.
+func _unhandled_input(event: InputEvent) -> void:
+	var touch := event as InputEventScreenTouch
+	if touch == null or not touch.pressed:
+		return
+	if _picker.is_open():
+		_picker.close()
+		return
+	handle_lot_tap(touch.position)
+
+
+func handle_lot_tap(screen_pos: Vector2) -> void:
+	if _ended or driven_ship != null or Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
+		return
+	var world := get_canvas_transform().affine_inverse() * screen_pos
+	var near := ships_near_world(world, pick_radius_world())
+	if near.size() == 1:
+		select_ship(near[0])
+	elif near.size() > 1:
+		_picker.open(near, screen_pos)
+
+
+func pick_radius_world() -> float:
+	return PICK_RADIUS_SCREEN / _lot_camera.zoom.x
+
+
+## Drivable ships whose outline is within radius of a world point, nearest first.
+func ships_near_world(world: Vector2, radius: float) -> Array[Ship]:
+	var found: Array[Ship] = []
+	var distance := {}
+	for ship: Ship in _ships.get_children():
+		if ship.is_parked:
+			continue
+		var d := _distance_to_hull(ship, world)
+		if d <= radius:
+			found.append(ship)
+			distance[ship] = d
+	found.sort_custom(func(a: Ship, b: Ship) -> bool: return distance[a] < distance[b])
+	return found
+
+
+func _distance_to_hull(ship: Ship, world: Vector2) -> float:
+	var points := ship.hull_points()
+	var outline := points.slice(0, points.size() - 1)  # the last point is the centre
+	if Geometry2D.is_point_in_polygon(world, outline):
+		return 0.0
+	var best := INF
+	for i in outline.size():
+		var closest := Geometry2D.get_closest_point_to_segment(world, outline[i], outline[(i + 1) % outline.size()])
+		best = minf(best, world.distance_to(closest))
+	return best
+
+
+func _on_picked(ship: Ship) -> void:
+	_picker.close()
+	select_ship(ship)
 
 
 ## Takes control of a ship. Ignored while already driving (press Done first)
@@ -87,6 +148,7 @@ func select_ship(ship: Ship) -> void:
 		return
 	if Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
 		return
+	_picker.close()
 	driven_ship = ship
 	ship.set_driven(true)
 	_controls.set_driving(true)

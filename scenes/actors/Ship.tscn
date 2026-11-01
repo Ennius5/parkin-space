@@ -7,7 +7,6 @@ blend_mode = 1
 
 [node name="Ship" type="RigidBody2D"]
 gravity_scale = 0.0
-input_pickable = true
 contact_monitor = true
 max_contacts_reported = 4
 script = ExtResource("1_ship")

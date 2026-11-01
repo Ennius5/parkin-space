@@ -24,7 +24,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | Heavy | Long and wide, slow to start and stop | Freighter (cargo-heavy tail, weak rotation thrusters, strafing leaves a twist), lopsided junker (drifts to one side) |
 
 **Two modes:**
-- **Lot view (ship select):** fixed camera shows the whole lot. Tap a ship to take control. Waiting ships, retrieval requests and tier cards are shown here.
+- **Lot view (ship select):** fixed camera shows the whole lot. Tap near a ship to take control: with one ship within a thumb-sized circle it's selected straight away; with several, a list of them opens beside the finger (paint swatch, name, class), numbered to match badges drawn around the tap, and the player taps the row they want. Waiting ships, retrieval requests and tier cards are shown here.
 - **Driving:** the camera follows the ship and rotates with its cockpit, so "forward" is always up the screen.
 
 | Input (driving) | Action |

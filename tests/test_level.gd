@@ -168,3 +168,103 @@ func test_customers_get_a_paint_color() -> void:
 	assert_true(Level.PAINT_COLORS.has(ship.paint_color), "paint=%s" % ship.paint_color)
 	level.queue_free()
 	_restore_state()
+
+
+func _screen_pos(node: Node2D) -> Vector2:
+	return node.get_global_transform_with_canvas().origin
+
+
+## Level with two waiting ships 60 px apart, away from the entrance.
+func _level_with_two_ships() -> Array:
+	var level := await _make_level()
+	var first: Ship = level.get_node("Ships").get_child(0)
+	var second := level.spawn_next_customer()
+	first.global_position = Vector2(900, 900)
+	second.global_position = Vector2(960, 900)
+	await tree.process_frame
+	return [level, first, second]
+
+
+func test_ships_near_lists_nearest_first() -> void:
+	_setup_state()
+	var setup := await _level_with_two_ships()
+	var level: Level = setup[0]
+	var near: Array[Ship] = level.ships_near_world(Vector2(955, 900), level.pick_radius_world())
+	assert_eq(near.size(), 2)
+	if near.size() == 2:
+		assert_eq(near[0], setup[2], "second is nearest")
+		assert_eq(near[1], setup[1])
+	level.queue_free()
+	_restore_state()
+
+
+func test_parked_ships_never_listed() -> void:
+	_setup_state()
+	var setup := await _level_with_two_ships()
+	var level: Level = setup[0]
+	(setup[1] as Ship).set_parked()
+	var near: Array[Ship] = level.ships_near_world(Vector2(930, 900), level.pick_radius_world())
+	assert_eq(near, [setup[2]] as Array[Ship])
+	level.queue_free()
+	_restore_state()
+
+
+func test_pick_radius_is_fixed_on_screen() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var camera: Camera2D = level.get_node("LotCamera")
+	camera.zoom = Vector2(0.5, 0.5)
+	assert_almost(level.pick_radius_world(), Level.PICK_RADIUS_SCREEN / 0.5, 0.01)
+	camera.zoom = Vector2(0.25, 0.25)
+	assert_almost(level.pick_radius_world(), Level.PICK_RADIUS_SCREEN / 0.25, 0.01)
+	level.queue_free()
+	_restore_state()
+
+
+func test_tap_near_one_ship_selects_it() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship: Ship = level.get_node("Ships").get_child(0)
+	level.handle_lot_tap(_screen_pos(ship) + Vector2(20, 0))
+	assert_eq(level.driven_ship, ship)
+	level.queue_free()
+	_restore_state()
+
+
+func test_tap_near_nothing_does_nothing() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship: Ship = level.get_node("Ships").get_child(0)
+	level.handle_lot_tap(_screen_pos(ship) + Vector2(400, 0))
+	assert_eq(level.driven_ship, null)
+	assert_false((level.get_node("ShipPicker") as ShipPicker).is_open())
+	level.queue_free()
+	_restore_state()
+
+
+func test_tap_near_two_ships_opens_picker_and_pick_drives() -> void:
+	_setup_state()
+	var setup := await _level_with_two_ships()
+	var level: Level = setup[0]
+	var picker := level.get_node("ShipPicker") as ShipPicker
+	level.handle_lot_tap(_screen_pos(setup[1]))
+	assert_eq(level.driven_ship, null, "a choice opens the list instead")
+	assert_true(picker.is_open())
+	assert_eq(picker.ships.size(), 2)
+	picker.picked.emit(setup[2])
+	assert_eq(level.driven_ship, setup[2])
+	assert_false(picker.is_open(), "list closes after picking")
+	level.queue_free()
+	_restore_state()
+
+
+func test_tap_ignored_while_driving() -> void:
+	_setup_state()
+	var setup := await _level_with_two_ships()
+	var level: Level = setup[0]
+	level.select_ship(setup[1])
+	level.handle_lot_tap(_screen_pos(setup[2]))
+	assert_eq(level.driven_ship, setup[1])
+	assert_false((level.get_node("ShipPicker") as ShipPicker).is_open())
+	level.queue_free()
+	_restore_state()
