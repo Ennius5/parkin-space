@@ -134,3 +134,20 @@ func test_rematch_and_leave_reach_the_rival() -> void:
 	assert_true(gone, "the host got rival_left")
 	assert_false(host.rival_wants_rematch, "cleared on close")
 	_cleanup([host, guest] as Array[NetSession])
+
+
+func test_handshake_rpcs_keep_the_lowest_ids() -> void:
+	# Godot numbers a node's RPCs by method name in sorted order, so these four must sort first:
+	# then a build with a different PROTOCOL_VERSION can still hello, reject and ping.
+	var s := NetSession.new()
+	var config: Variant = s.get_script().get_rpc_config()
+	var names: Array = []
+	if config is Dictionary:
+		for key: Variant in (config as Dictionary).keys():
+			names.append(String(key))  # Godot sorts them alphabetically (StringNames don't sort so)
+	names.sort()
+	assert_true(names.size() >= 4, str(names))
+	if names.size() >= 4:
+		assert_eq(names.slice(0, 4), ["_hello", "_ping", "_reject", "_welcome"])
+	assert_eq(NetSession.PROTOCOL_VERSION, 2, "bumped when the RPC set changed")
+	s.free()

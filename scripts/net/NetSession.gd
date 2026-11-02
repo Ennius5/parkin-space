@@ -10,7 +10,7 @@ signal rival_left  ## the other side disconnected, went silent or left the match
 signal rival_rematch  ## the rival asked for a rematch
 
 const PORT := 24557
-const PROTOCOL_VERSION := 1
+const PROTOCOL_VERSION := 2  # bump whenever any RPC (here or on NetSync) is added, removed or renamed
 const JOIN_TIMEOUT := 5.0
 const SILENCE_LIMIT := 3.0
 const KEEPALIVE_INTERVAL := 0.5
@@ -210,6 +210,10 @@ func _on_server_disconnected() -> void:
 		_fail_join.call_deferred(MSG_UNREACHABLE)
 
 
+# RPC ids follow the sorted method names. The handshake RPCs (_hello, _ping, _reject, _welcome)
+# must keep the lowest ids so a build with another PROTOCOL_VERSION can still be told so: any
+# new RPC on this node is named to sort after _welcome (prefix _x_). See test_net_session.
+
 @rpc("any_peer", "reliable")
 func _hello(version: int) -> void:
 	if not _is_host or _connected:
@@ -241,19 +245,19 @@ func _reject() -> void:
 ## result screen outlives the duel scene.
 func ask_rematch() -> void:
 	if _connected:
-		_rematch.rpc_id(_rival_id)
+		_x_rematch.rpc_id(_rival_id)
 
 
 ## Tells the rival this side is leaving, then closes. The rival gets rival_left.
 func leave() -> void:
 	if _connected and _rival_id in _api.get_peers():
-		_leave.rpc_id(_rival_id)
+		_x_leave.rpc_id(_rival_id)
 		_peer.host.flush()  # send it before close() drops the peer
 	close()
 
 
 @rpc("any_peer", "reliable")
-func _rematch() -> void:
+func _x_rematch() -> void:
 	if not _connected or _api.get_remote_sender_id() != _rival_id:
 		return
 	heard()
@@ -262,7 +266,7 @@ func _rematch() -> void:
 
 
 @rpc("any_peer", "reliable")
-func _leave() -> void:
+func _x_leave() -> void:
 	if _connected and _api.get_remote_sender_id() == _rival_id:
 		_lose_rival.call_deferred()
 

@@ -291,3 +291,66 @@ func test_rival_left_notice_shows_once() -> void:
 	tree.root.add_child(screen)
 	assert_false((screen.get_node("%OnlineNote") as Label).visible, "no notice the second time")
 	screen.free()
+
+
+func _online_result() -> Control:
+	GameState.duel_result = {"mine": 10, "rival": 10}
+	var screen: Control = load("res://scenes/ui/OnlineResult.tscn").instantiate()
+	screen.change_scenes = false
+	screen.session = NetSession.new()  # never connects
+	tree.root.add_child(screen)
+	return screen
+
+
+func _free_online_result(screen: Control) -> void:
+	var session: NetSession = screen.session
+	screen.free()
+	session.free()
+	GameState.duel_result = {}
+
+
+func test_rematch_when_rival_asked_first() -> void:
+	var screen := _online_result()
+	screen.session.rival_wants_rematch = true
+	screen.session.rival_rematch.emit()
+	assert_eq((screen.get_node("%Status") as Label).text, "Your rival wants a rematch")
+	assert_eq(screen.last_target, "", "no reload until I ask")
+	(screen.get_node("%Rematch") as Button).pressed.emit()
+	await tree.process_frame
+	assert_eq(screen.last_target, "res://scenes/levels/Duel.tscn")
+	assert_false(screen.session.rival_wants_rematch, "cleared for the next match")
+	_free_online_result(screen)
+
+
+func test_rematch_when_i_ask_first() -> void:
+	var screen := _online_result()
+	(screen.get_node("%Rematch") as Button).pressed.emit()
+	assert_eq((screen.get_node("%Status") as Label).text, "Waiting for rival…")
+	assert_true((screen.get_node("%Rematch") as Button).disabled)
+	await tree.process_frame
+	assert_eq(screen.last_target, "", "waits for the rival")
+	screen.session.rival_wants_rematch = true
+	screen.session.rival_rematch.emit()
+	await tree.process_frame
+	assert_eq(screen.last_target, "res://scenes/levels/Duel.tscn")
+	_free_online_result(screen)
+
+
+func test_lobby_keeps_last_ip_when_field_empty() -> void:
+	_setup_state(1)
+	var real: String = GameState.last_ip
+	GameState.last_ip = "10.0.0.9"
+	var session := NetSession.new()
+	tree.root.add_child(session)
+	var screen: Control = load("res://scenes/ui/Lobby.tscn").instantiate()
+	screen.change_scenes = false
+	screen.session = session
+	tree.root.add_child(screen)
+	(screen.get_node("%Ip") as LineEdit).text = "  "
+	(screen.get_node("%Join") as Button).pressed.emit()
+	assert_eq(GameState.last_ip, "10.0.0.9", "an empty field doesn't wipe the saved address")
+	assert_eq((screen.get_node("%Status") as Label).text, NetSession.MSG_UNREACHABLE)
+	screen.free()
+	session.free()
+	GameState.last_ip = real
+	_restore_state()

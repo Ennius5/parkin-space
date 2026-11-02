@@ -153,8 +153,9 @@ func _on_host_pressed() -> void:
 
 func _on_join_pressed() -> void:
 	var ip := (%Ip as LineEdit).text.strip_edges()
-	GameState.last_ip = ip
-	GameState.save_progress()
+	if ip != "":
+		GameState.last_ip = ip
+		GameState.save_progress()
 	# An address ENet can't parse fails at once, without join_failed.
 	if ip == "" or session.join(ip) != OK:
 		_set_status(NetSession.MSG_UNREACHABLE)

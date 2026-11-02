@@ -395,3 +395,72 @@ func test_duel_hud_scores() -> void:
 	assert_true(customers.visible)
 	assert_eq(customers.text, "Customers left %d" % level.customer_queue.size())
 	_done_host(level)
+
+
+# --- Opened from the lobby (GameState.duel_role set) ---
+
+## A lobby-opened host duel. listen = its session really listens (is_active), else it's closed.
+func _lobby_duel(listen: bool, port := 24612) -> DuelLevel:
+	_real_save = GameState.save_path
+	GameState.save_path = TEST_SAVE
+	GameState.duel_role = "host"
+	GameState.notice = ""
+	GameState.duel_result = {}
+	var session := NetSession.new()
+	session.port = port
+	tree.root.add_child(session)
+	if listen:
+		assert_eq(session.host(), OK)
+	var level: DuelLevel = load(DUEL).instantiate()
+	level.change_scene_on_end = false
+	level.session = session
+	tree.root.add_child(level)
+	await tree.process_frame
+	return level
+
+
+func _done_lobby(level: DuelLevel) -> void:
+	var session := level.session
+	level.free()
+	session.close()
+	session.free()
+	GameState.save_path = _real_save
+	GameState.duel_role = ""
+	GameState.notice = ""
+	GameState.duel_result = {}
+
+
+func test_lobby_duel_with_dropped_rival_starts_no_match() -> void:
+	var level := await _lobby_duel(false)
+	assert_eq(GameState.notice, "Your rival left the match")
+	assert_eq(GameState.duel_role, "")
+	assert_true(level._ended, "the lot is over before it starts")
+	var left := level.ledger.time_left
+	level._physics_process(DuelLevel.COUNTDOWN + 1.0)
+	for i in 5:
+		await tree.physics_frame
+	assert_eq(level.get_node("Ships").get_child_count(), 0, "no solo match: no ships")
+	assert_almost(level.ledger.time_left, left, 0.001)
+	_done_lobby(level)
+
+
+func test_lobby_duel_rival_left_goes_to_mode_select() -> void:
+	var level := await _lobby_duel(true, 24613)
+	assert_false(level._ended, "a live session starts the duel")
+	assert_eq(GameState.notice, "")
+	level.session.rival_left.emit()
+	assert_eq(GameState.notice, "Your rival left the match")
+	assert_eq(GameState.duel_role, "")
+	assert_true(level._ended)
+	_done_lobby(level)
+
+
+func test_lobby_duel_end_fills_duel_result() -> void:
+	var level := await _lobby_duel(true, 24614)
+	level.on_guest_loaded()
+	_skip_countdown(level)
+	level.ledger.add_tip(40)
+	level.valets[1].ledger.add_tip(15)
+	level.end_level()
+	assert_eq(GameState.duel_result, {"mine": 40, "rival": 15})
+	_done_lobby(level)
