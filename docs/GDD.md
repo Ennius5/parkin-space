@@ -56,7 +56,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | 1 – Starter Lot (tutorial) | "Park 4 ships before the shift ends" | Light and medium ships; one diagonal, one parallel, one perpendicular lane; on-screen hints |
 | 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right |
 | 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them. 9 spaces (2 heavy D1–D2, gold C1–C2), fixed wrecks and drifting asteroids, radiation dents ₵5 every 2 s inside |
-| 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject |
+| 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject. 11 rim spaces (3 heavy, 5 medium, 3 light; gold G1–G2 by the exit); the hole's solid core blocks ships like an island and its pull grows close in (20 px/s² at 300 px, capped at 80 px/s², weaker than any ship's thrust) and only moves ships that aren't parked |
 | 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above |
 
 Ship quirks (saucer, junker) first appear in Levels 3–5.
@@ -79,7 +79,7 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 
 **Random customers:** a level can draw its customers at random from a pool. Each ship has a **spawn weight** (1 = normal; the Recon Drone is 0.25 and the Nostrom 0.5), and a draw never deals more ships of a class than the lot has spaces for.
 
-**Orphaned ships (from Level 4):** an ownerless ship shows a countdown. Ejecting it through the far exit after the countdown pays a removal bonus; ejecting it early costs pay.
+**Orphaned ships (from Level 4):** an ownerless ship shows a countdown. Ejecting it through the far exit after the countdown pays a removal bonus; ejecting it early costs pay. 2 per shift appear parked in free spaces at random moments between 25% and 60% of the shift, only in spaces the shift's customers can spare. The countdown is 60 s; on time pays +₵25, early costs ₵15. Orphans don't count as served.
 
 ## 6. Unlocking rule
 - Clearing level n unlocks level n+1. Progress and best stars are saved to `user://save.cfg`.

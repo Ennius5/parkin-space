@@ -46,12 +46,12 @@ func test_level_select_locks() -> void:
 	_restore_state()
 
 
-func test_level4_says_coming_soon() -> void:
-	_setup_state(4)
+func test_level5_says_coming_soon() -> void:
+	_setup_state(5)
 	var screen: Control = load("res://scenes/ui/LevelSelect.tscn").instantiate()
 	tree.root.add_child(screen)
-	var button := screen.get_node("%Grid").get_child(3) as Button
-	assert_true(button.disabled, "level 4 has no scene yet")
+	var button := screen.get_node("%Grid").get_child(4) as Button
+	assert_true(button.disabled, "level 5 has no scene yet")
 	assert_true(button.text.contains("Coming soon"))
 	screen.queue_free()
 	_restore_state()
