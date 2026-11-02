@@ -68,3 +68,19 @@ func test_ship_badge_reads_level_under_a_turning_camera() -> void:
 	await tree.process_frame
 	assert_almost(wrapf(_screen_angle(ship.get_node("Badge")), -PI, PI), 0.0, 0.001)
 	world.free()
+
+
+func test_badge_sits_at_the_ships_lower_left_on_screen() -> void:
+	for cam_angle in [0.0, 1.2]:
+		var world := _world(cam_angle)
+		var ship: Ship = SHIP_SCENE.instantiate()
+		ship.spec = ship_spec("light_scout")
+		ship.freeze = true
+		ship.rotation = 0.5
+		world.add_child(ship)
+		await tree.process_frame
+		await tree.process_frame
+		var canvas := ship.get_viewport().get_canvas_transform()
+		var offset: Vector2 = canvas * ship.get_node("Badge").global_position - canvas * ship.global_position
+		assert_true(offset.x < 0.0 and offset.y > 0.0, "down-left on screen: %s (camera %s)" % [offset, cam_angle])
+		world.free()

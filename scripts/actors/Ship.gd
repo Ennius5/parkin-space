@@ -120,7 +120,7 @@ func _draw_orphan_badge() -> void:
 	var coin := Color(0.3, 0.9, 0.4) if ready else Color(0.6, 0.6, 0.6)
 	_badge.draw_circle(Vector2.ZERO, 14.0, coin)
 	_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
-	_badge.draw_string(ThemeDB.fallback_font, Vector2(20, 9), orphan.badge_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, coin)
+	_badge.draw_string(ThemeDB.fallback_font, Vector2(-22, 38), orphan.badge_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, coin)
 
 
 func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
@@ -136,7 +136,9 @@ func _process(_delta: float) -> void:
 		_lights.modulate.a = lights_level()
 	_badge.rotation = 0.0
 	_badge.rotation = Upright.angle(_badge)  # level on screen, even as the driving camera turns
-	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0)).rotated(_badge.rotation)
+	var reach := maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 10.0
+	var corner := Vector2(-1, 1).normalized() * reach  # the ship's lower-left on screen, clear of its nose
+	_badge.global_position = global_position + corner.rotated(_badge.rotation)
 	_badge.queue_redraw()  # a gold tip counts down
 
 
@@ -257,9 +259,9 @@ func _draw_badge() -> void:
 		_badge.draw_circle(Vector2.ZERO, 14.0, customer.color())
 		_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
 		if customer.tier == Customer.Tier.GOLD:
-			_badge.draw_string(font, Vector2(20, 9), "₵%d" % customer.tip_shown(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+			_badge.draw_string(font, Vector2(-22, 38), "₵%d" % customer.tip_shown(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
 	if wants:
-		_badge.draw_string(font, Vector2(-30, 42), "→ %s" % customer.wants_space, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+		_badge.draw_string(font, Vector2(-30, 62), "→ %s" % customer.wants_space, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
 	if customer.requested:
 		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 150.0)
 		_badge.draw_string(font, Vector2(-48, 10), "↩", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color(1, 1, 1, pulse))

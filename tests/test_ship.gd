@@ -411,7 +411,7 @@ func test_unpark_restores_ship() -> void:
 	ship.queue_free()
 
 
-func test_badge_stays_upright_above_ship() -> void:
+func test_badge_stays_upright_at_the_lower_left() -> void:
 	var ship := _spawn("light_scout")
 	var c := Customer.new()
 	c.tier = Customer.Tier.GOLD
@@ -421,6 +421,6 @@ func test_badge_stays_upright_above_ship() -> void:
 	await tree.process_frame  # process_frame fires before _process runs
 	var badge: Node2D = ship.get_node("Badge")
 	assert_true(absf(badge.global_rotation) < 0.001, "badge rotation %f" % badge.global_rotation)
-	assert_true(badge.global_position.y < ship.global_position.y)
-	assert_true(absf(badge.global_position.x - ship.global_position.x) < 0.5)
+	assert_true(badge.global_position.y > ship.global_position.y, "below the ship")
+	assert_true(badge.global_position.x < ship.global_position.x, "and to its left")
 	ship.queue_free()
