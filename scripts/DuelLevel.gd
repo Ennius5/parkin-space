@@ -48,6 +48,7 @@ func _ready() -> void:
 		minutes = GameState.duel_minutes if role == Role.HOST else session.duel_minutes
 	if match_seed == 0 and role == Role.HOST:
 		match_seed = randi_range(1, 0x7fffffff)
+	allow_moving_parked = true
 	super._ready()
 	sync = NetSync.new()
 	sync.name = "NetSync"
@@ -105,6 +106,11 @@ func prepare_queue() -> void:
 	retrieval_count = GameState.duel_retrievals(minutes)
 	if _exit:
 		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
+
+
+## A duel customer asks for the ship back 20-30 s after it first parks.
+func retrieval_delay() -> float:
+	return _rng.randf_range(20.0, 30.0)
 
 
 ## A duel ledger that only the clock ends.
@@ -191,6 +197,7 @@ func spawn_next_customer() -> Ship:
 		return null
 	var ship := super.spawn_next_customer()
 	if ship:
+		customer_for(ship).wants_retrieval = true  # every duel ship leaves again
 		_ship_ids[ship] = _next_ship_id
 		_ships_by_id[_next_ship_id] = ship
 		_next_ship_id += 1

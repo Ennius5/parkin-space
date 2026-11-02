@@ -539,6 +539,11 @@ func press_done(valet: Valet = null) -> void:
 		_on_ship_parked(ship, space)
 
 
+## Seconds from a first park until the customer asks for the ship back.
+func retrieval_delay() -> float:
+	return Customer.request_delay(_rng, ledger.time_left)
+
+
 ## Credits the valet who drove the ship in.
 func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 	space.claim(ship)
@@ -565,7 +570,7 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 		if c.wants_retrieval and _exit:
 			valet.ledger.add_fee()  # the tip waits until the ship is handed back
 			_cue("fee", valet)
-			c.request_in = Customer.request_delay(_rng, valet.ledger.time_left)
+			c.request_in = retrieval_delay()
 		else:
 			_pay_tip(c.tip(), valet)  # before serving: the final serve ends the shift
 			valet.ledger.serve_customer()

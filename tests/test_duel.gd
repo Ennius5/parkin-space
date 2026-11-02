@@ -508,3 +508,70 @@ func test_lobby_duel_end_fills_duel_result() -> void:
 	level.end_level()
 	assert_eq(GameState.duel_result, {"mine": 40, "rival": 15})
 	_done_lobby(level)
+
+
+func test_every_duel_ship_leaves() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ships: Array[Ship] = [_first_ship(level)]
+	for i in 4:
+		ships.append(level.spawn_next_customer())
+	for ship in ships:
+		assert_true(level.customer_for(ship).wants_retrieval, "every duel customer wants their ship back")
+	assert_true(level.allow_moving_parked)
+	level.select_ship(ships[0])
+	assert_true(_park_spot(level, ships[0]) != null)
+	level._check_parking(0.016)
+	level.press_done()
+	var wait := level.customer_for(ships[0]).request_in
+	assert_true(wait >= 20.0 and wait <= 30.0, "request in 20-30 s, got %.1f" % wait)
+	_done_host(level)
+
+
+func test_moving_parked_pays_nothing() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ship := _first_ship(level)
+	_sync(level)._on_select(level.ship_id(ship))
+	assert_true(_park_spot(level, ship) != null)
+	level._check_parking(0.016)
+	_sync(level)._on_done()
+	assert_true(ship.is_parked)
+	var fee := level.valets[1].ledger.earnings()
+	assert_true(fee > 0)
+	var c := level.customer_for(ship)
+	level._update_customers(1.0)
+	var counting := c.request_in
+	level.valets[0].released_at_msec = -10000
+	level.select_ship(ship)  # valet 0 picks the parked ship up
+	assert_false(ship.is_parked)
+	assert_true(level.valets[0].ship == ship)
+	assert_eq(c.request_in, counting, "picking it up doesn't reset the countdown")
+	level._update_customers(1.0)
+	assert_almost(c.request_in, counting - 1.0, 0.001)
+	assert_true(_park_spot(level, ship) != null)
+	level._check_parking(0.016)
+	level.press_done()
+	assert_true(ship.is_parked)
+	assert_eq(level.valets[1].ledger.earnings(), fee, "no second fee")
+	assert_eq(level.valets[0].ledger.earnings(), 0, "the mover earns nothing")
+	assert_almost(c.request_in, counting - 1.0, 0.001)
+	_done_host(level)
+
+
+func test_rival_cannot_take_driven_parked_move() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ship := _first_ship(level)
+	_sync(level)._on_select(level.ship_id(ship))
+	assert_true(_park_spot(level, ship) != null)
+	level._check_parking(0.016)
+	_sync(level)._on_done()
+	assert_true(ship.is_parked)
+	level.valets[0].released_at_msec = -10000
+	level.select_ship(ship)
+	assert_true(level.valets[0].ship == ship)
+	_sync(level)._on_select(level.ship_id(ship))
+	assert_true(level.valets[1].ship == null, "the rival can't take a ship being moved")
+	assert_true(level.valets[0].ship == ship)
+	_done_host(level)
