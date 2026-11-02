@@ -46,3 +46,37 @@ func test_stars() -> void:
 	assert_eq(ShiftLedger.stars_for(160, 150, 170, true), 2)
 	assert_eq(ShiftLedger.stars_for(120, 150, 170, true), 1)
 	assert_eq(ShiftLedger.stars_for(180, 150, 170, false), 0)
+
+
+func test_add_fee_does_not_serve() -> void:
+	var l := ShiftLedger.new(100, 1, 180.0)
+	l.add_fee()
+	assert_eq(l.earned, ShiftLedger.PARK_FEE)
+	assert_eq(l.served, 0)
+	assert_eq(l.outcome, ShiftLedger.Outcome.PLAYING)
+
+
+func test_add_tip_counts_in_earnings() -> void:
+	var l := ShiftLedger.new(100, 2, 180.0)
+	l.add_tip(15)
+	assert_eq(l.tips, 15)
+	assert_eq(l.earned, 15)
+	assert_eq(l.earnings(), 115)
+
+
+func test_leaver_flow_wins_on_return() -> void:
+	var l := ShiftLedger.new(100, 1, 180.0)
+	l.add_fee()
+	assert_eq(l.outcome, ShiftLedger.Outcome.PLAYING)
+	l.serve_customer(0)
+	assert_eq(l.outcome, ShiftLedger.Outcome.WON)
+	assert_eq(l.earned, 20)
+
+
+func test_no_money_after_outcome() -> void:
+	var l := ShiftLedger.new(100, 1, 180.0)
+	l.serve_customer()
+	l.add_fee()
+	l.add_tip(10)
+	assert_eq(l.earned, 20)
+	assert_eq(l.tips, 0)

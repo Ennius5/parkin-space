@@ -9,6 +9,7 @@ const PARK_FEE := 20
 
 var pay: int  # salary left after dents; reaching 0 = fired
 var earned: int = 0  # fees and tips
+var tips: int = 0
 var served: int = 0
 var customers: int
 var time_left: float
@@ -27,6 +28,20 @@ func add_dent(cost: int) -> void:
 	pay = maxi(pay - cost, 0)
 	if pay == 0:
 		outcome = Outcome.FIRED
+
+
+## A park fee from a customer who isn't done yet (they'll want their ship back).
+func add_fee(fee: int = PARK_FEE) -> void:
+	if outcome != Outcome.PLAYING:
+		return
+	earned += fee
+
+
+func add_tip(amount: int) -> void:
+	if outcome != Outcome.PLAYING:
+		return
+	tips += amount
+	earned += amount
 
 
 func serve_customer(fee: int = PARK_FEE) -> void:
