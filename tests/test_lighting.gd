@@ -112,3 +112,14 @@ func test_level01_has_strong_floodlights_and_two_flicker() -> void:
 			flickering += 1
 	assert_eq(flickering, 2)
 	level.free()
+
+
+func test_ship_lights_glow_in_the_dark() -> void:
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = ship_spec("light_scout")
+	ship.freeze = true
+	tree.root.add_child(ship)
+	var m := (ship.get_node("Lights") as CanvasItem).material as CanvasItemMaterial
+	assert_true(m != null and m.light_mode == CanvasItemMaterial.LIGHT_MODE_UNSHADED, "lights ignore the dark")
+	assert_true(m != null and m.blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "and still glow additively")
+	ship.queue_free()

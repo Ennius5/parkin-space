@@ -4,6 +4,7 @@
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
 blend_mode = 1
+light_mode = 1
 
 [node name="Ship" type="RigidBody2D"]
 gravity_scale = 0.0
