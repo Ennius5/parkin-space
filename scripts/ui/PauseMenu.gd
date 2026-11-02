@@ -1,10 +1,11 @@
 class_name PauseMenu
 extends CanvasLayer
-## Pause screen over a level: Resume, Restart, Sound on/off, Quit. Runs while the tree is paused.
+## Pause screen over a level: Resume, Restart, Sound on/off, CCTV strength, Quit. Runs while the tree is paused.
 
 signal resume_pressed
 signal restart_pressed
 signal quit_pressed
+signal cctv_changed(level: int)
 
 var _panel := Control.new()
 
@@ -25,7 +26,7 @@ func _ready() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_panel.add_child(center)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 20)
+	box.add_theme_constant_override("separation", 14)
 	center.add_child(box)
 	var title := Label.new()
 	title.text = "Paused"
@@ -35,9 +36,11 @@ func _ready() -> void:
 	_add_button(box, "Resume", "Resume").pressed.connect(func() -> void: resume_pressed.emit())
 	_add_button(box, "Restart", "Restart").pressed.connect(func() -> void: restart_pressed.emit())
 	_add_button(box, "SoundToggle", "").pressed.connect(_on_sound_pressed)
+	_add_button(box, "CctvToggle", "").pressed.connect(_on_cctv_pressed)
 	_add_button(box, "Quit", "Quit to Level Select").pressed.connect(func() -> void: quit_pressed.emit())
 	Sound.wire_clicks(self)
 	refresh_sound_label()
+	refresh_cctv_label()
 	_panel.visible = false
 
 
@@ -45,7 +48,7 @@ func _add_button(box: VBoxContainer, node_name: String, text: String) -> Button:
 	var b := Button.new()
 	b.name = node_name
 	b.text = text
-	b.custom_minimum_size = Vector2(420, 96)  # thumb-sized
+	b.custom_minimum_size = Vector2(420, 84)  # thumb-sized, five fit on a phone screen
 	b.add_theme_font_size_override("font_size", 32)
 	box.add_child(b)
 	b.owner = self
@@ -55,6 +58,7 @@ func _add_button(box: VBoxContainer, node_name: String, text: String) -> Button:
 
 func open() -> void:
 	refresh_sound_label()
+	refresh_cctv_label()
 	_panel.visible = true
 
 
@@ -73,6 +77,18 @@ func refresh_sound_label() -> void:
 func _on_sound_pressed() -> void:
 	Sound.set_sound_on(not GameState.sound_on)
 	refresh_sound_label()
+
+
+func refresh_cctv_label() -> void:
+	(get_node("%CctvToggle") as Button).text = "CCTV: " + CctvFilter.NAMES[GameState.cctv_level]
+
+
+## Steps Off -> Light -> Medium -> Heavy -> Off, saves it and tells the level.
+func _on_cctv_pressed() -> void:
+	GameState.cctv_level = (GameState.cctv_level + 1) % CctvFilter.STRENGTHS.size()
+	GameState.save_progress()
+	refresh_cctv_label()
+	cctv_changed.emit(GameState.cctv_level)
 
 
 ## Escape on desktop closes the menu, like the back gesture.
