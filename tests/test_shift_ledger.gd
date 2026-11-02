@@ -90,3 +90,19 @@ func test_ledger_bonus_adds_to_earnings() -> void:
 	l.serve_customer()
 	l.add_bonus(25)
 	assert_eq(l.bonuses, 25, "ignored once the shift is won")
+
+
+func test_duel_ledger_starts_at_zero_and_goes_negative() -> void:
+	var l := ShiftLedger.duel(180.0)
+	l.add_dent(30)
+	assert_eq(l.earnings(), -30)
+	assert_eq(l.outcome, ShiftLedger.Outcome.PLAYING)
+
+
+func test_duel_ledger_never_wins_early() -> void:
+	var l := ShiftLedger.duel(180.0)
+	for i in 100:
+		l.serve_customer()
+	assert_eq(l.outcome, ShiftLedger.Outcome.PLAYING)
+	l.tick(180.0)
+	assert_eq(l.outcome, ShiftLedger.Outcome.TIMEOUT)

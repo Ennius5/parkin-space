@@ -424,3 +424,22 @@ func test_badge_stays_upright_at_the_lower_left() -> void:
 	assert_true(badge.global_position.y > ship.global_position.y, "below the ship")
 	assert_true(badge.global_position.x < ship.global_position.x, "and to its left")
 	ship.queue_free()
+
+
+func test_faster_driven_ship_pays() -> void:
+	var fast := _spawn("light_scout")
+	var slow := _spawn("light_scout", Vector2(600, 400))
+	fast.is_driven = true
+	slow.is_driven = true
+	fast._prev_velocity = Vector2(300, 0)
+	slow._prev_velocity = Vector2(50, 0)
+	assert_true(fast._pays_for_collision_with(slow))
+	assert_false(slow._pays_for_collision_with(fast))
+	slow._prev_velocity = Vector2(300, 0)  # tie: lower instance id pays
+	var low_first := fast.get_instance_id() < slow.get_instance_id()
+	assert_eq(fast._pays_for_collision_with(slow), low_first)
+	assert_eq(slow._pays_for_collision_with(fast), not low_first)
+	fast.is_driven = false
+	slow.is_driven = false
+	fast.queue_free()
+	slow.queue_free()

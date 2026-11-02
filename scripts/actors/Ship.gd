@@ -352,12 +352,18 @@ func _on_body_entered(other: Node) -> void:
 		bumped.emit(self)
 
 
-## Exactly one ship pays for a ship-to-ship collision: the driven one, else the one with the lower id.
+## Exactly one ship pays for a ship-to-ship collision: the driven one (the faster one if both are
+## driven, the rammer), else the one with the lower id.
 func _pays_for_collision_with(other: Ship) -> bool:
 	if other.is_parked:
 		return true  # parked ships never report collisions
 	if is_driven != other.is_driven:
 		return is_driven
+	if is_driven:
+		var mine := _prev_velocity.length()
+		var theirs := other._prev_velocity.length()
+		if not is_equal_approx(mine, theirs):
+			return mine > theirs
 	return get_instance_id() < other.get_instance_id()
 
 
