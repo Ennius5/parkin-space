@@ -1,6 +1,7 @@
 extends TestCase
 
 const LEVEL01 := preload("res://scenes/levels/Level01.tscn")
+const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const TEST_SAVE := "user://test_level_save.cfg"
 
 const LEVEL01_POOL := [
@@ -1092,7 +1093,7 @@ func test_orphan_ejected_while_driven_releases_it() -> void:
 	_restore_state()
 
 
-func test_orphan_never_counts_as_parked() -> void:
+func test_orphan_reparks_without_counting() -> void:
 	_setup_state()
 	var level := await _orphan_level(["light_scout"])
 	var orphan := level._spawn_orphan()
@@ -1101,10 +1102,11 @@ func test_orphan_never_counts_as_parked() -> void:
 	level.release_ship()
 	_move(orphan, space.global_position)
 	orphan.global_rotation = space.global_rotation
-	for i in 4:
-		level._check_parking(0.5)
-	assert_eq(level.ledger.served, 0)
-	assert_false(orphan.is_parked)
+	orphan.freeze = false
+	orphan.linear_velocity = Vector2.ZERO
+	await _physics_frames(90)
+	assert_true(orphan.is_parked, "an orphan left in a space settles back into it")
+	assert_eq(level.ledger.served, 0, "but it's never a served customer")
 	level.free()
 	_restore_state()
 
@@ -1211,3 +1213,35 @@ func test_level04_spaces_clear_the_hud() -> void:
 			var p: Vector2 = space.transform * c
 			assert_true(p.y >= 220.0, "%s reaches y %d, under the HUD's pay and goal lines" % [space.label, p.y])
 	level.free()
+
+
+
+func test_orphans_on_hard_leave_time_to_collect() -> void:
+	var rng := RandomNumberGenerator.new()
+	for i in 50:
+		for t in Level.orphan_times(rng, 2, 150.0):
+			assert_true(t >= 37.5 and t <= 150.0 - Orphan.COUNTDOWN - Level.ORPHAN_EJECT_SECONDS, str(t))
+
+
+func test_level04_every_space_parks_a_resting_ship() -> void:
+	_setup_state()
+	var level: Level = load(LEVEL04_PATH).instantiate()
+	level.change_scene_on_end = false
+	tree.root.add_child(level)
+	await tree.process_frame
+	level._orphans_due.clear()
+	level.ledger.customers = 100  # serving these test ships must not end the shift
+	var names := {ShipSpec.ShipClass.LIGHT: "light_scout", ShipSpec.ShipClass.MEDIUM: "medium_shuttle", ShipSpec.ShipClass.HEAVY: "heavy_freighter"}
+	var placed := {}
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		var ship: Ship = SHIP_SCENE.instantiate()
+		ship.spec = ship_spec(names[space.space_class])
+		ship.global_position = space.global_position
+		ship.rotation = space.global_rotation
+		level.get_node("Ships").add_child(ship)
+		placed[space.label] = ship
+	await _physics_frames(120)
+	for label: String in placed:
+		assert_true((placed[label] as Ship).is_parked, "a ship left at rest in %s parks" % label)
+	level.free()
+	_restore_state()

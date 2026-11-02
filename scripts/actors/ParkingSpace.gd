@@ -27,12 +27,13 @@ func size() -> Vector2:
 	return ParkingRules.SPACE_SIZES[space_class]
 
 
-## True if the ship is fully inside this free space, fits its class, and has come to rest.
+## True if the ship is fully inside this space (free, or already held for this ship), fits its
+## class, and has come to rest.
 func check(ship: Ship) -> bool:
 	return ParkingRules.can_credit(
 		ship.spec.ship_class,
 		space_class,
-		occupant != null,
+		occupant != null and occupant != ship,
 		ParkingRules.points_inside(ship.hull_points(), global_transform, size()),
 		ParkingRules.is_settled(ship.linear_velocity.length(), ship.angular_velocity),
 	)

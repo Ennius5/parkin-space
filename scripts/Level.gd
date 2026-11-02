@@ -10,6 +10,7 @@ const PAINT_COLORS: Array[Color] = [
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
+const ORPHAN_EJECT_SECONDS := 30.0  # an orphan always appears early enough to be driven out after its countdown
 const ORPHAN_RETRY_SECONDS := 1.0  # no space for a due orphan: look again this much later
 const ARRIVAL_CLEAR_SECONDS := 1.0  # the arrival bay must stay empty this long before the next ship
 const RADIATION_DENT_COST := 5
@@ -361,7 +362,7 @@ func end_level() -> void:
 func _check_parking(delta: float) -> void:
 	for ship: Ship in _ships.get_children():
 		var c := customer_for(ship)
-		if ship.is_parked or ship.orphan or (c and c.requested):
+		if ship.is_parked or (c and c.requested):
 			continue
 		var hit: ParkingSpace = null
 		for space: ParkingSpace in _spaces.get_children():
@@ -370,7 +371,10 @@ func _check_parking(delta: float) -> void:
 				break
 		var tracker: ParkTracker = _trackers.get_or_add(ship, ParkTracker.new())
 		if tracker.update(delta, hit != null):
-			_on_ship_parked(ship, hit)
+			if ship.orphan:
+				_repark_orphan(ship, hit)
+			else:
+				_on_ship_parked(ship, hit)
 
 
 func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
@@ -456,19 +460,30 @@ func _add_darkness() -> void:
 
 
 ## The black hole drags every ship that isn't parked, at its centre of mass so it never spins it.
+## A ship resting inside a space it fits is shielded, so it can always settle and park.
 func _apply_pull() -> void:
 	for ship: Ship in _ships.get_children():
-		if not ship.is_parked:
+		if not ship.is_parked and not _sheltered(ship):
 			ship.apply_central_force(_black_hole.pull_on(ship.global_position) * ship.mass)
+
+
+func _sheltered(ship: Ship) -> bool:
+	for space: ParkingSpace in _spaces.get_children():
+		if (space.occupant == null or space.occupant == ship) 				and ParkingRules.fits_class(ship.spec.ship_class, space.space_class) 				and ParkingRules.points_inside(ship.hull_points(), space.global_transform, space.size()):
+			return true
+	return false
 
 
 # --- Orphaned ships ---
 
-## When each orphan shows up: a random moment between 25% and 60% of the shift.
+## When each orphan shows up: a random moment between 25% and 60% of the shift, but never so late
+## that its countdown plus a drive to the exit would outlast the shift.
 static func orphan_times(rng: RandomNumberGenerator, count: int, shift: float) -> Array[float]:
+	var earliest := 0.25 * shift
+	var latest := maxf(earliest, minf(0.6 * shift, shift - Orphan.COUNTDOWN - ORPHAN_EJECT_SECONDS))
 	var times: Array[float] = []
 	for i in count:
-		times.append(rng.randf_range(0.25, 0.6) * shift)
+		times.append(rng.randf_range(earliest, latest))
 	return times
 
 
@@ -543,6 +558,15 @@ func _spawn_orphan() -> Ship:
 			_hud.show_hint("Orphaned ship! Eject it at the EXIT after its timer", 4.0)
 		return ship
 	return null
+
+
+## An orphan left at rest in a space settles back into it: parked again, but nobody pays or is served.
+func _repark_orphan(ship: Ship, space: ParkingSpace) -> void:
+	space.claim(ship)
+	if ship == driven_ship:
+		release_ship()
+	ship.set_parked()
+	_trackers.erase(ship)
 
 
 ## An orphan leaves through the exit: a bonus once its timer has run out, a fine before that.
