@@ -26,6 +26,7 @@ var tier: Tier = Tier.NONE
 var bronze_tips := false  # rolled at spawn: a bronze customer tips half the time
 var wants_retrieval := false
 var requested := false
+var request_seen := false  # the valet has picked the ship up since the request
 var request_in := -1.0  # seconds until the retrieval request; below 0 = none scheduled
 var dents := 0
 var wait := 0.0  # seconds spent waiting on the valet

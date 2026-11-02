@@ -903,3 +903,18 @@ func test_requested_ship_glows() -> void:
 	assert_true(ship.is_glowing(), "a ship whose owner wants it back glows")
 	level.free()
 	_restore_state()
+
+
+func test_glow_stops_once_the_ship_is_selected() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	level._request(ship)
+	assert_true(ship.is_glowing())
+	level.select_ship(ship)
+	assert_true(level.driven_ship == ship)
+	assert_false(ship.is_glowing(), "picking the ship up dismisses the glow")
+	level.release_ship()
+	assert_false(ship.is_glowing(), "and it stays off after letting go")
+	level.free()
+	_restore_state()

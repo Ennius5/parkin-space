@@ -161,6 +161,9 @@ func set_driven(on: bool) -> void:
 	is_driven = on
 	if on:
 		_drive_camera.make_current()
+		if customer and customer.requested:
+			customer.request_seen = true
+			queue_redraw()
 
 
 func set_parked() -> void:
@@ -204,9 +207,9 @@ func hull_points() -> PackedVector2Array:
 	return pts
 
 
-## A ship whose owner wants it back glows, so it's easy to spot in the lot.
+## A ship whose owner wants it back glows until the valet picks it up, so it's easy to spot.
 func is_glowing() -> bool:
-	return customer != null and customer.requested
+	return customer != null and customer.requested and not customer.request_seen
 
 
 func _draw() -> void:

@@ -71,7 +71,7 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 
 **Retrieval (from Level 2):**
 - **Who:** 2 of the shift's customers want their ship back, 20–40 s after it parks. A request always leaves at least 30 s of the shift to finish it.
-- **What you do:** the ship shows ↩ and a pulsing translucent glow around its outline, and can be driven again. Drive it onto the EXIT pad to hand it over.
+- **What you do:** the ship shows ↩ and a pulsing translucent glow around its outline until you pick it up, and can be driven again. Drive it onto the EXIT pad to hand it over.
 - **Payment:** the fee is paid at parking. The tip, and the customer counting as served, come at the hand-over.
 - **Served:** a customer is served when parked (if they stay) or returned (if they leave). The shift is won when everyone is served.
 
