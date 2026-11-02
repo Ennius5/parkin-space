@@ -4,11 +4,13 @@ extends RigidBody2D
 ## Each held input action fires its thrusters at their hull positions. The nose points local -Y.
 
 signal dented(ship: Ship, cost: int)
+signal bumped(ship: Ship)  # a knock too soft to dent
 
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
 const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
 const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
+const BUMP_SOUND_SPEED := 20.0  # px/s; gentler contacts (resting, nudging) stay silent
 const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
 const HEADLIGHT_SCALE := 1.6
 const HEADLIGHT_COLORS: Array[Color] = [Color(1.0, 0.9, 0.3), Color(0.4, 1.0, 0.45), Color(1.0, 0.45, 0.8), Color(0.3, 0.95, 1.0)]  # yellow, green, pink, cyan
@@ -163,6 +165,11 @@ func _physics_process(_delta: float) -> void:
 		_fire_thrusters()
 	if firing != was_firing:
 		_flames.queue_redraw()
+	if is_driven:
+		if firing.is_empty():
+			Sound.stop_thruster()
+		else:
+			Sound.start_thruster()
 
 
 func _fire_thrusters() -> void:
@@ -212,6 +219,8 @@ func _local_against_drift() -> Vector2:
 
 func set_driven(on: bool) -> void:
 	is_driven = on
+	if not on:
+		Sound.stop_thruster()
 	if on:
 		driven_since_free = true
 		_drive_camera.make_current()
@@ -332,9 +341,12 @@ func _on_body_entered(other: Node) -> void:
 		other_velocity = other_ship._prev_velocity  # pre-impact on both sides, so both agree
 	elif other is RigidBody2D:
 		other_velocity = (other as RigidBody2D).linear_velocity
-	var cost := ShiftLedger.dent_cost((_prev_velocity - other_velocity).length())
+	var impact := (_prev_velocity - other_velocity).length()
+	var cost := ShiftLedger.dent_cost(impact)
 	if cost > 0:
 		dented.emit(self, cost)
+	elif impact > BUMP_SOUND_SPEED:
+		bumped.emit(self)
 
 
 ## Exactly one ship pays for a ship-to-ship collision: the driven one, else the one with the lower id.
@@ -344,3 +356,8 @@ func _pays_for_collision_with(other: Ship) -> bool:
 	if is_driven != other.is_driven:
 		return is_driven
 	return get_instance_id() < other.get_instance_id()
+
+
+func _exit_tree() -> void:
+	if is_driven:
+		Sound.stop_thruster()

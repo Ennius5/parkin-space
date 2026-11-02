@@ -11,6 +11,7 @@ func _ready() -> void:
 	%Back.pressed.connect(get_tree().change_scene_to_file.bind(MODE_SELECT))
 	_add_difficulty_row()
 	build()
+	Sound.wire_clicks(self)
 
 
 ## Easy / Normal / Hard buttons above the grid. The choice sets every shift's length and is saved.

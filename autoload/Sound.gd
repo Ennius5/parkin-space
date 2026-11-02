@@ -108,6 +108,14 @@ func play(effect: String) -> void:
 	player.play()
 
 
+## Every Button under root also clicks when pressed.
+func wire_clicks(root: Node) -> void:
+	for node in root.find_children("*", "Button", true, false):
+		var button := node as Button
+		if not button.pressed.is_connected(play.bind("click")):
+			button.pressed.connect(play.bind("click"))
+
+
 func start_thruster() -> void:
 	if not _thruster.playing:
 		_thruster.play()

@@ -13,6 +13,7 @@ var _level := 1
 
 func _ready() -> void:
 	Sound.play_menu_music()
+	Sound.wire_clicks(self)
 	%Retry.pressed.connect(_on_retry_pressed)
 	%Next.pressed.connect(_on_next_pressed)
 	%Menu.pressed.connect(get_tree().change_scene_to_file.bind(LEVEL_SELECT))

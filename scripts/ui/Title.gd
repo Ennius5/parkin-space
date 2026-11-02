@@ -4,9 +4,9 @@ extends Control
 const MODE_SELECT := "res://scenes/ui/ModeSelect.tscn"
 
 
-
 func _ready() -> void:
 	Sound.play_menu_music()
+
 
 func _gui_input(event: InputEvent) -> void:
 	var tapped: bool = event is InputEventScreenTouch and event.pressed

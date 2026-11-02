@@ -10,6 +10,7 @@ const PAINT_COLORS: Array[Color] = [
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
+const CRASH_COST := 15  # dents this costly crunch instead of clang
 const REQUEST_BONUS := 20  # for parking a special request in the space they asked for
 const ORPHAN_EJECT_SECONDS := 30.0  # an orphan always appears early enough to be driven out after its countdown
 const ORPHAN_RETRY_SECONDS := 1.0  # no space for a due orphan: look again this much later
@@ -177,6 +178,7 @@ func _request(ship: Ship) -> void:
 	var c: Customer = customers[ship]
 	c.requested = true
 	c.request_in = -1.0
+	Sound.play("request")
 	ship.unpark()
 	_trackers.erase(ship)
 	if not _return_hint_shown:
@@ -198,7 +200,7 @@ func _return(ship: Ship) -> void:
 	_trackers.erase(ship)
 	_ships.remove_child(ship)
 	ship.queue_free()
-	ledger.add_tip(c.tip())  # before serving: the final serve ends the shift
+	_pay_tip(c.tip())  # before serving: the final serve ends the shift
 	ledger.serve_customer(0)
 
 
@@ -257,6 +259,8 @@ func spawn_next_customer() -> Ship:
 	_next_customer += 1
 	_ships.add_child(ship)
 	ship.dented.connect(_on_ship_dented)
+	ship.bumped.connect(_on_ship_bumped)
+	Sound.play("arrive")
 	return ship
 
 
@@ -359,6 +363,8 @@ func end_level() -> void:
 		return
 	_ended = true
 	release_ship()
+	Sound.stop_thruster()
+	Sound.play("win" if ledger.outcome == ShiftLedger.Outcome.WON else "lose")
 	var won := ledger.outcome == ShiftLedger.Outcome.WON
 	var stars := ShiftLedger.stars_for(ledger.earnings(), silver_target, gold_target, won)
 	if won:
@@ -398,6 +404,8 @@ func _check_parking(_delta: float) -> void:
 					break
 	for space: ParkingSpace in _spaces.get_children():
 		var now: Ship = ship if space == ready else null
+		if now != null and space.ready_for == null:
+			Sound.play("ready")
 		if space.ready_for != now:
 			space.ready_for = now
 			space.queue_redraw()
@@ -415,6 +423,7 @@ func _on_done_pressed() -> void:
 		release_ship()
 		return
 	space.ready_for = null
+	Sound.play("park")
 	if ship.orphan:
 		_repark_orphan(ship, space)
 	else:
@@ -432,6 +441,7 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 		return
 	if c == null:
 		ledger.serve_customer()
+		Sound.play("fee")
 	else:
 		c.parked_once = true
 		c.parked_in_gold = space.gold
@@ -440,16 +450,35 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 			_update_pin(c.wants_space)
 			if c.got_wanted_space:
 				ledger.add_bonus(REQUEST_BONUS)
+				Sound.play("bonus")
 		if c.wants_retrieval and _exit:
 			ledger.add_fee()  # the tip waits until the ship is handed back
+			Sound.play("fee")
 			c.request_in = Customer.request_delay(_rng, ledger.time_left)
 		else:
-			ledger.add_tip(c.tip())  # before serving: the final serve ends the shift
+			_pay_tip(c.tip())  # before serving: the final serve ends the shift
 			ledger.serve_customer()
+			Sound.play("fee")
 	_refresh()
 
 
 func _on_ship_dented(ship: Ship, cost: int) -> void:
+	_charge_dent(ship, cost, "dent" if cost < CRASH_COST else "crash")
+
+
+func _on_ship_bumped(_ship: Ship) -> void:
+	Sound.play("bump")
+
+
+func _pay_tip(amount: int) -> void:
+	ledger.add_tip(amount)
+	if amount > 0:
+		Sound.play("tip")
+
+
+## Charges a dent to the ship's customer and the pay, with the given sound.
+func _charge_dent(ship: Ship, cost: int, effect: String) -> void:
+	Sound.play(effect)
 	var c := customer_for(ship)
 	if c:
 		c.dents += 1
@@ -490,7 +519,7 @@ func _update_radiation(delta: float) -> void:
 		_radiation_time[ship] = _radiation_time.get(ship, 0.0) + delta
 		if _radiation_time[ship] >= RADIATION_INTERVAL:
 			_radiation_time[ship] -= RADIATION_INTERVAL
-			_on_ship_dented(ship, RADIATION_DENT_COST)
+			_charge_dent(ship, RADIATION_DENT_COST, "radiation")
 			if not _radiation_hint_shown:
 				_radiation_hint_shown = true
 				_hud.show_hint("Radiation! It dents ships inside", 3.0)
@@ -608,6 +637,8 @@ func _spawn_orphan() -> Ship:
 		_ships.add_child(ship)
 		ship.make_orphan(Orphan.new())
 		ship.dented.connect(_on_ship_dented)
+		ship.bumped.connect(_on_ship_bumped)
+		Sound.play("warning")
 		space.claim(ship)
 		ship.set_parked()
 		if not _orphan_hint_shown:
@@ -640,7 +671,9 @@ func _eject_orphan(ship: Ship) -> void:
 	ship.queue_free()
 	if ship.orphan.ready_to_eject():
 		ledger.add_bonus(Orphan.BONUS)
+		Sound.play("bonus")
 	else:
+		Sound.play("warning")
 		ledger.add_dent(Orphan.EARLY_COST)
 		_hud.show_hint("-₵%d ejected too early" % Orphan.EARLY_COST, 1.5)
 
@@ -662,6 +695,7 @@ func _fling_from_core() -> void:
 		if now - int(_flung_at.get(body, -BlackHole.FLING_COOLDOWN_MS)) < BlackHole.FLING_COOLDOWN_MS:
 			continue
 		_flung_at[body] = now
+		Sound.play("fling")
 		body.linear_velocity = BlackHole.fling_velocity(body.linear_velocity, _rng)
 		body.angular_velocity = BlackHole.FLING_SPIN * (1.0 if _rng.randf() < 0.5 else -1.0)
 
