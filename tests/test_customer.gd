@@ -96,3 +96,10 @@ func test_is_waiting() -> void:
 func test_tier_colors() -> void:
 	assert_eq(_customer(Customer.Tier.GOLD).color(), Color(1, 0.82, 0.2))
 	assert_eq(_customer(Customer.Tier.NONE).color().a, 0.0)
+
+
+func test_gold_tip_on_offer_ignores_space() -> void:
+	var c := _customer(Customer.Tier.GOLD)
+	c.wait = 12.5
+	assert_eq(c.tip(), 0)
+	assert_eq(c.tip_on_offer(), 28)

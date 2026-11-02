@@ -43,14 +43,19 @@ static func roll(rng: RandomNumberGenerator, use_tiers: bool) -> Customer:
 
 
 func tip() -> int:
+	if tier == Tier.GOLD and not parked_in_gold:
+		return 0
+	return tip_on_offer()
+
+
+## The tip as it stands, before the gold-space rule: what a gold badge shows while waiting.
+func tip_on_offer() -> int:
 	match tier:
 		Tier.BRONZE:
 			return BRONZE_TIP if bronze_tips else 0
 		Tier.SILVER:
 			return maxi(0, SILVER_TIP - SILVER_DENT_COST * dents)
 		Tier.GOLD:
-			if not parked_in_gold:
-				return 0
 			return maxi(0, GOLD_TIP - GOLD_DROP_PER_SECOND * ceili(maxf(0.0, wait - GOLD_PATIENCE)))
 	return 0
 

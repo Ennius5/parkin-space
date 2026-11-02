@@ -19,6 +19,7 @@ var ships: Array[Ship] = []
 
 var _rows: Array[Button] = []
 var _swatches: Array[ColorRect] = []
+var _coins: Array[Color] = []
 var _highlight := -1
 var _tap := Vector2.ZERO
 
@@ -58,6 +59,16 @@ func open(near: Array[Ship], screen_pos: Vector2) -> void:
 		button.button_down.connect(func() -> void: _set_highlight(i))
 		button.mouse_entered.connect(func() -> void: _set_highlight(i))
 		row.add_child(swatch)
+		var coin_color := Color.TRANSPARENT
+		if ship.customer and ship.customer.tier != Customer.Tier.NONE:
+			coin_color = ship.customer.color()
+			var coin := Label.new()
+			coin.text = "●"
+			coin.add_theme_font_size_override("font_size", FONT_SIZE)
+			coin.add_theme_color_override("font_color", coin_color)
+			coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(coin)
+		_coins.append(coin_color)
 		row.add_child(button)
 		_list.add_child(row)
 		_rows.append(button)
@@ -73,6 +84,7 @@ func close() -> void:
 		row.queue_free()
 	_rows.clear()
 	_swatches.clear()
+	_coins.clear()
 	ships.clear()
 	_highlight = -1
 	_panel.visible = false
@@ -89,6 +101,10 @@ func rows() -> Array[Button]:
 
 func swatch_color(index: int) -> Color:
 	return _swatches[index].color
+
+
+func coin_color(index: int) -> Color:
+	return _coins[index]
 
 
 func panel_rect() -> Rect2:

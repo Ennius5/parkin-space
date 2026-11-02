@@ -12,6 +12,7 @@ const TAKEN_COLOR := Color(1, 1, 1, 0.6)
 
 @export var space_class: ShipSpec.ShipClass = ShipSpec.ShipClass.MEDIUM
 @export var label: String = ""
+@export var gold := false  # gold customers only tip when parked in a gold space
 
 var occupant: Ship = null
 
@@ -38,6 +39,21 @@ func claim(ship: Ship) -> void:
 	queue_redraw()
 
 
+func release() -> void:
+	occupant = null
+	queue_redraw()
+
+
+## True while any part of the ship is still inside the space.
+func touches(ship: Ship) -> bool:
+	var to_local := global_transform.affine_inverse()
+	var rect := Rect2(-size() / 2, size())
+	for p in ship.hull_points():
+		if rect.has_point(to_local * p):
+			return true
+	return false
+
+
 func _process(delta: float) -> void:
 	if occupant == null:
 		_pulse = fmod(_pulse + delta, 1.0)
@@ -53,6 +69,8 @@ func _draw() -> void:
 	draw_rect(Rect2(-s / 2, s), color, false, 3.0)
 	var font := ThemeDB.fallback_font
 	var text := "%s %s" % [CLASS_LETTERS[space_class], label]
+	if gold:
+		text += " ★"
 	var font_size := 28
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, color)

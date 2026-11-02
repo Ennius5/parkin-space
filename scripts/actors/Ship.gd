@@ -15,6 +15,7 @@ const CLASS_COLORS := {
 
 @export var spec: ShipSpec
 var paint_color := Color.WHITE  # set before the ship enters the tree
+var customer: Customer  # null = no badge
 
 var is_driven: bool = false
 var is_parked: bool = false
@@ -27,6 +28,8 @@ var _prev_velocity := Vector2.ZERO
 @onready var _lights: Sprite2D = $Lights
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _drive_camera: Camera2D = $DriveCamera
+
+var _badge := Node2D.new()
 
 
 func _ready() -> void:
@@ -56,6 +59,11 @@ func _ready() -> void:
 	_paint.modulate = paint_color
 	_show_layer(_lights, spec.lights_texture)
 	body_entered.connect(_on_body_entered)
+	_badge.name = "Badge"
+	_badge.top_level = true  # stays upright while the ship turns
+	_badge.z_index = 10
+	_badge.draw.connect(_draw_badge)
+	add_child(_badge)
 
 
 func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
@@ -68,6 +76,9 @@ func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
 func _process(_delta: float) -> void:
 	if _lights.visible:
 		_lights.modulate.a = lights_level()
+	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0))
+	_badge.global_rotation = 0.0
+	_badge.queue_redraw()  # a gold tip counts down
 
 
 ## The colour a player sees on this ship: its paint, or the class colour for placeholder art.
@@ -154,6 +165,28 @@ func set_parked() -> void:
 	is_driven = false
 	set_deferred("freeze", true)
 	modulate = Color(1, 1, 1, 0.7)
+
+
+## The customer wants their ship back: it can be driven again.
+func unpark() -> void:
+	is_parked = false
+	set_deferred("freeze", false)
+	modulate = Color.WHITE
+
+
+## Tier coin (with the gold tip still on offer) and a return arrow when the customer wants the ship back.
+func _draw_badge() -> void:
+	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested):
+		return
+	var font := ThemeDB.fallback_font
+	if customer.tier != Customer.Tier.NONE:
+		_badge.draw_circle(Vector2.ZERO, 14.0, customer.color())
+		_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
+		if customer.tier == Customer.Tier.GOLD:
+			_badge.draw_string(font, Vector2(20, 9), "₵%d" % customer.tip_on_offer(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+	if customer.requested:
+		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 150.0)
+		_badge.draw_string(font, Vector2(-48, 10), "↩", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color(1, 1, 1, pulse))
 
 
 ## Outline (or hull corners) and centre in global coordinates, used for parking checks.

@@ -89,3 +89,20 @@ func test_badges_spread_out_and_panel_clears_them() -> void:
 	a.queue_free()
 	b.queue_free()
 	c.queue_free()
+
+
+func test_picker_row_shows_tier_coin() -> void:
+	var picker: ShipPicker = PICKER_SCENE.instantiate()
+	tree.root.add_child(picker)
+	var a := _ship("light_scout", Color.RED, Vector2(300, 300))
+	var b := _ship("light_scout", Color.GREEN, Vector2(360, 300))
+	var gold := Customer.new()
+	gold.tier = Customer.Tier.GOLD
+	a.customer = gold
+	var ships: Array[Ship] = [a, b]
+	picker.open(ships, Vector2(320, 300))
+	assert_eq(picker.coin_color(0), Color(1, 0.82, 0.2))
+	assert_eq(picker.coin_color(1), Color.TRANSPARENT)
+	picker.queue_free()
+	a.queue_free()
+	b.queue_free()

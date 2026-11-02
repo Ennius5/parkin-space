@@ -397,3 +397,30 @@ func test_swatch_color_matches_what_is_drawn() -> void:
 	tree.root.add_child(painted)
 	assert_eq(painted.swatch_color(), Color.RED)
 	painted.queue_free()
+
+
+func test_unpark_restores_ship() -> void:
+	var ship := _spawn("light_scout")
+	ship.set_parked()
+	await _frames(2)
+	ship.unpark()
+	await _frames(2)
+	assert_false(ship.is_parked)
+	assert_false(ship.freeze)
+	assert_eq(ship.modulate, Color.WHITE)
+	ship.queue_free()
+
+
+func test_badge_stays_upright_above_ship() -> void:
+	var ship := _spawn("light_scout")
+	var c := Customer.new()
+	c.tier = Customer.Tier.GOLD
+	ship.customer = c
+	ship.rotation = 1.2
+	await tree.process_frame
+	await tree.process_frame  # process_frame fires before _process runs
+	var badge: Node2D = ship.get_node("Badge")
+	assert_true(absf(badge.global_rotation) < 0.001, "badge rotation %f" % badge.global_rotation)
+	assert_true(badge.global_position.y < ship.global_position.y)
+	assert_true(absf(badge.global_position.x - ship.global_position.x) < 0.5)
+	ship.queue_free()

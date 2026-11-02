@@ -70,3 +70,24 @@ func test_size_matches_class() -> void:
 	var space := _space(ShipSpec.ShipClass.HEAVY)
 	assert_eq(space.size(), Vector2(124, 196))
 	_cleanup()
+
+
+func test_gold_space_flag_and_release() -> void:
+	var space := _space(ShipSpec.ShipClass.MEDIUM)
+	space.gold = true
+	var ship := _ship("medium_shuttle")
+	space.claim(ship)
+	assert_eq(space.occupant, ship)
+	space.release()
+	assert_eq(space.occupant, null)
+	_cleanup()
+
+
+func test_touches_partial_overlap() -> void:
+	var space := _space(ShipSpec.ShipClass.MEDIUM)
+	var ship := _ship("medium_shuttle", Vector2(300, 300 + 100))  # spans y 350-450; the space ends at 366
+	assert_true(space.touches(ship))
+	assert_false(space.check(ship))
+	ship.position = Vector2(300, 900)
+	assert_false(space.touches(ship))
+	_cleanup()
