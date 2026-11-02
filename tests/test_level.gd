@@ -1794,3 +1794,58 @@ func test_ships_never_park_by_themselves() -> void:
 	assert_true(_space_a1(level).ready_for == null)
 	level.free()
 	_restore_state()
+
+
+# --- Valets ---
+
+func _rival_valet(level: Level) -> Valet:
+	var v := Valet.new(1, false, ShiftLedger.new(level.base_pay, 100, 60.0))
+	level.valets.append(v)
+	return v
+
+
+func test_level_has_one_local_valet() -> void:
+	_setup_state()
+	var level := await _make_level()
+	assert_eq(level.valets.size(), 1)
+	assert_true(level.valets[0].local)
+	assert_true(level.ledger == level.valets[0].ledger)
+	level.free()
+	_restore_state()
+
+
+func test_second_valet_cannot_take_a_driven_ship() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var v1 := _rival_valet(level)
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	level.select_ship(ship, v1)
+	assert_true(level.driven_ship == ship)
+	assert_true(v1.ship == null, "valet 1 didn't get it")
+	assert_eq(ship.last_driver, 0)
+	level.free()
+	_restore_state()
+
+
+func test_park_credits_the_driving_valet() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var v1 := _rival_valet(level)
+	var ship := _first_ship(level)
+	level.select_ship(ship, v1)
+	assert_true(v1.ship == ship)
+	assert_true(level.driven_ship == null, "valet 0's hands stay free")
+	var a1 := _space_a1(level)
+	_move(ship, a1.global_position)
+	ship.global_rotation = a1.global_rotation
+	ship.linear_velocity = Vector2.ZERO
+	ship.angular_velocity = 0.0
+	level._check_parking(0.016)
+	level.press_done(v1)
+	assert_true(ship.is_parked)
+	assert_true(v1.ledger.earned > 0)
+	assert_eq(level.ledger.earned, 0)
+	assert_true(v1.ship == null)
+	level.free()
+	_restore_state()
