@@ -232,7 +232,8 @@ func _draw_badge() -> void:
 	if orphan:
 		_draw_orphan_badge()
 		return
-	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested):
+	var wants := customer != null and customer.wants_space != "" and not customer.parked_once
+	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested and not wants):
 		return
 	var font := ThemeDB.fallback_font
 	if customer.tier != Customer.Tier.NONE:
@@ -240,6 +241,8 @@ func _draw_badge() -> void:
 		_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
 		if customer.tier == Customer.Tier.GOLD:
 			_badge.draw_string(font, Vector2(20, 9), "₵%d" % customer.tip_shown(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+	if wants:
+		_badge.draw_string(font, Vector2(-30, 42), "→ %s" % customer.wants_space, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
 	if customer.requested:
 		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 150.0)
 		_badge.draw_string(font, Vector2(-48, 10), "↩", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color(1, 1, 1, pulse))

@@ -15,6 +15,7 @@ const TAKEN_COLOR := Color(1, 1, 1, 0.6)
 @export var gold := false  # gold customers only tip when parked in a gold space
 
 var occupant: Ship = null
+var pin_color := Color(0, 0, 0, 0)  # a special request marker; transparent = none
 
 var _pulse := 0.0
 
@@ -79,3 +80,19 @@ func _draw() -> void:
 	var font_size := 28
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, color)
+	if pin_color.a > 0.0:
+		var head := Vector2(0, -font_size * 1.4)
+		draw_line(head, head + Vector2(0, 18), pin_color, 3.0)
+		draw_circle(head, 10.0, pin_color)
+		draw_arc(head, 10.0, 0.0, TAU, 20, Color(0, 0, 0, 0.6), 2.0)
+
+
+## Marks this space as the one a customer asked for.
+func set_pin(c: Color) -> void:
+	pin_color = c
+	queue_redraw()
+
+
+func clear_pin() -> void:
+	pin_color = Color(0, 0, 0, 0)
+	queue_redraw()

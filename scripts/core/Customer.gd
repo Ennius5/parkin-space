@@ -32,6 +32,8 @@ var dents := 0
 var wait := 0.0  # seconds spent waiting on the valet
 var parked_in_gold := false
 var parked_once := false
+var wants_space := ""  # a special request: the label of the one space this customer wants
+var got_wanted_space := false
 
 
 ## A new customer. weights overrides the tier odds for a level (empty = TIER_WEIGHTS).
@@ -53,6 +55,8 @@ static func roll(rng: RandomNumberGenerator, use_tiers: bool, gold_allowed := tr
 func tip() -> int:
 	if tier == Tier.GOLD and not parked_in_gold:
 		return 0
+	if wants_space != "" and not got_wanted_space:
+		return 0  # a special request ignored: no tip
 	return tip_on_offer()
 
 

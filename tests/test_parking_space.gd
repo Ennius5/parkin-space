@@ -91,3 +91,13 @@ func test_touches_partial_overlap() -> void:
 	ship.position = Vector2(300, 900)
 	assert_false(space.touches(ship))
 	_cleanup()
+
+
+func test_pin_shows_and_clears() -> void:
+	var space: ParkingSpace = load("res://scenes/actors/ParkingSpace.tscn").instantiate()
+	tree.root.add_child(space)
+	space.set_pin(Color.GOLD)
+	assert_true(space.pin_color.a > 0.0)
+	space.clear_pin()
+	assert_eq(space.pin_color.a, 0.0)
+	space.queue_free()

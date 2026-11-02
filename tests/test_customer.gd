@@ -160,3 +160,12 @@ func test_default_tier_weights_unchanged() -> void:
 
 func test_custom_weights_still_respect_gold_fit() -> void:
 	assert_eq(_shares(GOLD_RUSH, false, 200)[Customer.Tier.GOLD], 0.0)
+
+
+func test_request_customer_tips_only_in_their_space() -> void:
+	var c := _customer(Customer.Tier.SILVER)
+	c.wants_space = "G4"
+	c.parked_once = true
+	assert_eq(c.tip(), 0, "parked elsewhere: no tip")
+	c.got_wanted_space = true
+	assert_eq(c.tip(), 15)

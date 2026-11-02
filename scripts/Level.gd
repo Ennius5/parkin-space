@@ -10,6 +10,7 @@ const PAINT_COLORS: Array[Color] = [
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
+const REQUEST_BONUS := 20  # for parking a special request in the space they asked for
 const ORPHAN_EJECT_SECONDS := 30.0  # an orphan always appears early enough to be driven out after its countdown
 const ORPHAN_RETRY_SECONDS := 1.0  # no space for a due orphan: look again this much later
 const ARRIVAL_CLEAR_SECONDS := 1.0  # the arrival bay must stay empty this long before the next ship
@@ -32,6 +33,7 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 ## How many customers want their ship back at the exit. Needs an ExitPad named Exit.
 @export var retrieval_count: int = 0
 @export var allow_moving_parked := false  # the valet may pick up a parked customer ship to make room
+@export var request_count := 0  # customers who ask for one named space
 @export var orphan_count := 0  # abandoned ships that appear partway through the shift
 
 var ledger: ShiftLedger
@@ -56,6 +58,8 @@ var _pool: Array[ShipSpec] = []  # every ship this level can draw, kept for orph
 var _orphans_due: Array[float] = []  # shift seconds at which orphans are due to appear
 var _orphan_clock := 0.0
 var _orphan_hint_shown := false
+var _request_indexes: Array[int] = []  # queue positions of customers with a special request
+var _request_hint_shown := false
 var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
 
 @onready var _spaces: Node2D = $Spaces
@@ -78,6 +82,7 @@ func _ready() -> void:
 		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
 	if _exit:
 		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
+	_request_indexes = _pick_requests(customer_queue.size(), request_count)
 	ledger = ShiftLedger.new(base_pay, customer_queue.size(), GameState.shift_seconds())
 	if orphan_count > 0:
 		_orphans_due = orphan_times(_rng, orphan_count, GameState.shift_seconds())
@@ -236,6 +241,14 @@ func spawn_next_customer() -> Ship:
 	ship.paint_color = PAINT_COLORS.pick_random()
 	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class), tier_weights)
 	c.wants_retrieval = _next_customer in _retrieval_indexes
+	if _next_customer in _request_indexes:
+		var wanted := _pick_request_space(ship.spec.ship_class)
+		if wanted:
+			c.wants_space = wanted.label
+			wanted.set_pin(c.color())
+			if not _request_hint_shown:
+				_request_hint_shown = true
+				_hud.show_hint("Special request: park them in their space", 4.0)
 	ship.customer = c
 	customers[ship] = c
 	ship.global_position = _entrance.global_position
@@ -400,6 +413,13 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 	else:
 		c.parked_once = true
 		c.parked_in_gold = space.gold
+		if c.wants_space != "":
+			c.got_wanted_space = space.label == c.wants_space
+			for wanted: ParkingSpace in _spaces.get_children():
+				if wanted.label == c.wants_space:
+					wanted.clear_pin()
+			if c.got_wanted_space:
+				ledger.add_bonus(REQUEST_BONUS)
 		if c.wants_retrieval and _exit:
 			ledger.add_fee()  # the tip waits until the ship is handed back
 			c.request_in = Customer.request_delay(_rng, ledger.time_left)
@@ -624,3 +644,37 @@ func _fling_from_core() -> void:
 		_flung_at[body] = now
 		body.linear_velocity = BlackHole.fling_velocity(body.linear_velocity, _rng)
 		body.angular_velocity = BlackHole.FLING_SPIN * (1.0 if _rng.randf() < 0.5 else -1.0)
+
+
+
+# --- Special requests ---
+
+## count distinct queue positions for special requests, never ones that will want their ship back.
+func _pick_requests(queue_size: int, count: int) -> Array[int]:
+	var free: Array[int] = []
+	for i in queue_size:
+		if not i in _retrieval_indexes:
+			free.append(i)
+	for i in range(free.size() - 1, 0, -1):
+		var j := _rng.randi_range(0, i)
+		var t := free[i]
+		free[i] = free[j]
+		free[j] = t
+	return free.slice(0, mini(count, free.size()))
+
+
+## The space a request customer asks for: one their ship fits, preferring a space that's taken
+## right now so the valet has to make room.
+func _pick_request_space(ship_class: int) -> ParkingSpace:
+	var fitting: Array[ParkingSpace] = []
+	var taken: Array[ParkingSpace] = []
+	for space: ParkingSpace in _spaces.get_children():
+		if ParkingRules.fits_class(ship_class, space.space_class):
+			fitting.append(space)
+			if space.occupant != null:
+				taken.append(space)
+	if not taken.is_empty():
+		return taken[_rng.randi_range(0, taken.size() - 1)]
+	if not fitting.is_empty():
+		return fitting[_rng.randi_range(0, fitting.size() - 1)]
+	return null

@@ -1507,3 +1507,92 @@ func test_parked_ships_stay_put_where_not_allowed() -> void:
 	assert_false(ship in level.ships_near_world(ship.global_position, 50.0))
 	level.free()
 	_restore_state()
+
+
+# --- Special requests ---
+
+func _request_level() -> Level:
+	var level: Level = LEVEL01.instantiate()
+	level.change_scene_on_end = false
+	level.use_tiers = true
+	level.random_customers = 0
+	level.retrieval_count = 2
+	level.request_count = 3
+	var queue: Array[ShipSpec] = []
+	for i in 6:
+		queue.append(ship_spec("light_scout"))
+	level.customer_queue = queue
+	var exit: ExitPad = EXIT_SCENE.instantiate()
+	exit.name = "Exit"
+	exit.position = EXIT_POS
+	level.add_child(exit)
+	tree.root.add_child(level)
+	await tree.process_frame
+	return level
+
+
+## The first ship as a silver stayer who asked for B1.
+func _b1_requester(level: Level) -> Ship:
+	var ship := _first_ship(level)
+	var c := level.customer_for(ship)
+	c.tier = Customer.Tier.SILVER
+	c.wants_retrieval = false
+	c.wants_space = "B1"
+	(level.get_node("Spaces/B1") as ParkingSpace).set_pin(c.color())
+	return ship
+
+
+func test_requests_never_overlap_retrievals() -> void:
+	_setup_state()
+	var level := await _request_level()
+	assert_eq(level._request_indexes.size(), 3)
+	for i in level._request_indexes:
+		assert_false(i in level._retrieval_indexes, "position %d both requests and leaves" % i)
+	level.free()
+	_restore_state()
+
+
+func test_request_prefers_an_occupied_fitting_space() -> void:
+	_setup_state()
+	var level := await _request_level()
+	var a1 := _space_a1(level)
+	a1.claim(_first_ship(level))
+	for i in 20:
+		assert_true(level._pick_request_space(ShipSpec.ShipClass.LIGHT) == a1)
+	a1.release()
+	for i in 20:
+		var space := level._pick_request_space(ShipSpec.ShipClass.HEAVY)
+		assert_true(space == null or ParkingRules.fits_class(ShipSpec.ShipClass.HEAVY, space.space_class))
+		var light := level._pick_request_space(ShipSpec.ShipClass.LIGHT)
+		assert_true(light != null and ParkingRules.fits_class(ShipSpec.ShipClass.LIGHT, light.space_class))
+	level.free()
+	_restore_state()
+
+
+func test_request_in_named_space_pays_bonus_and_tip() -> void:
+	_setup_state()
+	var level := await _request_level()
+	var ship := _b1_requester(level)
+	var b1: ParkingSpace = level.get_node("Spaces/B1")
+	level._on_ship_parked(ship, b1)
+	assert_eq(level.ledger.bonuses, Level.REQUEST_BONUS)
+	assert_eq(level.ledger.tips, 15)
+	assert_eq(level.ledger.served, 1)
+	assert_eq(b1.pin_color.a, 0.0, "the pin goes once they've parked")
+	level.free()
+	_restore_state()
+
+
+func test_request_parked_elsewhere_pays_fee_only() -> void:
+	_setup_state()
+	var level := await _request_level()
+	var ship := _b1_requester(level)
+	var earned := level.ledger.earned
+	level._on_ship_parked(ship, level.get_node("Spaces/A2"))
+	assert_eq(level.ledger.bonuses, 0)
+	assert_eq(level.ledger.tips, 0)
+	assert_eq(level.ledger.earned - earned, ShiftLedger.PARK_FEE)
+	assert_eq(level.ledger.served, 1)
+	assert_eq((level.get_node("Spaces/B1") as ParkingSpace).pin_color.a, 0.0)
+	level.free()
+	_restore_state()
