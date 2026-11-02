@@ -672,3 +672,83 @@ func test_no_placeholder_ships_in_the_game() -> void:
 		for spec in level.customer_queue:
 			assert_true(spec.resource_path.begins_with("res://resources/ships/"), spec.resource_path)
 		level.free()
+
+
+## A tiered Level 1 with one radiation zone on open floor and the first ship sitting in it.
+func _irradiated_level() -> Level:
+	var level := await _make_tiered_level()
+	var radiation := Node2D.new()
+	radiation.name = "Radiation"
+	var zone := RadiationZone.new()
+	zone.position = OPEN_FLOOR
+	radiation.add_child(zone)
+	level.add_child(radiation)
+	level._radiation = radiation
+	_move(_first_ship(level), OPEN_FLOOR)
+	return level
+
+
+func test_radiation_dents_after_two_seconds_inside() -> void:
+	_setup_state()
+	var level := await _irradiated_level()
+	var ship := _first_ship(level)
+	var pay := level.ledger.pay
+	level._update_radiation(1.9)
+	assert_eq(level.ledger.pay, pay)
+	assert_eq(level.customer_for(ship).dents, 0)
+	level._update_radiation(0.2)
+	assert_eq(level.ledger.pay, pay - Level.RADIATION_DENT_COST)
+	assert_eq(level.customer_for(ship).dents, 1)
+	level.free()
+	_restore_state()
+
+
+func test_leaving_radiation_resets_the_timer() -> void:
+	_setup_state()
+	var level := await _irradiated_level()
+	var ship := _first_ship(level)
+	level._update_radiation(1.5)
+	_move(ship, OPEN_FLOOR + Vector2(600, 0))
+	level._update_radiation(0.1)
+	_move(ship, OPEN_FLOOR)
+	level._update_radiation(1.5)
+	assert_eq(level.customer_for(ship).dents, 0, "the timer restarted on leaving")
+	level._update_radiation(0.6)
+	assert_eq(level.customer_for(ship).dents, 1)
+	level.free()
+	_restore_state()
+
+
+func test_radiation_dents_keep_coming_every_two_seconds() -> void:
+	_setup_state()
+	var level := await _irradiated_level()
+	var ship := _first_ship(level)
+	var pay := level.ledger.pay
+	for i in 61:
+		level._update_radiation(0.1)
+	assert_eq(level.customer_for(ship).dents, 3)
+	assert_eq(level.ledger.pay, pay - 3 * Level.RADIATION_DENT_COST)
+	level.free()
+	_restore_state()
+
+
+func test_returned_ship_leaves_no_radiation_entry() -> void:
+	_setup_state()
+	var level := await _irradiated_level()
+	level._update_radiation(1.0)
+	level._return(_first_ship(level))  # handed over at the exit: the ship leaves the lot
+	await tree.process_frame
+	level._update_radiation(1.5)
+	assert_true(level._radiation_time.is_empty())
+	level.free()
+	_restore_state()
+
+
+func test_level01_has_no_radiation() -> void:
+	_setup_state()
+	var level := await _make_level()
+	assert_true(level._radiation == null)
+	await _physics_frames(60)
+	assert_true(level._radiation_time.is_empty())
+	level.free()
+	_restore_state()

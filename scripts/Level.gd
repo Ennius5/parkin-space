@@ -11,6 +11,8 @@ const PAINT_COLORS: Array[Color] = [
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
 const ARRIVAL_CLEAR_SECONDS := 1.0  # the arrival bay must stay empty this long before the next ship
+const RADIATION_DENT_COST := 5
+const RADIATION_INTERVAL := 2.0  # seconds inside radiation per dent
 const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
 const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on screen) are candidates
 
@@ -44,6 +46,8 @@ var _retrieval_indexes: Array[int] = []  # queue positions of customers who will
 var _return_hint_shown := false
 var _bay: ArrivalBay
 var _bay_clear_for := 0.0
+var _radiation_time: Dictionary = {}  # Ship -> seconds inside radiation since its last dent
+var _radiation_hint_shown := false
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -53,6 +57,7 @@ var _bay_clear_for := 0.0
 @onready var _controls: ShipControls = $Controls
 @onready var _picker: ShipPicker = $ShipPicker
 @onready var _exit: ExitPad = get_node_or_null("Exit")
+@onready var _radiation: Node = get_node_or_null("Radiation")
 
 
 func _ready() -> void:
@@ -83,6 +88,8 @@ func _physics_process(delta: float) -> void:
 		if spawn_next_customer():
 			_arrival_timer = 0.0
 			_bay_clear_for = 0.0
+	if _radiation:
+		_update_radiation(delta)
 	_check_parking(delta)
 	_update_customers(delta)
 	_refresh()
@@ -391,3 +398,28 @@ func _refresh() -> void:
 	_hud.set_customers(ledger.served, ledger.customers)
 	if ledger.outcome != ShiftLedger.Outcome.PLAYING:
 		end_level()
+
+
+## A ship inside any radiation zone takes a dent every RADIATION_INTERVAL seconds it stays in.
+func _update_radiation(delta: float) -> void:
+	for key: Variant in _radiation_time.keys():
+		if not is_instance_valid(key):
+			_radiation_time.erase(key)
+	for ship: Ship in _ships.get_children():
+		if ship.is_queued_for_deletion() or not _in_radiation(ship):
+			_radiation_time.erase(ship)
+			continue
+		_radiation_time[ship] = _radiation_time.get(ship, 0.0) + delta
+		if _radiation_time[ship] >= RADIATION_INTERVAL:
+			_radiation_time[ship] -= RADIATION_INTERVAL
+			_on_ship_dented(ship, RADIATION_DENT_COST)
+			if not _radiation_hint_shown:
+				_radiation_hint_shown = true
+				_hud.show_hint("Radiation! It dents ships inside", 3.0)
+
+
+func _in_radiation(ship: Ship) -> bool:
+	for zone: RadiationZone in _radiation.get_children():
+		if zone.touches(ship):
+			return true
+	return false
