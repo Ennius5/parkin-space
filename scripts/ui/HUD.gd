@@ -31,7 +31,7 @@ func set_pay(pay: int, earned: int) -> void:
 
 
 func set_customers(served: int, total: int) -> void:
-	_customers.text = "Parked %d / %d" % [served, total]
+	_customers.text = "Served %d / %d" % [served, total]
 
 
 func show_hint(text: String, seconds: float) -> void:

@@ -24,8 +24,12 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var silver_target: int = 150
 @export var gold_target: int = 170
 @export var arrival_interval: float = 8.0
+@export var use_tiers := false  # bronze/silver/gold customers who tip
+## How many customers want their ship back at the exit. Needs an ExitPad named Exit.
+@export var retrieval_count: int = 0
 
 var ledger: ShiftLedger
+var customers: Dictionary = {}  # Ship -> Customer
 var driven_ship: Ship = null
 var change_scene_on_end := true  # tests turn this off
 
@@ -35,6 +39,9 @@ var _trackers: Dictionary = {}  # Ship -> ParkTracker
 var _ended := false
 var _drive_hint_shown := false
 var _released_at_msec := -RESELECT_DELAY_MS
+var _rng := RandomNumberGenerator.new()
+var _retrieval_indexes: Array[int] = []  # queue positions of customers who will want their ship back
+var _return_hint_shown := false
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -43,13 +50,15 @@ var _released_at_msec := -RESELECT_DELAY_MS
 @onready var _hud: HUD = $HUD
 @onready var _controls: ShipControls = $Controls
 @onready var _picker: ShipPicker = $ShipPicker
+@onready var _exit: ExitPad = get_node_or_null("Exit")
 
 
 func _ready() -> void:
+	_rng.randomize()
 	if random_customers > 0:
-		var rng := RandomNumberGenerator.new()
-		rng.randomize()
-		customer_queue = draw_customers(customer_queue, random_customers, rng, _space_classes())
+		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
+	if _exit:
+		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
 	ledger = ShiftLedger.new(base_pay, customer_queue.size(), shift_seconds)
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
@@ -70,7 +79,79 @@ func _physics_process(delta: float) -> void:
 		if spawn_next_customer():
 			_arrival_timer = 0.0
 	_check_parking(delta)
+	_update_customers(delta)
 	_refresh()
+
+
+func customer_for(ship: Ship) -> Customer:
+	return customers.get(ship)
+
+
+## count distinct queue positions, chosen at random.
+func _pick_retrievals(queue_size: int, count: int) -> Array[int]:
+	var indexes: Array[int] = []
+	for i in queue_size:
+		indexes.append(i)
+	for i in range(queue_size - 1, 0, -1):
+		var j := _rng.randi_range(0, i)
+		var t := indexes[i]
+		indexes[i] = indexes[j]
+		indexes[j] = t
+	return indexes.slice(0, mini(count, queue_size))
+
+
+## Waiting time, retrieval requests, freeing spaces behind leaving ships, and hand-overs at the exit.
+func _update_customers(delta: float) -> void:
+	for ship: Ship in customers.keys():
+		var c: Customer = customers[ship]
+		if c.is_waiting():
+			c.wait += delta
+		if c.request_in >= 0.0 and not c.requested:
+			c.request_in -= delta
+			if c.request_in <= 0.0:
+				_request(ship)
+		if c.requested:
+			var space := _space_of(ship)
+			if space and not space.touches(ship):
+				space.release()
+			if _exit and _exit.contains(ship.global_position):
+				_return(ship)
+
+
+func _space_of(ship: Ship) -> ParkingSpace:
+	for space: ParkingSpace in _spaces.get_children():
+		if space.occupant == ship:
+			return space
+	return null
+
+
+func _request(ship: Ship) -> void:
+	var c: Customer = customers[ship]
+	c.requested = true
+	c.request_in = -1.0
+	ship.unpark()
+	_trackers.erase(ship)
+	if not _return_hint_shown:
+		_return_hint_shown = true
+		_hud.show_hint("A customer wants their ship – return it to the EXIT", 4.0)
+
+
+## Hands a requested ship back to its customer: it leaves the lot and the customer is served.
+func _return(ship: Ship) -> void:
+	var c: Customer = customers[ship]
+	if ship == driven_ship:
+		release_ship()
+	var space := _space_of(ship)
+	if space:
+		space.release()
+	if _picker.is_open():
+		_picker.close()
+	customers.erase(ship)
+	_trackers.erase(ship)
+	_ships.remove_child(ship)
+	ship.queue_free()
+	ledger.serve_customer(0)
+	ledger.add_tip(c.tip())
 
 
 ## Draws count ships from pool, each pick weighted by its spawn_weight. With space_classes,
@@ -111,6 +192,10 @@ func spawn_next_customer() -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
 	ship.paint_color = PAINT_COLORS.pick_random()
+	var c := Customer.roll(_rng, use_tiers)
+	c.wants_retrieval = _next_customer in _retrieval_indexes
+	ship.customer = c
+	customers[ship] = c
 	ship.global_position = _entrance.global_position
 	ship.rotation = _entrance.global_rotation
 	_next_customer += 1
@@ -222,6 +307,7 @@ func end_level() -> void:
 		"stars": stars,
 		"level": level_number,
 		"earnings": ledger.earnings(),
+		"tips": ledger.tips,
 		"served": ledger.served,
 		"customers": ledger.customers,
 		"reason": reasons.get(ledger.outcome, "timeout"),
@@ -232,7 +318,8 @@ func end_level() -> void:
 
 func _check_parking(delta: float) -> void:
 	for ship: Ship in _ships.get_children():
-		if ship.is_parked:
+		var c := customer_for(ship)
+		if ship.is_parked or (c and c.requested):
 			continue
 		var hit: ParkingSpace = null
 		for space: ParkingSpace in _spaces.get_children():
@@ -249,11 +336,25 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 	if ship == driven_ship:
 		release_ship()
 	ship.set_parked()
-	ledger.serve_customer()
+	var c := customer_for(ship)
+	if c == null:
+		ledger.serve_customer()
+	else:
+		c.parked_once = true
+		c.parked_in_gold = space.gold
+		if c.wants_retrieval and _exit:
+			ledger.add_fee()  # the tip waits until the ship is handed back
+			c.request_in = Customer.request_delay(_rng, ledger.time_left)
+		else:
+			ledger.serve_customer()
+			ledger.add_tip(c.tip())
 	_refresh()
 
 
-func _on_ship_dented(_ship: Ship, cost: int) -> void:
+func _on_ship_dented(ship: Ship, cost: int) -> void:
+	var c := customer_for(ship)
+	if c:
+		c.dents += 1
 	ledger.add_dent(cost)
 	_hud.show_hint("-₵%d dent!" % cost, 1.0)
 	_refresh()

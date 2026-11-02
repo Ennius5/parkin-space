@@ -24,8 +24,12 @@ func show_result(result: Dictionary) -> void:
 	var stars: int = result.get("stars", 0)
 	%Title.text = TITLES.get(result.get("reason", "timeout"), TITLES["timeout"])
 	%Stars.text = "★".repeat(stars) + "☆".repeat(3 - stars)
-	%Earnings.text = "Earnings ₵%d   Parked %d / %d" % [
+	%Earnings.text = "Earnings ₵%d   Served %d / %d" % [
 		result.get("earnings", 0), result.get("served", 0), result.get("customers", 0)]
+	var tips: int = result.get("tips", 0)
+	if tips > 0:
+		%Earnings.text += "
+Tips ₵%d" % tips
 	var next := _level + 1
 	%Next.disabled = not won or next > GameState.TOTAL_LEVELS or not GameState.has_level_scene(next)
 

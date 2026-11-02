@@ -370,3 +370,170 @@ func test_tap_ignored_while_driving() -> void:
 	assert_false((level.get_node("ShipPicker") as ShipPicker).is_open())
 	level.queue_free()
 	_restore_state()
+
+
+# --- Tiers, retrieval and the exit (Level 2 systems, exercised on the Level 1 layout) ---
+
+const EXIT_SCENE := preload("res://scenes/actors/ExitPad.tscn")
+const EXIT_POS := Vector2(2260, 700)
+const OPEN_FLOOR := Vector2(400, 1000)  # not in any Level 1 space, nor at the entrance or exit
+
+
+func _make_tiered_level() -> Level:
+	var level: Level = LEVEL01.instantiate()
+	level.change_scene_on_end = false
+	level.use_tiers = true
+	var exit: ExitPad = EXIT_SCENE.instantiate()
+	exit.name = "Exit"
+	exit.position = EXIT_POS
+	level.add_child(exit)
+	tree.root.add_child(level)
+	await tree.process_frame
+	return level
+
+
+func _physics_frames(n: int) -> void:
+	for i in n:
+		await tree.physics_frame
+
+
+func _first_ship(level: Level) -> Ship:
+	return level.get_node("Ships").get_child(0)
+
+
+func _space_a1(level: Level) -> ParkingSpace:
+	return level.get_node("Spaces/A1")
+
+
+## Parks the first ship in A1 as a silver customer who wants the ship back.
+func _park_silver_leaver(level: Level) -> Ship:
+	var ship := _first_ship(level)
+	var c := level.customer_for(ship)
+	c.tier = Customer.Tier.SILVER
+	c.wants_retrieval = true
+	var space := _space_a1(level)
+	ship.global_position = space.global_position
+	ship.global_rotation = space.global_rotation
+	level._on_ship_parked(ship, space)
+	return ship
+
+
+func _move(ship: Ship, pos: Vector2) -> void:
+	ship.freeze = true
+	ship.global_position = pos
+
+
+func test_level1_has_no_tiers_or_retrievals() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var c := level.customer_for(_first_ship(level))
+	assert_eq(c.tier, Customer.Tier.NONE)
+	assert_false(c.wants_retrieval)
+	level.free()
+	_restore_state()
+
+
+func test_stayer_pays_fee_and_tip_on_parking() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _first_ship(level)
+	level.customer_for(ship).tier = Customer.Tier.SILVER
+	level._on_ship_parked(ship, _space_a1(level))
+	assert_eq(level.ledger.earned, 35)
+	assert_eq(level.ledger.served, 1)
+	level.free()
+	_restore_state()
+
+
+func test_leaver_pays_fee_then_requests() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	var c := level.customer_for(ship)
+	assert_eq(level.ledger.earned, 20)
+	assert_eq(level.ledger.served, 0)
+	assert_true(c.request_in >= 20.0 and c.request_in <= 40.0, "request_in %f" % c.request_in)
+	c.request_in = 0.01
+	await _physics_frames(3)
+	assert_true(c.requested)
+	assert_false(ship.is_parked)
+	await _physics_frames(90)  # longer than the 1 s parking hold, still sitting in its space
+	assert_false(ship.is_parked)
+	assert_eq(level.ledger.served, 0)
+	level.free()
+	_restore_state()
+
+
+func test_space_frees_after_ship_leaves() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	level.customer_for(ship).request_in = 0.01
+	await _physics_frames(3)
+	assert_eq(_space_a1(level).occupant, ship)
+	_move(ship, OPEN_FLOOR)
+	await _physics_frames(2)
+	assert_eq(_space_a1(level).occupant, null)
+	level.free()
+	_restore_state()
+
+
+func test_return_at_exit_serves_and_despawns() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	level.customer_for(ship).request_in = 0.01
+	await _physics_frames(3)
+	level.select_ship(ship)
+	assert_eq(level.driven_ship, ship)
+	_move(ship, EXIT_POS)
+	await _physics_frames(2)
+	assert_eq(level.ledger.served, 1)
+	assert_eq(level.ledger.earned, 35)
+	assert_eq(level.ledger.tips, 15)
+	assert_eq(level.driven_ship, null)
+	assert_false(is_instance_valid(ship) and ship.is_inside_tree())
+	assert_eq(_space_a1(level).occupant, null)
+	level.free()
+	_restore_state()
+
+
+func test_waiting_counts_until_parked_and_after_request() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _first_ship(level)
+	var c := level.customer_for(ship)
+	await _physics_frames(10)
+	assert_true(c.wait > 0.1, "wait %f" % c.wait)
+	ship = _park_silver_leaver(level)
+	var parked_wait := c.wait
+	await _physics_frames(10)
+	assert_eq(c.wait, parked_wait)
+	c.request_in = 0.01
+	await _physics_frames(10)
+	assert_true(c.wait > parked_wait + 0.1)
+	level.free()
+	_restore_state()
+
+
+func test_dents_count_on_the_customer() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _first_ship(level)
+	level._on_ship_dented(ship, 5)
+	assert_eq(level.customer_for(ship).dents, 1)
+	level.free()
+	_restore_state()
+
+
+func test_timeout_with_pending_request_loses_cleanly() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	_park_silver_leaver(level)
+	level.ledger.time_left = 0.05
+	await _physics_frames(10)
+	assert_eq(level.ledger.outcome, ShiftLedger.Outcome.TIMEOUT)
+	assert_eq(GameState.last_result.get("reason"), "timeout")
+	assert_true(GameState.last_result.has("tips"))
+	level.free()
+	_restore_state()
