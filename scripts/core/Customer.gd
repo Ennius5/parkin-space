@@ -32,11 +32,15 @@ var parked_in_gold := false
 var parked_once := false
 
 
-static func roll(rng: RandomNumberGenerator, use_tiers: bool) -> Customer:
+static func roll(rng: RandomNumberGenerator, use_tiers: bool, gold_allowed := true) -> Customer:
 	var c := Customer.new()
 	if use_tiers:
 		var tiers := TIER_WEIGHTS.keys()
-		var weights := PackedFloat32Array(TIER_WEIGHTS.values())
+		if not gold_allowed:
+			tiers.erase(Tier.GOLD)
+		var weights := PackedFloat32Array()
+		for t in tiers:
+			weights.append(TIER_WEIGHTS[t])
 		c.tier = tiers[rng.rand_weighted(weights)]
 		c.bronze_tips = rng.randf() < 0.5
 	return c
@@ -58,6 +62,11 @@ func tip_on_offer() -> int:
 		Tier.GOLD:
 			return maxi(0, GOLD_TIP - GOLD_DROP_PER_SECOND * ceili(maxf(0.0, wait - GOLD_PATIENCE)))
 	return 0
+
+
+## What the badge shows: the tip on offer while waiting to park, then what will actually be paid.
+func tip_shown() -> int:
+	return tip() if parked_once else tip_on_offer()
 
 
 ## Waiting from arrival until parked, and again from a retrieval request until returned.

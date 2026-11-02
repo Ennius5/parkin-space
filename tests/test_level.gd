@@ -587,3 +587,45 @@ func test_level02_runs_a_shift() -> void:
 	assert_eq(leavers, 2)
 	level.free()
 	_restore_state()
+
+
+# --- Final review fixes ---
+
+func test_final_stayer_tip_counts_on_the_winning_serve() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _first_ship(level)
+	level.customer_for(ship).tier = Customer.Tier.SILVER
+	level.ledger.served = level.ledger.customers - 1
+	level._on_ship_parked(ship, _space_a1(level))
+	assert_eq(level.ledger.outcome, ShiftLedger.Outcome.WON)
+	assert_eq(level.ledger.tips, 15)
+	assert_eq(GameState.last_result.get("tips"), 15)
+	level.free()
+	_restore_state()
+
+
+func test_final_leaver_tip_counts_on_the_winning_return() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	level.ledger.served = level.ledger.customers - 1
+	level.customer_for(ship).request_in = 0.01
+	await _physics_frames(3)
+	_move(ship, EXIT_POS)
+	await _physics_frames(2)
+	assert_eq(level.ledger.outcome, ShiftLedger.Outcome.WON)
+	assert_eq(level.ledger.tips, 15)
+	level.free()
+	_restore_state()
+
+
+func test_gold_only_for_ships_that_fit_a_gold_space() -> void:
+	var level: Level = load("res://scenes/levels/Level02.tscn").instantiate()
+	assert_true(level.gold_allowed(ShipSpec.ShipClass.LIGHT))
+	assert_true(level.gold_allowed(ShipSpec.ShipClass.MEDIUM))
+	assert_false(level.gold_allowed(ShipSpec.ShipClass.HEAVY))
+	level.free()
+	var level1: Level = LEVEL01.instantiate()
+	assert_false(level1.gold_allowed(ShipSpec.ShipClass.LIGHT))
+	level1.free()

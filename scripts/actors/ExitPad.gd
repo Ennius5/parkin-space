@@ -2,13 +2,12 @@ class_name ExitPad
 extends Node2D
 ## The gate where customers collect their ship. A requested ship driven onto it is handed over.
 
-const RADIUS := 90.0
 const SIZE := Vector2(140, 220)
 const COLOR := Color(1, 0.82, 0.2)
 
 
 func contains(point: Vector2) -> bool:
-	return global_position.distance_to(point) <= RADIUS
+	return Rect2(-SIZE / 2, SIZE).has_point(to_local(point))
 
 
 func _draw() -> void:

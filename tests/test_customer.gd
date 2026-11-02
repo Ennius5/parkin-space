@@ -103,3 +103,25 @@ func test_gold_tip_on_offer_ignores_space() -> void:
 	c.wait = 12.5
 	assert_eq(c.tip(), 0)
 	assert_eq(c.tip_on_offer(), 28)
+
+
+func test_roll_without_gold_never_gold() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 85
+	var silver := 0
+	for i in 500:
+		var tier := Customer.roll(rng, true, false).tier
+		assert_true(tier == Customer.Tier.BRONZE or tier == Customer.Tier.SILVER)
+		if tier == Customer.Tier.SILVER:
+			silver += 1
+	assert_true(silver > 250, "silver %d" % silver)  # bronze:silver stays 30:50
+
+
+func test_tip_shown_after_parking_is_what_gets_paid() -> void:
+	var c := _customer(Customer.Tier.GOLD)
+	c.wait = 5.0
+	assert_eq(c.tip_shown(), 40)  # still waiting: the tip on offer
+	c.parked_once = true
+	assert_eq(c.tip_shown(), 0)  # parked outside a gold space
+	c.parked_in_gold = true
+	assert_eq(c.tip_shown(), 40)

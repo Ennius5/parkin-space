@@ -183,7 +183,7 @@ func _draw_badge() -> void:
 		_badge.draw_circle(Vector2.ZERO, 14.0, customer.color())
 		_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
 		if customer.tier == Customer.Tier.GOLD:
-			_badge.draw_string(font, Vector2(20, 9), "₵%d" % customer.tip_on_offer(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+			_badge.draw_string(font, Vector2(20, 9), "₵%d" % customer.tip_shown(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
 	if customer.requested:
 		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 150.0)
 		_badge.draw_string(font, Vector2(-48, 10), "↩", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color(1, 1, 1, pulse))

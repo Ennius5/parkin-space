@@ -83,6 +83,14 @@ func _physics_process(delta: float) -> void:
 	_refresh()
 
 
+## A customer can only be gold if the lot has a gold space their ship fits.
+func gold_allowed(ship_class: int) -> bool:
+	for space: ParkingSpace in get_node("Spaces").get_children():
+		if space.gold and ParkingRules.fits_class(ship_class, space.space_class):
+			return true
+	return false
+
+
 func customer_for(ship: Ship) -> Customer:
 	return customers.get(ship)
 
@@ -150,8 +158,8 @@ func _return(ship: Ship) -> void:
 	_trackers.erase(ship)
 	_ships.remove_child(ship)
 	ship.queue_free()
+	ledger.add_tip(c.tip())  # before serving: the final serve ends the shift
 	ledger.serve_customer(0)
-	ledger.add_tip(c.tip())
 
 
 ## Draws count ships from pool, each pick weighted by its spawn_weight. With space_classes,
@@ -192,7 +200,7 @@ func spawn_next_customer() -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
 	ship.paint_color = PAINT_COLORS.pick_random()
-	var c := Customer.roll(_rng, use_tiers)
+	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class))
 	c.wants_retrieval = _next_customer in _retrieval_indexes
 	ship.customer = c
 	customers[ship] = c
@@ -346,8 +354,8 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 			ledger.add_fee()  # the tip waits until the ship is handed back
 			c.request_in = Customer.request_delay(_rng, ledger.time_left)
 		else:
+			ledger.add_tip(c.tip())  # before serving: the final serve ends the shift
 			ledger.serve_customer()
-			ledger.add_tip(c.tip())
 	_refresh()
 
 
