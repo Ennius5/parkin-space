@@ -92,3 +92,41 @@ func test_duel_queue_follows_minutes() -> void:
 	assert_true(level.ledger.endless)
 	assert_almost(level.ledger.time_left, 240.0, 0.5)
 	_done(level)
+
+
+## A node's rectangle of the given size, as lot-space corners.
+func _corners(node: Node2D, size: Vector2) -> PackedVector2Array:
+	var xf := node.transform
+	return PackedVector2Array([xf * (-size / 2), xf * Vector2(size.x / 2, -size.y / 2),
+			xf * (size / 2), xf * Vector2(-size.x / 2, size.y / 2)])
+
+
+func _world_polygon(pillar: Node2D) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for p in (pillar.get_node("Polygon2D") as Polygon2D).polygon:
+		points.append(pillar.position + p)
+	return points
+
+
+func test_duel_pillars_block_straight_route() -> void:
+	var level := await _duel()
+	var route := PackedVector2Array([level.get_node("Entrance").position, level.get_node("Exit").position])
+	var blocked := false
+	for pillar: Node2D in level.get_node("Pillars").get_children():
+		if not Geometry2D.intersect_polyline_with_polygon(route, _world_polygon(pillar)).is_empty():
+			blocked = true
+	assert_true(blocked, "a pillar stands between the entrance and the exit")
+	_done(level)
+
+
+func test_duel_layout_clear_of_hud() -> void:
+	var level := await _duel()
+	var rects := {}  # name -> corners
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		rects[space.name] = _corners(space, space.size())
+	rects["bay"] = _corners(level.get_node("Entrance"), ArrivalBay.SIZE)
+	rects["exit"] = _corners(level.get_node("Exit"), ExitPad.SIZE)
+	for key: String in rects:
+		for p: Vector2 in rects[key]:
+			assert_true(p.y >= 300.0 - 0.5 and p.y <= 1320.0 + 0.5, "%s stays clear of the HUD (y %.0f)" % [key, p.y])
+	_done(level)
