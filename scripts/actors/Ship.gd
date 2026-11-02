@@ -7,6 +7,7 @@ signal dented(ship: Ship, cost: int)
 
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
 const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
+const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
 	ShipSpec.ShipClass.MEDIUM: Color(0.98, 0.85, 0.3),
@@ -74,6 +75,8 @@ func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
 
 
 func _process(_delta: float) -> void:
+	if is_glowing():
+		queue_redraw()  # the glow pulses
 	if _lights.visible:
 		_lights.modulate.a = lights_level()
 	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0))
@@ -201,13 +204,33 @@ func hull_points() -> PackedVector2Array:
 	return pts
 
 
+## A ship whose owner wants it back glows, so it's easy to spot in the lot.
+func is_glowing() -> bool:
+	return customer != null and customer.requested
+
+
 func _draw() -> void:
 	if spec == null:
 		return
+	if is_glowing():
+		_draw_glow()
 	if spec.texture == null:
 		_draw_placeholder_hull()
 	for i in firing:
 		_draw_flame(spec.thrusters[i])
+
+
+## A translucent pulsing outline around the hull, drawn under the ship's art.
+func _draw_glow() -> void:
+	var outline := spec.hull_polygon
+	if outline.size() < 3:
+		var h := spec.hull_size / 2
+		outline = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 250.0)
+	draw_polyline(closed, Color(GLOW_COLOR, 0.15 + 0.15 * pulse), 18.0, true)
+	draw_polyline(closed, Color(GLOW_COLOR, 0.35 + 0.3 * pulse), 6.0, true)
 
 
 ## Exhaust points away from the push; bigger thrusters get longer flames.

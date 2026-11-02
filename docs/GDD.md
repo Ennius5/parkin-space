@@ -47,13 +47,15 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).
 
 ## 5. Level plan
-| Level | Goal shown on screen | What is new or harder | Shift limit |
-|---|---|---|---|
-| 1 – Starter Lot (tutorial) | "Park 4 ships before the shift ends" | Light and medium ships; one diagonal, one parallel, one perpendicular lane; on-screen hints | 3:00 |
-| 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right | 3:00 |
-| 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them. 9 spaces (2 heavy D1–D2, gold C1–C2), fixed wrecks and drifting asteroids, radiation dents ₵5 every 2 s inside | 3:00 |
-| 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject | 3:30 |
-| 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above | 4:00 |
+**Shift length** is set by the difficulty chosen on Level Select, the same for every level: Easy 10:00, Normal 5:00 (default), Hard 2:30. Stars use the same earnings targets on every difficulty; the result screen names the difficulty played.
+
+| Level | Goal shown on screen | What is new or harder |
+|---|---|---|
+| 1 – Starter Lot (tutorial) | "Park 4 ships before the shift ends" | Light and medium ships; one diagonal, one parallel, one perpendicular lane; on-screen hints |
+| 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right |
+| 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them. 9 spaces (2 heavy D1–D2, gold C1–C2), fixed wrecks and drifting asteroids, radiation dents ₵5 every 2 s inside |
+| 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject |
+| 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above |
 
 Ship quirks (saucer, junker) first appear in Levels 3–5.
 
@@ -69,7 +71,7 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 
 **Retrieval (from Level 2):**
 - **Who:** 2 of the shift's customers want their ship back, 20–40 s after it parks. A request always leaves at least 30 s of the shift to finish it.
-- **What you do:** the ship shows ↩ and can be driven again. Drive it onto the EXIT pad to hand it over.
+- **What you do:** the ship shows ↩ and a pulsing translucent glow around its outline, and can be driven again. Drive it onto the EXIT pad to hand it over.
 - **Payment:** the fee is paid at parking. The tip, and the customer counting as served, come at the hand-over.
 - **Served:** a customer is served when parked (if they stay) or returned (if they leave). The shift is won when everyone is served.
 

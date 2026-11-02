@@ -136,7 +136,6 @@ func test_level01_exports() -> void:
 	assert_eq(level.goal_text, "Park 4 ships before the shift ends")
 	assert_eq(_queue_paths(level.customer_queue), LEVEL01_POOL)
 	assert_eq(level.random_customers, 4)
-	assert_eq(level.shift_seconds, 180.0)
 	assert_eq(level.base_pay, 100)
 	assert_eq(level.silver_target, 150)
 	assert_eq(level.gold_target, 170)
@@ -556,7 +555,6 @@ func test_level02_layout() -> void:
 	assert_eq(level.level_number, 2)
 	assert_eq(level.goal_text, "Serve 6 customers")
 	assert_eq(level.random_customers, 6)
-	assert_eq(level.shift_seconds, 180.0)
 	assert_eq(level.base_pay, 100)
 	assert_eq(level.silver_target, 240)
 	assert_eq(level.gold_target, 280)
@@ -811,7 +809,6 @@ func test_level03_layout() -> void:
 	assert_eq(level.level_number, 3)
 	assert_eq(level.goal_text, "Serve 7 customers")
 	assert_eq(level.random_customers, 7)
-	assert_eq(level.shift_seconds, 180.0)
 	assert_eq(level.base_pay, 100)
 	assert_eq(level.silver_target, 260)
 	assert_eq(level.gold_target, 300)
@@ -864,5 +861,45 @@ func test_level03_runs_a_shift() -> void:
 	assert_eq(level.ledger.customers, 7)
 	await _physics_frames(120)
 	assert_true(level.get_node("Ships").get_child_count() >= 1)
+	level.free()
+	_restore_state()
+
+
+
+# --- Difficulty ---
+
+func test_shift_length_comes_from_the_difficulty() -> void:
+	_setup_state()
+	var real: int = GameState.difficulty
+	for d: int in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		GameState.difficulty = d
+		var level := await _make_level()
+		assert_almost(level.ledger.time_left, GameState.SHIFT_SECONDS[d], 0.5, "difficulty %d" % d)  # a frame or two has ticked
+		level.free()
+	GameState.difficulty = real
+	_restore_state()
+
+
+func test_result_names_the_difficulty() -> void:
+	_setup_state()
+	var real: int = GameState.difficulty
+	GameState.difficulty = GameState.Difficulty.HARD
+	var level := await _make_level()
+	level.end_level()
+	assert_eq(GameState.last_result.get("difficulty"), "Hard")
+	level.free()
+	GameState.difficulty = real
+	_restore_state()
+
+
+# --- Requested ships glow ---
+
+func test_requested_ship_glows() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_leaver(level)
+	assert_false(ship.is_glowing(), "a parked ship doesn't glow")
+	level._request(ship)
+	assert_true(ship.is_glowing(), "a ship whose owner wants it back glows")
 	level.free()
 	_restore_state()

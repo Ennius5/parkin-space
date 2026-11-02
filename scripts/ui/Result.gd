@@ -30,6 +30,9 @@ func show_result(result: Dictionary) -> void:
 	if tips > 0:
 		%Earnings.text += "
 Tips ₵%d" % tips
+	if result.has("difficulty"):
+		%Earnings.text += "
+Difficulty: %s" % result["difficulty"]
 	var next := _level + 1
 	%Next.disabled = not won or next > GameState.TOTAL_LEVELS or not GameState.has_level_scene(next)
 

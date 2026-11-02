@@ -8,7 +8,36 @@ const MODE_SELECT := "res://scenes/ui/ModeSelect.tscn"
 
 func _ready() -> void:
 	%Back.pressed.connect(get_tree().change_scene_to_file.bind(MODE_SELECT))
+	_add_difficulty_row()
 	build()
+
+
+## Easy / Normal / Hard buttons above the grid. The choice sets every shift's length and is saved.
+func _add_difficulty_row() -> void:
+	var row := HBoxContainer.new()
+	row.name = "Difficulty"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	var group := ButtonGroup.new()
+	for d: int in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		var b := Button.new()
+		var seconds: int = int(GameState.SHIFT_SECONDS[d])
+		b.text = "%s
+%d:%02d" % [GameState.DIFFICULTY_NAMES[d], seconds / 60, seconds % 60]
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = d == GameState.difficulty
+		b.custom_minimum_size = Vector2(180, 100)
+		b.add_theme_font_size_override("font_size", 28)
+		b.pressed.connect(_on_difficulty_pressed.bind(d))
+		row.add_child(b)
+	_grid.add_sibling(row)
+	_grid.get_parent().move_child(row, _grid.get_index())
+
+
+func _on_difficulty_pressed(d: int) -> void:
+	GameState.difficulty = d
+	GameState.save_progress()
 
 
 func build() -> void:

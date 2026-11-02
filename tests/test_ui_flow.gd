@@ -57,6 +57,37 @@ func test_level4_says_coming_soon() -> void:
 	_restore_state()
 
 
+func test_level_select_picks_the_difficulty() -> void:
+	_setup_state(1)
+	var real: int = GameState.difficulty
+	GameState.difficulty = GameState.Difficulty.NORMAL
+	var screen: Control = load("res://scenes/ui/LevelSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	var row := screen.find_child("Difficulty", true, false)
+	assert_true(row != null)
+	if row:
+		var buttons := row.get_children()
+		assert_eq(buttons.size(), 3)
+		assert_true((buttons[1] as Button).button_pressed, "Normal starts selected")
+		(buttons[0] as Button).pressed.emit()
+		assert_eq(GameState.difficulty, GameState.Difficulty.EASY)
+		assert_true((buttons[0] as Button).text.contains("10:00"))
+	screen.queue_free()
+	GameState.difficulty = real
+	_restore_state()
+
+
+func test_result_shows_the_difficulty() -> void:
+	_setup_state(2)
+	var screen := _result_screen()
+	var result := _result("won", 2)
+	result["difficulty"] = "Easy"
+	screen.show_result(result)
+	assert_true(screen.get_node("%Earnings").text.contains("Easy"))
+	screen.queue_free()
+	_restore_state()
+
+
 func test_result_win() -> void:
 	_setup_state(2)
 	var screen := _result_screen()

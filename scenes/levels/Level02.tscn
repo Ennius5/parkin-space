@@ -39,7 +39,6 @@ level_number = 2
 goal_text = "Serve 6 customers"
 customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("21_hammer"), ExtResource("22_research")])
 random_customers = 6
-shift_seconds = 180.0
 base_pay = 100
 silver_target = 240
 gold_target = 280

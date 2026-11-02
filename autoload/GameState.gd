@@ -4,6 +4,10 @@ extends Node
 
 const TOTAL_LEVELS := 5
 
+enum Difficulty { EASY, NORMAL, HARD }
+const SHIFT_SECONDS := {Difficulty.EASY: 600.0, Difficulty.NORMAL: 300.0, Difficulty.HARD: 150.0}
+const DIFFICULTY_NAMES := {Difficulty.EASY: "Easy", Difficulty.NORMAL: "Normal", Difficulty.HARD: "Hard"}
+
 var save_path: String = "user://save.cfg"  # user:// is the app's private folder on the phone
 var unlocked_level: int = 1  # highest level the player may open
 var best_stars: Dictionary = {}  # level number -> best stars (1..3)
@@ -11,6 +15,7 @@ var current_level: int = 1
 var mode: String = "offline"  # "offline" or "online"
 var last_result: Dictionary = {}  # filled when a level ends
 var sound_on: bool = true
+var difficulty: int = Difficulty.NORMAL  # sets every shift's length
 
 
 func _ready() -> void:
@@ -33,6 +38,7 @@ func save_progress() -> void:
 	cfg.set_value("progress", "unlocked_level", unlocked_level)
 	cfg.set_value("progress", "best_stars", best_stars)
 	cfg.set_value("settings", "sound_on", sound_on)
+	cfg.set_value("settings", "difficulty", difficulty)
 	cfg.save(save_path)
 
 
@@ -49,6 +55,9 @@ func load_progress() -> void:
 	var sound: Variant = cfg.get_value("settings", "sound_on", true)
 	if sound is bool:
 		sound_on = sound
+	var saved_difficulty: Variant = cfg.get_value("settings", "difficulty", Difficulty.NORMAL)
+	if saved_difficulty is int and saved_difficulty in SHIFT_SECONDS:
+		difficulty = saved_difficulty
 
 
 func reset_progress() -> void:  # call from a hidden debug button while testing
@@ -63,3 +72,12 @@ func level_scene_path(level: int) -> String:
 
 func has_level_scene(level: int) -> bool:
 	return ResourceLoader.exists(level_scene_path(level))
+
+
+## How long a shift lasts on the chosen difficulty.
+func shift_seconds() -> float:
+	return SHIFT_SECONDS[difficulty]
+
+
+func difficulty_name() -> String:
+	return DIFFICULTY_NAMES[difficulty]

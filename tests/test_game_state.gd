@@ -91,3 +91,27 @@ func test_level_scene_path_format() -> void:
 	var gs := _fresh_state()
 	assert_eq(gs.level_scene_path(3), "res://scenes/levels/Level03.tscn")
 	gs.free()
+
+
+
+func test_shift_lengths_by_difficulty() -> void:
+	var gs := _fresh_state()
+	assert_eq(gs.difficulty, gs.Difficulty.NORMAL, "Normal by default")
+	gs.difficulty = gs.Difficulty.EASY
+	assert_eq(gs.shift_seconds(), 600.0)
+	gs.difficulty = gs.Difficulty.NORMAL
+	assert_eq(gs.shift_seconds(), 300.0)
+	gs.difficulty = gs.Difficulty.HARD
+	assert_eq(gs.shift_seconds(), 150.0)
+	gs.free()
+
+
+func test_difficulty_is_saved() -> void:
+	var gs := _fresh_state()
+	gs.difficulty = gs.Difficulty.EASY
+	gs.save_progress()
+	gs.free()
+	var reloaded := _new_state()
+	reloaded.load_progress()
+	assert_eq(reloaded.difficulty, reloaded.Difficulty.EASY)
+	reloaded.free()

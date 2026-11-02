@@ -21,7 +21,6 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var customer_queue: Array[ShipSpec] = []
 ## Above 0: each shift draws this many customers from customer_queue by spawn_weight (repeats allowed).
 @export var random_customers: int = 0
-@export var shift_seconds: float = 180.0
 @export var base_pay: int = 100
 @export var silver_target: int = 150
 @export var gold_target: int = 170
@@ -67,7 +66,7 @@ func _ready() -> void:
 		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
 	if _exit:
 		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
-	ledger = ShiftLedger.new(base_pay, customer_queue.size(), shift_seconds)
+	ledger = ShiftLedger.new(base_pay, customer_queue.size(), GameState.shift_seconds())
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
 	_controls.done_pressed.connect(release_ship)
@@ -330,6 +329,7 @@ func end_level() -> void:
 		"won": won,
 		"stars": stars,
 		"level": level_number,
+		"difficulty": GameState.difficulty_name(),
 		"earnings": ledger.earnings(),
 		"tips": ledger.tips,
 		"served": ledger.served,
