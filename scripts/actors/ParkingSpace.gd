@@ -18,11 +18,20 @@ var occupant: Ship = null
 var pin_color := Color(0, 0, 0, 0)  # a special request marker; transparent = none
 
 var _pulse := 0.0
+var _pin := Node2D.new()
 
 
 
 func _ready() -> void:
 	material = Lighting.unlit()  # a marking, always readable in the dark
+	_pin.name = "Pin"
+	_pin.z_index = 5  # above parked ships, which would hide it
+	_pin.material = Lighting.unlit()
+	_pin.position = Vector2(0, -(size().y / 2 + 26))  # just past the space's end, in the lane
+	_pin.draw.connect(_draw_pin)
+	add_child(_pin)
+	_pin.global_rotation = 0.0
+
 
 func size() -> Vector2:
 	return ParkingRules.SPACE_SIZES[space_class]
@@ -80,19 +89,25 @@ func _draw() -> void:
 	var font_size := 28
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, color)
-	if pin_color.a > 0.0:
-		var head := Vector2(0, -font_size * 1.4)
-		draw_line(head, head + Vector2(0, 18), pin_color, 3.0)
-		draw_circle(head, 10.0, pin_color)
-		draw_arc(head, 10.0, 0.0, TAU, 20, Color(0, 0, 0, 0.6), 2.0)
+
 
 
 ## Marks this space as the one a customer asked for.
 func set_pin(c: Color) -> void:
 	pin_color = c
-	queue_redraw()
+	_pin.queue_redraw()
 
 
 func clear_pin() -> void:
 	pin_color = Color(0, 0, 0, 0)
-	queue_redraw()
+	_pin.queue_redraw()
+
+
+## A map pin with the space's label, so a request customer can find it at a glance.
+func _draw_pin() -> void:
+	if pin_color.a <= 0.0:
+		return
+	_pin.draw_line(Vector2(0, -6), Vector2(0, 12), pin_color, 3.0)
+	_pin.draw_circle(Vector2(0, -14), 12.0, pin_color)
+	_pin.draw_arc(Vector2(0, -14), 12.0, 0.0, TAU, 20, Color(0, 0, 0, 0.7), 2.0)
+	_pin.draw_string(ThemeDB.fallback_font, Vector2(16, -6), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, pin_color)

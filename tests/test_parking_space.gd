@@ -101,3 +101,15 @@ func test_pin_shows_and_clears() -> void:
 	space.clear_pin()
 	assert_eq(space.pin_color.a, 0.0)
 	space.queue_free()
+
+
+func test_pin_sits_outside_the_space_above_ships() -> void:
+	var space: ParkingSpace = load("res://scenes/actors/ParkingSpace.tscn").instantiate()
+	tree.root.add_child(space)
+	space.set_pin(Color.GOLD)
+	var pin := space.get_node_or_null("Pin") as Node2D
+	assert_true(pin != null)
+	if pin:
+		assert_true(pin.z_index > 0, "drawn above parked ships")
+		assert_false(Rect2(-space.size() / 2, space.size()).has_point(pin.position), "outside the space, not under its occupant")
+	space.queue_free()

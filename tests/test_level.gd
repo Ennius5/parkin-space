@@ -348,7 +348,8 @@ func test_tap_near_two_ships_opens_picker_and_pick_drives() -> void:
 	var setup := await _level_with_two_ships()
 	var level: Level = setup[0]
 	var picker := level.get_node("ShipPicker") as ShipPicker
-	level.handle_lot_tap(_screen_pos(setup[1]))
+	var between := ((setup[1] as Ship).global_position + (setup[2] as Ship).global_position) / 2.0
+	level.handle_lot_tap(level.get_global_transform_with_canvas() * between)  # in the gap, on neither hull
 	assert_eq(level.driven_ship, null, "a choice opens the list instead")
 	assert_true(picker.is_open())
 	assert_eq(picker.ships.size(), 2)
@@ -1666,5 +1667,54 @@ func test_level05_runs_a_shift() -> void:
 	assert_eq(level._request_indexes.size(), 3)
 	await _physics_frames(120)
 	assert_true(level.get_node("Ships").get_child_count() >= 1)
+	level.free()
+	_restore_state()
+
+
+# --- Level 5 review fixes ---
+
+func test_open_requests_never_share_a_space() -> void:
+	_setup_state()
+	var level := await _request_level()
+	var first := _first_ship(level)
+	var a1 := _space_a1(level)
+	var a2: ParkingSpace = level.get_node("Spaces/A2")
+	a1.claim(first)
+	a2.claim(first)
+	var asker := level.customer_for(first)
+	asker.wants_space = "A1"  # an open request already names A1
+	for i in 20:
+		assert_true(level._pick_request_space(ShipSpec.ShipClass.LIGHT) == a2)
+	level.free()
+	_restore_state()
+
+
+func test_pin_stays_for_the_other_request() -> void:
+	_setup_state()
+	var level := await _request_level()
+	var ship := _b1_requester(level)
+	var second: Ship = level.spawn_next_customer()
+	var other := level.customer_for(second)
+	other.wants_space = "B1"
+	other.tier = Customer.Tier.GOLD
+	level._on_ship_parked(ship, level.get_node("Spaces/A2"))
+	var b1: ParkingSpace = level.get_node("Spaces/B1")
+	assert_eq(b1.pin_color, other.color(), "B1 is still wanted by the second customer")
+	level.free()
+	_restore_state()
+
+
+func test_tap_on_a_ship_picks_it_even_with_neighbours() -> void:
+	_setup_state()
+	var level := await _moving_level()
+	var ship := _park_silver_stayer(level)
+	var neighbour: Ship = level.spawn_next_customer()
+	var a2: ParkingSpace = level.get_node("Spaces/A2")
+	neighbour.global_position = a2.global_position
+	neighbour.global_rotation = a2.global_rotation
+	level._on_ship_parked(neighbour, a2)
+	level._released_at_msec = -100000
+	level.handle_lot_tap(_screen_pos(ship))
+	assert_true(level.driven_ship == ship, "a tap right on a ship takes it, no list")
 	level.free()
 	_restore_state()

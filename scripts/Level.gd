@@ -276,7 +276,9 @@ func handle_lot_tap(screen_pos: Vector2) -> void:
 		return
 	var world := get_canvas_transform().affine_inverse() * screen_pos
 	var near := ships_near_world(world, pick_radius_world())
-	if near.size() == 1:
+	if near.size() > 1 and _distance_to_hull(near[0], world) == 0.0 and _distance_to_hull(near[1], world) > 0.0:
+		select_ship(near[0])  # a tap right on one ship takes it, even among neighbours
+	elif near.size() == 1:
 		select_ship(near[0])
 	elif near.size() > 1:
 		_picker.open(near, screen_pos)
@@ -415,9 +417,7 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 		c.parked_in_gold = space.gold
 		if c.wants_space != "":
 			c.got_wanted_space = space.label == c.wants_space
-			for wanted: ParkingSpace in _spaces.get_children():
-				if wanted.label == c.wants_space:
-					wanted.clear_pin()
+			_update_pin(c.wants_space)
 			if c.got_wanted_space:
 				ledger.add_bonus(REQUEST_BONUS)
 		if c.wants_retrieval and _exit:
@@ -666,15 +666,42 @@ func _pick_requests(queue_size: int, count: int) -> Array[int]:
 ## The space a request customer asks for: one their ship fits, preferring a space that's taken
 ## right now so the valet has to make room.
 func _pick_request_space(ship_class: int) -> ParkingSpace:
+	var named := _open_request_spaces()
 	var fitting: Array[ParkingSpace] = []
 	var taken: Array[ParkingSpace] = []
 	for space: ParkingSpace in _spaces.get_children():
-		if ParkingRules.fits_class(ship_class, space.space_class):
+		if ParkingRules.fits_class(ship_class, space.space_class) and not space.label in named:
 			fitting.append(space)
 			if space.occupant != null:
 				taken.append(space)
+	if fitting.is_empty():  # every fitting space is already asked for: share one rather than none
+		for space: ParkingSpace in _spaces.get_children():
+			if ParkingRules.fits_class(ship_class, space.space_class):
+				fitting.append(space)
 	if not taken.is_empty():
 		return taken[_rng.randi_range(0, taken.size() - 1)]
 	if not fitting.is_empty():
 		return fitting[_rng.randi_range(0, fitting.size() - 1)]
 	return null
+
+
+
+## Labels of spaces asked for by customers who haven't parked yet.
+func _open_request_spaces() -> Array[String]:
+	var named: Array[String] = []
+	for c: Customer in customers.values():
+		if c.wants_space != "" and not c.parked_once:
+			named.append(c.wants_space)
+	return named
+
+
+## Shows a space's pin for the first customer still waiting for it, or clears it when nobody is.
+func _update_pin(label: String) -> void:
+	for space: ParkingSpace in _spaces.get_children():
+		if space.label != label:
+			continue
+		space.clear_pin()
+		for c: Customer in customers.values():
+			if c.wants_space == label and not c.parked_once:
+				space.set_pin(c.color())
+				break
