@@ -1418,3 +1418,92 @@ func test_level04_boulders_stay_clear() -> void:
 			for rock: Asteroid in level.get_node("Asteroids").get_children():
 				assert_true(rock.position.distance_to(boulder.position) > reach + 60.0, "%s starts clear of %s" % [rock.name, boulder.name])
 	level.free()
+
+
+# --- Moving parked ships ---
+
+func _moving_level() -> Level:
+	var level: Level = LEVEL01.instantiate()
+	level.change_scene_on_end = false
+	level.use_tiers = true
+	level.allow_moving_parked = true
+	var exit: ExitPad = EXIT_SCENE.instantiate()
+	exit.name = "Exit"
+	exit.position = EXIT_POS
+	level.add_child(exit)
+	tree.root.add_child(level)
+	await tree.process_frame
+	return level
+
+
+func _park_silver_stayer(level: Level) -> Ship:
+	var ship := _first_ship(level)
+	level.customer_for(ship).tier = Customer.Tier.SILVER
+	var space := _space_a1(level)
+	ship.global_position = space.global_position
+	ship.global_rotation = space.global_rotation
+	level._on_ship_parked(ship, space)
+	return ship
+
+
+func test_parked_ship_can_be_moved_when_allowed() -> void:
+	_setup_state()
+	var level := await _moving_level()
+	var ship := _park_silver_stayer(level)
+	level.select_ship(ship)
+	assert_true(level.driven_ship == ship)
+	assert_false(ship.is_parked)
+	_move(ship, OPEN_FLOOR)
+	level._update_customers(0.1)
+	assert_true(_space_a1(level).occupant == null, "A1 frees up once the ship has left it")
+	level.free()
+	_restore_state()
+
+
+func test_reparking_never_serves_twice() -> void:
+	_setup_state()
+	var level := await _moving_level()
+	var ship := _park_silver_stayer(level)
+	assert_eq(level.ledger.served, 1)
+	level.ledger.customers = 2  # one more serve would win the shift
+	var earned := level.ledger.earned
+	level.select_ship(ship)
+	_move(ship, OPEN_FLOOR)
+	level._update_customers(0.1)
+	var a2: ParkingSpace = level.get_node("Spaces/A2")
+	level._on_ship_parked(ship, a2)
+	assert_eq(level.ledger.served, 1, "moved, not served again")
+	assert_eq(level.ledger.earned, earned, "no second fee or tip")
+	assert_eq(level.ledger.outcome, ShiftLedger.Outcome.PLAYING)
+	assert_true(ship.is_parked and a2.occupant == ship)
+	level.free()
+	_restore_state()
+
+
+func test_moved_leaver_still_asks_for_its_ship() -> void:
+	_setup_state()
+	var level := await _moving_level()
+	var ship := _park_silver_leaver(level)
+	var c := level.customer_for(ship)
+	level.select_ship(ship)
+	_move(ship, OPEN_FLOOR)
+	level._update_customers(0.1)
+	var waiting := c.request_in
+	level._on_ship_parked(ship, level.get_node("Spaces/A2"))
+	assert_eq(c.request_in, waiting, "re-parking leaves the countdown alone")
+	assert_true(waiting >= 0.0)
+	level._update_customers(waiting + 0.1)
+	assert_true(c.requested)
+	level.free()
+	_restore_state()
+
+
+func test_parked_ships_stay_put_where_not_allowed() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	var ship := _park_silver_stayer(level)
+	level.select_ship(ship)
+	assert_true(level.driven_ship == null)
+	assert_false(ship in level.ships_near_world(ship.global_position, 50.0))
+	level.free()
+	_restore_state()

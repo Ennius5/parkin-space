@@ -31,6 +31,7 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var use_tiers := false  # bronze/silver/gold customers who tip
 ## How many customers want their ship back at the exit. Needs an ExitPad named Exit.
 @export var retrieval_count: int = 0
+@export var allow_moving_parked := false  # the valet may pick up a parked customer ship to make room
 @export var orphan_count := 0  # abandoned ships that appear partway through the shift
 
 var ledger: ShiftLedger
@@ -151,12 +152,12 @@ func _update_customers(delta: float) -> void:
 			c.request_in -= delta
 			if c.request_in <= 0.0:
 				_request(ship)
-		if c.requested:
+		if not ship.is_parked:
 			var space := _space_of(ship)
 			if space and not space.touches(ship):
 				space.release()
-			if _exit and _exit.contains(ship.global_position):
-				_return(ship)
+		if c.requested and _exit and _exit.contains(ship.global_position):
+			_return(ship)
 
 
 func _space_of(ship: Ship) -> ParkingSpace:
@@ -277,7 +278,7 @@ func ships_near_world(world: Vector2, radius: float) -> Array[Ship]:
 	var found: Array[Ship] = []
 	var distance := {}
 	for ship: Ship in _ships.get_children():
-		if ship.is_parked and ship.orphan == null:
+		if ship.is_parked and not _can_move_parked(ship):
 			continue
 		var d := _distance_to_hull(ship, world)
 		if d <= radius:
@@ -307,11 +308,11 @@ func _on_picked(ship: Ship) -> void:
 ## Takes control of a ship. Ignored while already driving (press Done first)
 ## and for a moment after Done, so the same touch doesn't grab a ship under the button.
 func select_ship(ship: Ship) -> void:
-	if _ended or (ship.is_parked and ship.orphan == null) or driven_ship != null:
+	if _ended or (ship.is_parked and not _can_move_parked(ship)) or driven_ship != null:
 		return
 	if Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
 		return
-	if ship.is_parked:  # an orphan: driving it away from its space
+	if ship.is_parked:  # an orphan, or a parked ship moved to make room
 		ship.unpark()
 		_trackers.erase(ship)
 	_picker.close()
@@ -321,6 +322,11 @@ func select_ship(ship: Ship) -> void:
 	if not _drive_hint_shown:
 		_drive_hint_shown = true
 		_hud.show_hint("Stop inside a green space", 3.0)
+
+
+## A parked ship the valet may pick up: an orphan, or any customer ship where the level allows moving.
+func _can_move_parked(ship: Ship) -> bool:
+	return ship.orphan != null or (allow_moving_parked and customer_for(ship) != null)
 
 
 func release_ship() -> void:
@@ -386,6 +392,9 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 		release_ship()
 	ship.set_parked()
 	var c := customer_for(ship)
+	if c and c.parked_once:  # a ship moved to make room: already paid for and counted
+		_refresh()
+		return
 	if c == null:
 		ledger.serve_customer()
 	else:
