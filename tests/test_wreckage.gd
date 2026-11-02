@@ -71,3 +71,32 @@ func test_ship_hitting_an_asteroid_hard_dents() -> void:
 	assert_true(costs.size() >= 1, "costs=%s" % [costs])
 	ship.queue_free()
 	rock.queue_free()
+
+
+func test_asteroid_keeps_its_speed_off_a_wall() -> void:
+	var wall := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(40, 400)
+	shape.shape = rect
+	wall.add_child(shape)
+	wall.position = Vector2(500, 300)
+	tree.root.add_child(wall)
+	var rock := _asteroid(Vector2(380, 300))
+	rock.linear_velocity = Vector2(60, 0)
+	rock.angular_velocity = 0.0
+	for i in 120:
+		await tree.physics_frame
+	assert_true(rock.linear_velocity.x < 0.0, "bounced back: %s" % rock.linear_velocity)
+	assert_true(rock.linear_velocity.length() > 54.0, "kept its speed: %s" % rock.linear_velocity.length())
+	rock.queue_free()
+	wall.queue_free()
+
+
+func test_shoved_asteroid_slows_to_its_speed_cap() -> void:
+	var rock := _asteroid(Vector2(300, 300))
+	rock.linear_velocity = Vector2(500, 0)
+	for i in 3:
+		await tree.physics_frame
+	assert_true(rock.linear_velocity.length() <= Asteroid.MAX_SPEED + 0.5, "speed %s" % rock.linear_velocity.length())
+	rock.queue_free()

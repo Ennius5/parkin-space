@@ -5,6 +5,20 @@ extends Node2D
 
 const SIZE := Vector2(140, 220)  # local Y is the arriving ship's length
 const COLOR := Color(0.6, 0.65, 0.75, 0.5)
+const ROCK_BARRIER_LAYER := 2  # physics layer only asteroids collide with: ships pass, rocks bounce off
+
+
+## An invisible wall over the bay that keeps drifting rocks out, so they can never stall arrivals.
+func _ready() -> void:
+	var wall := StaticBody2D.new()
+	wall.collision_layer = ROCK_BARRIER_LAYER
+	wall.collision_mask = 0
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = SIZE + Vector2(16, 16)  # a margin: rocks sink a few px into a wall before bouncing
+	shape.shape = rect
+	wall.add_child(shape)
+	add_child(wall)
 
 
 ## True when any part of a ship or asteroid is inside the bay.
