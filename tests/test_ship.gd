@@ -476,3 +476,57 @@ func test_bits_round_trip() -> void:
 	for a in NetPilot.ACTIONS:
 		if a != &"brake":
 			assert_false(pilot.is_pressed(a), str(a))
+
+
+## Gives a ship a mark and a velocity, then takes the start-of-step snapshot a physics frame would.
+func _marked(spec_name: String, pos: Vector2, mark: int, velocity: Vector2) -> Ship:
+	var ship := _spawn(spec_name, pos)
+	ship.last_driver = mark
+	ship.linear_velocity = velocity
+	ship._physics_process(0.0)
+	return ship
+
+
+func test_driven_ship_marks_struck_ship() -> void:
+	var a := _spawn("light_scout", Vector2(-3000, -3000))
+	var b := _spawn("light_scout", Vector2(-2000, -3000))
+	a.set_driven(true, false)
+	a.last_driver = 1
+	b.blame_from(a)
+	assert_eq(b.last_driver, 1, "the struck ship carries the driver's mark")
+	a.blame_from(b)
+	assert_eq(a.last_driver, 1, "a driven ship keeps its own mark")
+	a.set_driven(false, false)
+	a.queue_free()
+	b.queue_free()
+
+
+func test_blame_chain_order_independent() -> void:
+	for reverse in [false, true]:
+		var x := _marked("light_scout", Vector2(-3000, -5000), 1, Vector2(300, 0))
+		var y := _marked("light_scout", Vector2(-2000, -5000), 0, Vector2(10, 0))
+		if reverse:
+			y.blame_from(x)
+			x.blame_from(y)
+		else:
+			x.blame_from(y)
+			y.blame_from(x)
+		assert_eq(y.last_driver, 1, "the struck ship takes the hitter's mark (reverse=%s)" % reverse)
+		assert_eq(x.last_driver, 1, "the hitter keeps its mark (reverse=%s)" % reverse)
+		x.queue_free()
+		y.queue_free()
+
+
+func test_parking_clears_blame() -> void:
+	var a := _spawn("light_scout", Vector2(-3000, -3000))
+	var b := _spawn("light_scout", Vector2(-2000, -3000))
+	b.last_driver = 0
+	b.set_parked()
+	assert_eq(b.last_driver, -1, "parking clears the mark")
+	a.set_driven(true, false)
+	a.last_driver = 1
+	b.blame_from(a)
+	assert_eq(b.last_driver, -1, "a parked ship never takes a mark")
+	a.set_driven(false, false)
+	a.queue_free()
+	b.queue_free()

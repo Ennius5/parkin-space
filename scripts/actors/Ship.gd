@@ -41,6 +41,7 @@ var is_parked: bool = false
 var firing := PackedInt32Array()  # indices into spec.thrusters that fired this physics frame
 
 var _prev_velocity := Vector2.ZERO
+var _mark_before := -1  # last_driver at the start of this physics step, before any blame
 
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _paint: Sprite2D = $Paint
@@ -179,6 +180,7 @@ func lights_level() -> float:
 
 func _physics_process(_delta: float) -> void:
 	_prev_velocity = linear_velocity
+	_mark_before = last_driver
 	var was_firing := firing
 	firing = PackedInt32Array()
 	if is_driven:
@@ -254,6 +256,7 @@ func set_driven(on: bool, local := true) -> void:
 func set_parked() -> void:
 	is_parked = true
 	is_driven = false
+	last_driver = -1  # a parked ship answers to nobody
 	set_deferred("freeze", true)
 	modulate = Color(1, 1, 1, 0.7)
 
@@ -379,6 +382,8 @@ func _draw_placeholder_hull() -> void:
 
 
 func _on_body_entered(other: Node) -> void:
+	if other is Ship:
+		blame_from(other as Ship)
 	if is_parked:
 		return
 	var other_velocity := Vector2.ZERO
@@ -395,6 +400,18 @@ func _on_body_entered(other: Node) -> void:
 		dented.emit(self, cost)
 	elif impact > BUMP_SOUND_SPEED:
 		bumped.emit(self)
+
+
+## Blame follows the knocker: a driven ship marks an undriven, unparked ship it touches with its
+## valet; between undriven ships the slower (struck) one takes the faster one's mark, if it has one.
+## Reads only pre-step state, so both ships' handlers agree whichever runs first.
+func blame_from(other: Ship) -> void:
+	if is_parked or is_driven or other.is_parked:
+		return
+	if other.is_driven:
+		last_driver = other.last_driver  # a driver's mark is its own valet, never changed by blame
+	elif other._mark_before >= 0 and other._prev_velocity.length() > _prev_velocity.length():
+		last_driver = other._mark_before
 
 
 ## Exactly one ship pays for a ship-to-ship collision: the driven one (the faster one if both are

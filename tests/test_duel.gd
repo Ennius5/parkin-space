@@ -316,6 +316,30 @@ func test_dent_charged_to_driving_valet() -> void:
 	_done_host(level)
 
 
+func test_knocked_ship_crash_charges_knocker() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var b := _first_ship(level)
+	level.select_ship(b)  # valet 0 parks B...
+	var space := _park_spot(level, b)
+	assert_true(space != null)
+	level._check_parking(0.016)
+	level.press_done()
+	assert_true(b.is_parked)
+	level._request(b)  # ...then its owner wants it back: undriven and unparked
+	assert_false(b.is_parked)
+	assert_false(b.is_driven)
+	var a := level.spawn_next_customer()
+	_sync(level)._on_select(level.ship_id(a))  # valet 1 drives A
+	assert_true(level.valets[1].ship == a)
+	b.blame_from(a)  # A knocks B
+	var pay0 := level.valets[0].ledger.pay
+	b.dented.emit(b, 20)
+	assert_eq(level.valets[1].ledger.pay, -20, "the knocker pays")
+	assert_eq(level.valets[0].ledger.pay, pay0, "the valet who parked it doesn't")
+	_done_host(level)
+
+
 func test_exit_handover_credits_the_driver() -> void:
 	var level := await _host()
 	_skip_countdown(level)
