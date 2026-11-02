@@ -1,11 +1,15 @@
 class_name BlackHole
-extends StaticBody2D
-## A small black hole. Its solid core blocks ships like the island; its pull drags every free ship
-## towards it, gently from afar and hard up close, but never harder than a ship can thrust.
+extends Node2D
+## A small black hole. Its pull drags ships towards it, gently from afar and hard up close, but never
+## harder than a ship can thrust. A ship that reaches the very centre is flung out, spinning.
 
 const PULL_K := 1_800_000.0  # pull = PULL_K / distance², so 20 px/s² at 300 px
 const MAX_PULL := 80.0  # px/s², reached at 150 px; below every ship's forward thrust
-const CORE_RADIUS := 60.0
+const CORE_RADIUS := 60.0  # the black disc drawn at the centre
+const FLING_RADIUS := 30.0  # a ship whose centre gets this close is flung
+const FLING_SPEED := 450.0
+const FLING_SPIN := 6.0  # rad/s
+const FLING_COOLDOWN_MS := 1000  # a flung ship can't be flung again this soon
 const RING_COLORS: Array[Color] = [Color(1.0, 0.55, 0.2), Color(0.8, 0.3, 1.0), Color(1.0, 0.8, 0.4)]
 
 
@@ -24,13 +28,15 @@ func pull_on(point: Vector2) -> Vector2:
 	return to_hole.normalized() * pull_at(to_hole.length())
 
 
+## The velocity a flung ship leaves with: out the far side, the way it was going (any way at all
+## if it arrived nearly still).
+static func fling_velocity(incoming: Vector2, rng: RandomNumberGenerator) -> Vector2:
+	var direction := incoming.normalized() if incoming.length() >= 1.0 else Vector2.RIGHT.rotated(rng.randf() * TAU)
+	return direction * FLING_SPEED
+
+
 func _ready() -> void:
 	material = Lighting.unlit()  # always visible in the dark
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = CORE_RADIUS
-	shape.shape = circle
-	add_child(shape)
 	var glow := PointLight2D.new()
 	glow.texture = Lighting.round_texture()
 	glow.texture_scale = 3.0

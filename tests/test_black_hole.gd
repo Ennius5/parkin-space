@@ -18,14 +18,11 @@ func test_pull_is_capped_and_safe_at_the_centre() -> void:
 	hole.queue_free()
 
 
-func test_core_is_solid() -> void:
+func test_core_is_not_solid() -> void:
 	var hole := BlackHole.new()
 	tree.root.add_child(hole)
-	var radius := 0.0
 	for child in hole.get_children():
-		if child is CollisionShape2D and (child as CollisionShape2D).shape is CircleShape2D:
-			radius = ((child as CollisionShape2D).shape as CircleShape2D).radius
-	assert_eq(radius, 60.0)
+		assert_false(child is CollisionShape2D or child is CollisionPolygon2D, "ships pass into the core")
 	hole.queue_free()
 
 

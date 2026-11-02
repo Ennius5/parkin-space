@@ -20,6 +20,11 @@
 
 [ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
 [ext_resource type="Script" path="res://scripts/actors/BlackHole.gd" id="51_hole"]
+[ext_resource type="Script" path="res://scripts/actors/Asteroid.gd" id="32_rock"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big1.png" id="40_rock1"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big2.png" id="40_rock2"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big3.png" id="40_rock3"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big4.png" id="40_rock4"]
 [sub_resource type="RectangleShape2D" id="shape_WallTop"]
 size = Vector2(2480, 40)
 
@@ -76,7 +81,7 @@ position = Vector2(2420, 700)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
 shape = SubResource("shape_WallRight")
 
-[node name="BlackHole" type="StaticBody2D" parent="."]
+[node name="BlackHole" type="Node2D" parent="."]
 position = Vector2(1200, 700)
 script = ExtResource("51_hole")
 
@@ -177,6 +182,38 @@ script = ExtResource("50_flood")
 [node name="FExit" type="PointLight2D" parent="Floodlights"]
 position = Vector2(2120, 700)
 script = ExtResource("50_flood")
+
+[node name="Asteroids" type="Node2D" parent="."]
+
+[node name="R1" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(650, 600)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock1")
+art_scale = 1.0
+
+[node name="R2" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(900, 500)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock2")
+art_scale = 1.0
+
+[node name="R3" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(1600, 450)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock3")
+art_scale = 1.0
+
+[node name="R4" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(1650, 1000)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock4")
+art_scale = 1.0
+
+[node name="R5" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(1100, 1050)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock1")
+art_scale = 1.0
 
 [node name="Ships" type="Node2D" parent="."]
 

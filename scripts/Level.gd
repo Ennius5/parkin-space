@@ -54,6 +54,7 @@ var _pool: Array[ShipSpec] = []  # every ship this level can draw, kept for orph
 var _orphans_due: Array[float] = []  # shift seconds at which orphans are due to appear
 var _orphan_clock := 0.0
 var _orphan_hint_shown := false
+var _flung_at: Dictionary = {}  # Ship -> msec it was last flung out of a black hole
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -107,6 +108,7 @@ func _physics_process(delta: float) -> void:
 		_update_radiation(delta)
 	if _black_hole:
 		_apply_pull()
+		_fling_from_core()
 	_check_parking(delta)
 	_update_customers(delta)
 	_update_orphans(delta)
@@ -588,3 +590,17 @@ func _eject_orphan(ship: Ship) -> void:
 	else:
 		ledger.add_dent(Orphan.EARLY_COST)
 		_hud.show_hint("-₵%d ejected too early" % Orphan.EARLY_COST, 1.5)
+
+
+
+## A ship whose centre reaches the hole's core is flung out the far side, spinning hard.
+func _fling_from_core() -> void:
+	var now := Time.get_ticks_msec()
+	for ship: Ship in _ships.get_children():
+		if ship.is_parked or ship.global_position.distance_to(_black_hole.global_position) > BlackHole.FLING_RADIUS:
+			continue
+		if now - int(_flung_at.get(ship, -BlackHole.FLING_COOLDOWN_MS)) < BlackHole.FLING_COOLDOWN_MS:
+			continue
+		_flung_at[ship] = now
+		ship.linear_velocity = BlackHole.fling_velocity(ship.linear_velocity, _rng)
+		ship.angular_velocity = BlackHole.FLING_SPIN * (1.0 if _rng.randf() < 0.5 else -1.0)

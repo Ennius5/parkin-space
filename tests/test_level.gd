@@ -1280,3 +1280,81 @@ func test_requested_ship_feels_no_pull_until_picked_up() -> void:
 	assert_true(ship.global_position.distance_to(at) < 0.01, "waits where it was parked")
 	level.free()
 	_restore_state()
+
+
+
+func _driven_ship_at(level: Level, pos: Vector2, velocity: Vector2) -> Ship:
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	level.release_ship()
+	_move(ship, pos)
+	ship.freeze = false
+	ship.linear_velocity = velocity
+	ship.angular_velocity = 0.0
+	return ship
+
+
+func test_ship_reaching_the_core_is_flung_spinning() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var hole := _add_hole(level)
+	var ship := _driven_ship_at(level, hole.position, Vector2(100, 0))
+	await _physics_frames(2)
+	assert_true(ship.linear_velocity.length() >= BlackHole.FLING_SPEED * 0.9, "v=%s" % ship.linear_velocity)
+	assert_true(ship.linear_velocity.x > 0.0, "out the far side, the way it was going")
+	assert_true(absf(ship.angular_velocity) >= BlackHole.FLING_SPIN * 0.9, "spinning: %s" % ship.angular_velocity)
+	level.free()
+	_restore_state()
+
+
+func test_flung_ship_is_not_flung_again_at_once() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var hole := _add_hole(level)
+	var ship := _driven_ship_at(level, hole.position, Vector2(100, 0))
+	await _physics_frames(2)
+	_move(ship, hole.position)
+	ship.freeze = false
+	ship.linear_velocity = Vector2(0, 50)
+	await _physics_frames(2)
+	assert_true(ship.linear_velocity.length() < BlackHole.FLING_SPEED * 0.5, "no second fling within a second")
+	level.free()
+	_restore_state()
+
+
+func test_asteroids_ignore_the_hole() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var hole := _add_hole(level)
+	var img := Image.create(100, 60, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	var rock := Asteroid.new()
+	rock.texture = ImageTexture.create_from_image(img)
+	rock.drift_speed = 0.0
+	rock.position = hole.position + Vector2(200, 0)
+	level.add_child(rock)
+	await _physics_frames(30)
+	assert_true(rock.linear_velocity.length() < 0.01, "v=%s" % rock.linear_velocity)
+	level.free()
+	_restore_state()
+
+
+func test_level04_has_asteroids_clear_of_spaces() -> void:
+	if not GameState.has_level_scene(4):
+		return
+	var level: Level = load(LEVEL04_PATH).instantiate()
+	var rocks := level.get_node_or_null("Asteroids")
+	assert_true(rocks != null and rocks.get_child_count() >= 5)
+	if rocks:
+		var keep_clear := []
+		for space: ParkingSpace in level.get_node("Spaces").get_children():
+			keep_clear.append([space.label, space.transform, space.size()])
+		keep_clear.append(["bay", (level.get_node("Entrance") as Node2D).transform, ArrivalBay.SIZE])
+		keep_clear.append(["exit", (level.get_node("Exit") as Node2D).transform, ExitPad.SIZE])
+		for rock: Asteroid in rocks.get_children():
+			var reach := 0.0
+			for p in SpriteOutline.outline(rock.texture, rock.art_scale):
+				reach = maxf(reach, p.length())
+			for k in keep_clear:
+				assert_false(_circle_hits_rect(rock.position, reach, k[1], k[2]), "%s starts on %s" % [rock.name, k[0]])
+	level.free()
