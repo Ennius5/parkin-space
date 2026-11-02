@@ -19,6 +19,7 @@ var session: NetSession  # null = the Net autoload
 var match_seed := 0  # host: 0 = pick one in _ready
 var rival_gone := false  # the guest left or went silent
 var sync: NetSync
+var mirror: GuestMirror  # guest role only: draws the host's shift
 
 var _phase := Phase.WAITING
 var _countdown_left := COUNTDOWN
@@ -40,11 +41,12 @@ func _ready() -> void:
 	sync.level = self
 	sync.session = session
 	add_child(sync)
-	_recolor_floodlights()
-	if role != Role.HOST:
+	recolor_floodlights()
+	session.rival_left.connect(_on_rival_left)
+	if role == Role.GUEST:
+		_become_mirror()
 		return
 	valets.append(Valet.new(1, false, new_ledger(), NetPilot.new()))
-	session.rival_left.connect(_on_rival_left)
 	var ships: Array = []
 	for ship: Ship in _ship_ids:
 		ships.append(_ship_entry(ship))
@@ -56,6 +58,19 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if session and session.rival_left.is_connected(_on_rival_left):
 		session.rival_left.disconnect(_on_rival_left)
+
+
+## Guest: no shift rules run here and nothing in the lot collides (in a loopback test it shares
+## the host's physics world); a GuestMirror shows the host's snapshots instead.
+func _become_mirror() -> void:
+	set_physics_process(false)
+	for body in find_children("*", "CollisionObject2D", true, false):
+		(body as CollisionObject2D).collision_layer = 0
+		(body as CollisionObject2D).collision_mask = 0
+	mirror = GuestMirror.new()
+	mirror.name = "GuestMirror"
+	mirror.setup(self, _ships, _spaces, _hud, _controls, _lot_camera)
+	add_child(mirror)
 
 
 func seed_rng() -> void:
@@ -104,7 +119,8 @@ func _floodlights() -> Array[Floodlight]:
 	return lights
 
 
-func _recolor_floodlights() -> void:
+## Lamp shades from the match seed, the same on both phones.
+func recolor_floodlights() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = match_seed
 	for light in _floodlights():
@@ -140,7 +156,7 @@ func _count_down(delta: float) -> void:
 
 
 func spawn_next_customer() -> Ship:
-	if _phase != Phase.PLAYING:
+	if _phase != Phase.PLAYING or role != Role.HOST:
 		return null
 	var ship := super.spawn_next_customer()
 	if ship:
@@ -187,8 +203,13 @@ func _return(ship: Ship) -> void:
 		sync.send(&"ship_removed", [id])
 
 
-## Rings the ship in its driver's colour.
+## Rings the ship in its driver's colour. A guest's pick becomes a request to the host.
 func select_ship(ship: Ship, valet: Valet = null) -> void:
+	if role == Role.GUEST:
+		_picker.close()
+		if mirror:
+			mirror.request(ship)
+		return
 	super.select_ship(ship, valet)
 	var v := _valet_or_first(valet)
 	if v.ship == ship:
@@ -200,6 +221,15 @@ func release_ship(valet: Valet = null) -> void:
 	if v.ship and is_instance_valid(v.ship):
 		v.ship.ring_color = Color.TRANSPARENT
 	super.release_ship(valet)
+
+
+## Guest: Done is a request to the host.
+func press_done(valet: Valet = null) -> void:
+	if role == Role.GUEST:
+		if mirror:
+			mirror.press_done()
+		return
+	super.press_done(valet)
 
 
 ## The host hears its own cues; the guest is sent theirs, and both get shared ones.
@@ -258,7 +288,7 @@ func snapshot() -> Dictionary:
 func _on_rival_left() -> void:
 	rival_gone = true
 	sync.guest_bits = 0
-	if valets.size() > 1:
+	if role == Role.HOST and valets.size() > 1:
 		release_ship(valets[1])
 
 
@@ -276,3 +306,9 @@ func end_level() -> void:
 		var rival := _rival_score()
 		sync.send(&"match_end", [mine, rival])
 		match_ended.emit(mine, rival)
+
+
+## Guest: the host's final scores arrived. Ends this lot and reports mine first.
+func finish_as_guest(host_score: int, guest_score: int) -> void:
+	end_level()
+	match_ended.emit(guest_score, host_score)

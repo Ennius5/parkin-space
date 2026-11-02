@@ -20,6 +20,8 @@ const RADIATION_DENT_COST := 5
 const RADIATION_INTERVAL := 2.0  # seconds inside radiation per dent
 const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
 const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on screen) are candidates
+const HINT_DRIVE := "Stop in a green space, then press Done when it turns orange"
+const HINT_RETURN := "A customer wants their ship – return it to the EXIT"
 
 @export var level_number: int = 1
 @export var goal_text: String = ""
@@ -249,7 +251,7 @@ func _request(ship: Ship) -> void:
 	_trackers.erase(ship)
 	if not _return_hint_shown:
 		_return_hint_shown = true
-		_hud.show_hint("A customer wants their ship – return it to the EXIT", 4.0)
+		_hud.show_hint(HINT_RETURN, 4.0)
 
 
 ## Hands a requested ship back to its customer: it leaves the lot and the customer is served.
@@ -434,7 +436,7 @@ func select_ship(ship: Ship, valet: Valet = null) -> void:
 	_controls.set_driving(true)
 	if not _drive_hint_shown:
 		_drive_hint_shown = true
-		_hud.show_hint("Stop in a green space, then press Done when it turns orange", 4.0)
+		_hud.show_hint(HINT_DRIVE, 4.0)
 
 
 ## A parked ship the valet may pick up: an orphan, or any customer ship where the level allows moving.

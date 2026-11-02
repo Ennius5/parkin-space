@@ -18,7 +18,7 @@ var guest_bits := 0  # host: the guest's newest buttons, as NetPilot bits
 func send(method: StringName, args: Array) -> void:
 	if session != null and session.is_active():
 		var peer := session.rival_id()
-		if peer != 0:
+		if peer != 0 and peer in multiplayer.get_peers():  # not one that dropped a moment ago
 			callv(&"rpc_id", [peer, method] + args)
 		return
 	sent.append([method, args])
@@ -91,38 +91,49 @@ func leave() -> void:
 	_from_rival()
 
 
-# --- Host -> guest (the guest mirror, Task 9, gives these their behaviour) ---
+# --- Host -> guest (handed to the level's GuestMirror) ---
+
+func _is_guest() -> bool:
+	return level != null and level.role == DuelLevel.Role.GUEST and level.mirror != null
+
 
 @rpc("authority", "call_remote", "reliable")
-func match_start(_seed: int, _seconds: float, _ships: PackedByteArray) -> void:
-	_from_rival()
+func match_start(match_seed: int, seconds: float, ships: PackedByteArray) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.on_match_start(match_seed, seconds, NetProtocol.unpack_ship_list(ships))
 
 
 @rpc("authority", "call_remote", "reliable")
 func go() -> void:
-	_from_rival()
+	if _from_rival() and _is_guest():
+		level.mirror.on_go()
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func snapshot(_bytes: PackedByteArray) -> void:
-	_from_rival()
+func snapshot(bytes: PackedByteArray) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.on_snapshot(NetProtocol.unpack_snapshot(bytes))
 
 
 @rpc("authority", "call_remote", "reliable")
-func ship_added(_bytes: PackedByteArray) -> void:
-	_from_rival()
+func ship_added(bytes: PackedByteArray) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.add_ships(NetProtocol.unpack_ship_list(bytes))
 
 
 @rpc("authority", "call_remote", "reliable")
-func ship_removed(_id: int) -> void:
-	_from_rival()
+func ship_removed(id: int) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.remove_ship(id)
 
 
 @rpc("authority", "call_remote", "reliable")
-func event(_name: String) -> void:
-	_from_rival()
+func event(effect: String) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.on_event(effect)
 
 
 @rpc("authority", "call_remote", "reliable")
-func match_end(_host_score: int, _guest_score: int) -> void:
-	_from_rival()
+func match_end(host_score: int, guest_score: int) -> void:
+	if _from_rival() and _is_guest():
+		level.mirror.on_match_end(host_score, guest_score)

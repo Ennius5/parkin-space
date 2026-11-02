@@ -311,6 +311,13 @@ func _draw() -> void:
 		_draw_placeholder_hull()
 
 
+## Shows flames for the given thrusters without firing them (a duel guest's mirror ship).
+func show_firing(indices: PackedInt32Array) -> void:
+	if indices != firing:
+		firing = indices
+		_flames.queue_redraw()
+
+
 func _draw_flames() -> void:
 	for i in firing:
 		_draw_flame(spec.thrusters[i])
