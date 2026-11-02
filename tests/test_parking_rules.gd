@@ -63,3 +63,13 @@ func test_spec_resources_load() -> void:
 		if spec:
 			assert_eq(spec.ship_class, expected[key][0], key)
 			assert_eq(spec.hull_size, expected[key][1], key)
+
+
+func test_fits_lot_counts_bigger_spaces() -> void:
+	var L := ShipSpec.ShipClass.LIGHT
+	var M := ShipSpec.ShipClass.MEDIUM
+	var H := ShipSpec.ShipClass.HEAVY
+	assert_true(ParkingRules.fits_lot([H, M] as Array[int], [H, M] as Array[int]))
+	assert_true(ParkingRules.fits_lot([M, M] as Array[int], [H, M] as Array[int]))
+	assert_false(ParkingRules.fits_lot([H, H] as Array[int], [H, M] as Array[int]))
+	assert_false(ParkingRules.fits_lot([L, L, L] as Array[int], [M, L] as Array[int]))

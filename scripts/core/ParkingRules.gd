@@ -17,6 +17,17 @@ static func fits_class(ship_class: int, space_class: int) -> bool:
 	return ship_class <= space_class
 
 
+## True if all the ships can park at once: for every class, the ships of that class or bigger
+## are no more than the spaces of that class or bigger (a bigger space takes a smaller ship).
+static func fits_lot(ship_classes: Array[int], space_classes: Array[int]) -> bool:
+	for c in ShipSpec.ShipClass.values():
+		var ships := ship_classes.filter(func(k: int) -> bool: return k >= c).size()
+		var spaces := space_classes.filter(func(k: int) -> bool: return k >= c).size()
+		if ships > spaces:
+			return false
+	return true
+
+
 ## True if every global point lies inside the space rectangle centred on space_xform's origin.
 static func points_inside(points: PackedVector2Array, space_xform: Transform2D, space_size: Vector2) -> bool:
 	var to_local := space_xform.affine_inverse()

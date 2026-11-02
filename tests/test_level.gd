@@ -74,6 +74,47 @@ func test_draw_customers_follows_spawn_weight() -> void:
 	assert_true(rare_count > 150 and rare_count < 250, "rare drawn %d of 1000, expected about 200" % rare_count)
 
 
+func _class_spec(ship_class: ShipSpec.ShipClass) -> ShipSpec:
+	var spec := ShipSpec.new()
+	spec.ship_class = ship_class
+	return spec
+
+
+func _count_class(specs: Array[ShipSpec], ship_class: ShipSpec.ShipClass) -> int:
+	var n := 0
+	for spec in specs:
+		if spec.ship_class == ship_class:
+			n += 1
+	return n
+
+
+func test_draw_never_exceeds_lot() -> void:
+	var pool: Array[ShipSpec] = [_class_spec(ShipSpec.ShipClass.HEAVY), _class_spec(ShipSpec.ShipClass.LIGHT)]
+	var spaces: Array[int] = [ShipSpec.ShipClass.HEAVY, ShipSpec.ShipClass.LIGHT, ShipSpec.ShipClass.LIGHT]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 85
+	var worst := 0
+	for i in 200:
+		var drawn := Level.draw_customers(pool, 3, rng, spaces)
+		assert_eq(drawn.size(), 3)
+		worst = maxi(worst, _count_class(drawn, ShipSpec.ShipClass.HEAVY))
+	assert_eq(worst, 1)
+
+
+func test_draw_skips_ships_with_no_space() -> void:
+	var pool: Array[ShipSpec] = [_class_spec(ShipSpec.ShipClass.HEAVY), _class_spec(ShipSpec.ShipClass.MEDIUM)]
+	var spaces: Array[int] = [ShipSpec.ShipClass.MEDIUM, ShipSpec.ShipClass.MEDIUM]
+	var drawn := Level.draw_customers(pool, 2, RandomNumberGenerator.new(), spaces)
+	assert_eq(_count_class(drawn, ShipSpec.ShipClass.MEDIUM), 2)
+	assert_eq(drawn.size(), 2)
+
+
+func test_draw_stops_when_nothing_fits() -> void:
+	var pool: Array[ShipSpec] = [_class_spec(ShipSpec.ShipClass.HEAVY)]
+	var spaces: Array[int] = [ShipSpec.ShipClass.MEDIUM]
+	assert_eq(Level.draw_customers(pool, 3, RandomNumberGenerator.new(), spaces).size(), 0)
+
+
 func test_level01_draws_its_customers_from_the_pool() -> void:
 	_setup_state()
 	var level := await _make_level()

@@ -49,7 +49,7 @@ func _ready() -> void:
 	if random_customers > 0:
 		var rng := RandomNumberGenerator.new()
 		rng.randomize()
-		customer_queue = draw_customers(customer_queue, random_customers, rng)
+		customer_queue = draw_customers(customer_queue, random_customers, rng, _space_classes())
 	ledger = ShiftLedger.new(base_pay, customer_queue.size(), shift_seconds)
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
@@ -73,15 +73,35 @@ func _physics_process(delta: float) -> void:
 	_refresh()
 
 
-## Draws count ships from pool, each pick weighted by its spawn_weight.
-static func draw_customers(pool: Array[ShipSpec], count: int, rng: RandomNumberGenerator) -> Array[ShipSpec]:
-	var weights := PackedFloat32Array()
-	for spec in pool:
-		weights.append(spec.spawn_weight)
+## Draws count ships from pool, each pick weighted by its spawn_weight. With space_classes,
+## only ships that still leave room for everyone drawn so far can be picked; the draw stops
+## early when none can.
+static func draw_customers(pool: Array[ShipSpec], count: int, rng: RandomNumberGenerator,
+		space_classes: Array[int] = []) -> Array[ShipSpec]:
 	var drawn: Array[ShipSpec] = []
+	var drawn_classes: Array[int] = []
 	for i in count:
-		drawn.append(pool[rng.rand_weighted(weights)])
+		var options: Array[ShipSpec] = []
+		var weights := PackedFloat32Array()
+		for spec in pool:
+			var with_spec := drawn_classes.duplicate()
+			with_spec.append(spec.ship_class)
+			if space_classes.is_empty() or ParkingRules.fits_lot(with_spec, space_classes):
+				options.append(spec)
+				weights.append(spec.spawn_weight)
+		if options.is_empty():
+			break
+		var pick := options[rng.rand_weighted(weights)]
+		drawn.append(pick)
+		drawn_classes.append(pick.ship_class)
 	return drawn
+
+
+func _space_classes() -> Array[int]:
+	var classes: Array[int] = []
+	for space: ParkingSpace in _spaces.get_children():
+		classes.append(space.space_class)
+	return classes
 
 
 ## Spawns the next customer's ship at the entrance. Returns null when the queue is used up.
