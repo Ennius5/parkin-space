@@ -57,7 +57,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right |
 | 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them. 9 spaces (2 heavy D1–D2, gold C1–C2), fixed wrecks and drifting asteroids, radiation dents ₵5 every 2 s inside |
 | 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject. 11 rim spaces (3 heavy, 5 medium, 3 light; gold G1–G2 by the exit); its pull grows close in (20 px/s² at 300 px, capped at 80 px/s², weaker than any ship's thrust) and only moves ships you've taken in hand (never parked ones, nor ones resting inside a space); anything reaching the very centre is flung out the far side, spinning (300 px/s); 5 drifting asteroids that the hole also pulls and flings, so flung rocks become the danger; 4 big static boulders in the lanes |
-| 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above |
+| 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first). A calm lounge with no hazards: 12 sideways spaces in three rows (A1–A3 heavy, B1–B3 light, G1–G6 medium gold by the exit); tiers 60% gold / 30% silver / 10% bronze; an arrival every 6 s; 3 special requests (+₵20 in the named space); parked ships can be picked up and moved |
 
 Ship quirks (saucer, junker) first appear in Levels 3–5.
 
@@ -78,6 +78,8 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 - **Served:** a customer is served when parked (if they stay) or returned (if they leave). The shift is won when everyone is served.
 
 **Random customers:** a level can draw its customers at random from a pool. Each ship has a **spawn weight** (1 = normal; the Recon Drone is 0.25 and the Nostrom 0.5), and a draw never deals more ships of a class than the lot has spaces for.
+
+**Special requests (Level 5):** 3 customers per shift (never ones who will want their ship back) arrive asking for a named space their ship fits, preferably one that's occupied right now; their badge shows "→ G4" and the space shows a pin. Parking them there pays a +₵20 request bonus on top of their tier tip; parking them anywhere else serves them for the fee only (no tip, no bonus). To make room, the valet can pick up any parked ship in Level 5 and re-park it for free (it's never served twice; a leaver's request timer keeps running).
 
 **Orphaned ships (from Level 4):** an ownerless ship shows a countdown. Ejecting it through the far exit after the countdown pays a removal bonus; ejecting it early costs pay. 2 per shift appear parked in free spaces at random moments between 25% and 60% of the shift, only in spaces the shift's customers can spare. The countdown is 60 s; on time pays +₵25, early costs ₵15. Orphans don't count as served.
 

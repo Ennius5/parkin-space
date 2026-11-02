@@ -1,7 +1,7 @@
 extends TestCase
 
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
-const LEVELS := ["res://scenes/levels/Level01.tscn", "res://scenes/levels/Level02.tscn", "res://scenes/levels/Level03.tscn", "res://scenes/levels/Level04.tscn"]
+const LEVELS := ["res://scenes/levels/Level01.tscn", "res://scenes/levels/Level02.tscn", "res://scenes/levels/Level03.tscn", "res://scenes/levels/Level04.tscn", "res://scenes/levels/Level05.tscn"]
 
 
 func _is_unlit(item: CanvasItem) -> bool:

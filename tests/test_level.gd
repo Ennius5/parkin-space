@@ -1596,3 +1596,75 @@ func test_request_parked_elsewhere_pays_fee_only() -> void:
 	assert_eq((level.get_node("Spaces/B1") as ParkingSpace).pin_color.a, 0.0)
 	level.free()
 	_restore_state()
+
+
+
+# --- Level 5 ---
+
+const LEVEL05_PATH := "res://scenes/levels/Level05.tscn"
+
+
+func test_level05_layout() -> void:
+	assert_true(GameState.has_level_scene(5))
+	if not GameState.has_level_scene(5):
+		return
+	var level: Level = load(LEVEL05_PATH).instantiate()
+	var counts := {}
+	var gold: Array[String] = []
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		counts[space.space_class] = counts.get(space.space_class, 0) + 1
+		if space.gold:
+			gold.append(space.label)
+	gold.sort()
+	assert_eq(counts, {ShipSpec.ShipClass.HEAVY: 3, ShipSpec.ShipClass.MEDIUM: 6, ShipSpec.ShipClass.LIGHT: 3})
+	assert_eq(gold, ["G1", "G2", "G3", "G4", "G5", "G6"] as Array[String])
+	assert_true(level.get_node_or_null("Exit") is ExitPad)
+	for hazard in ["BlackHole", "Radiation", "Asteroids", "Boulders"]:
+		assert_true(level.get_node_or_null(hazard) == null, "no %s in the lounge" % hazard)
+	assert_eq(level.level_number, 5)
+	assert_eq(level.goal_text, "Serve 9 customers")
+	assert_eq(level.random_customers, 9)
+	assert_eq(level.base_pay, 100)
+	assert_eq(level.silver_target, 360)
+	assert_eq(level.gold_target, 420)
+	assert_eq(level.arrival_interval, 6.0)
+	assert_true(level.use_tiers)
+	assert_eq(level.tier_weights, {Customer.Tier.GOLD: 60, Customer.Tier.SILVER: 30, Customer.Tier.BRONZE: 10})
+	assert_eq(level.retrieval_count, 2)
+	assert_eq(level.request_count, 3)
+	assert_true(level.allow_moving_parked)
+	var pool := _queue_paths(level.customer_queue)
+	for file in DirAccess.get_files_at("res://resources/ships/"):
+		if file.ends_with(".tres"):
+			assert_true("res://resources/ships/" + file in pool, file)
+	level.free()
+
+
+func test_level05_spaces_clear_hud_bay_and_exit() -> void:
+	if not GameState.has_level_scene(5):
+		return
+	var level: Level = load(LEVEL05_PATH).instantiate()
+	var bay_xform := (level.get_node("Entrance") as Node2D).transform
+	var exit_xform := (level.get_node("Exit") as Node2D).transform
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		var h := space.size() / 2
+		for c in [Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)]:
+			var p: Vector2 = space.transform * c
+			assert_true(p.y >= 220.0, "%s reaches under the HUD" % space.label)
+			assert_false(Rect2(-ArrivalBay.SIZE / 2, ArrivalBay.SIZE).has_point(bay_xform.affine_inverse() * p), "%s clear of the bay" % space.label)
+			assert_false(Rect2(-ExitPad.SIZE / 2, ExitPad.SIZE).has_point(exit_xform.affine_inverse() * p), "%s clear of the exit" % space.label)
+	level.free()
+
+
+func test_level05_runs_a_shift() -> void:
+	_setup_state()
+	var level: Level = load(LEVEL05_PATH).instantiate()
+	level.change_scene_on_end = false
+	tree.root.add_child(level)
+	await tree.process_frame
+	assert_eq(level.customer_queue.size(), 9)
+	assert_eq(level._request_indexes.size(), 3)
+	await _physics_frames(120)
+	assert_true(level.get_node("Ships").get_child_count() >= 1)
+	level.free()
+	_restore_state()

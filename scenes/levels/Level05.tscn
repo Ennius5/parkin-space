@@ -1,0 +1,218 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/Level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="2_spec"]
+[ext_resource type="Resource" path="res://resources/ships/AsteroidJunker.tres" id="12_junker"]
+[ext_resource type="Resource" path="res://resources/ships/ManipulatorDrone.tres" id="10_drone"]
+[ext_resource type="Resource" path="res://resources/ships/ReconDrone.tres" id="13_recon"]
+[ext_resource type="Resource" path="res://resources/ships/RecreationalDrone.tres" id="14_rec"]
+[ext_resource type="Resource" path="res://resources/ships/Milano.tres" id="15_milano"]
+[ext_resource type="Resource" path="res://resources/ships/Miner.tres" id="16_miner"]
+[ext_resource type="Resource" path="res://resources/ships/Nostrom.tres" id="17_nostrom"]
+[ext_resource type="Resource" path="res://resources/ships/AgriShip.tres" id="18_agri"]
+[ext_resource type="Resource" path="res://resources/ships/Hammerhead.tres" id="21_hammer"]
+[ext_resource type="Resource" path="res://resources/ships/Researcher.tres" id="22_research"]
+[ext_resource type="PackedScene" path="res://scenes/actors/ParkingSpace.tscn" id="5_space"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ShipControls.tscn" id="7_ctrl"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ShipPicker.tscn" id="11_picker"]
+[ext_resource type="PackedScene" path="res://scenes/actors/ExitPad.tscn" id="20_exit"]
+
+[ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
+[sub_resource type="RectangleShape2D" id="shape_WallTop"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallBottom"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallLeft"]
+size = Vector2(40, 1480)
+
+[sub_resource type="RectangleShape2D" id="shape_WallRight"]
+size = Vector2(40, 1480)
+
+[node name="Level05" type="Node2D"]
+script = ExtResource("1_level")
+level_number = 5
+goal_text = "Serve 9 customers"
+customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("21_hammer"), ExtResource("22_research")])
+random_customers = 9
+base_pay = 100
+silver_target = 360
+gold_target = 420
+arrival_interval = 6.0
+use_tiers = true
+retrieval_count = 2
+request_count = 3
+allow_moving_parked = true
+tier_weights = {3: 60, 2: 30, 1: 10}
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.12, 0.13, 0.18, 1)
+polygon = PackedVector2Array(0, 0, 2400, 0, 2400, 1400, 0, 1400)
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, -20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
+shape = SubResource("shape_WallTop")
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, 1420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
+shape = SubResource("shape_WallBottom")
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(-20, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
+shape = SubResource("shape_WallLeft")
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(2420, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
+shape = SubResource("shape_WallRight")
+
+[node name="Spaces" type="Node2D" parent="."]
+
+[node name="A1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(650, 400)
+rotation = 1.570796
+space_class = 2
+label = "A1"
+
+[node name="A2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(650, 700)
+rotation = 1.570796
+space_class = 2
+label = "A2"
+
+[node name="A3" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(650, 1000)
+rotation = 1.570796
+space_class = 2
+label = "A3"
+
+[node name="B1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1150, 450)
+rotation = 1.570796
+space_class = 0
+label = "B1"
+
+[node name="B2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1150, 700)
+rotation = 1.570796
+space_class = 0
+label = "B2"
+
+[node name="B3" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1150, 950)
+rotation = 1.570796
+space_class = 0
+label = "B3"
+
+[node name="G1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 290)
+rotation = 1.570796
+label = "G1"
+gold = true
+
+[node name="G2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 470)
+rotation = 1.570796
+label = "G2"
+gold = true
+
+[node name="G3" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 650)
+rotation = 1.570796
+label = "G3"
+gold = true
+
+[node name="G4" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 830)
+rotation = 1.570796
+label = "G4"
+gold = true
+
+[node name="G5" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 1010)
+rotation = 1.570796
+label = "G5"
+gold = true
+
+[node name="G6" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1700, 1190)
+rotation = 1.570796
+label = "G6"
+gold = true
+
+[node name="Exit" parent="." instance=ExtResource("20_exit")]
+position = Vector2(2260, 700)
+
+[node name="Floodlights" type="Node2D" parent="."]
+
+[node name="FA1" type="PointLight2D" parent="Floodlights"]
+position = Vector2(650, 550)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FA2" type="PointLight2D" parent="Floodlights"]
+position = Vector2(650, 1000)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FB1" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1150, 575)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FB2" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1150, 950)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FG1" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1700, 380)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FG2" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1700, 740)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FG3" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1700, 1100)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FEntrance" type="PointLight2D" parent="Floodlights"]
+position = Vector2(300, 700)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="FExit" type="PointLight2D" parent="Floodlights"]
+position = Vector2(2120, 700)
+script = ExtResource("50_flood")
+radius = 300.0
+
+[node name="Ships" type="Node2D" parent="."]
+
+[node name="Entrance" type="Marker2D" parent="."]
+position = Vector2(140, 700)
+rotation = 1.570796
+
+[node name="LotCamera" type="Camera2D" parent="."]
+position = Vector2(1200, 700)
+zoom = Vector2(0.5, 0.5)
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="Controls" parent="." instance=ExtResource("7_ctrl")]
+
+[node name="ShipPicker" parent="." instance=ExtResource("11_picker")]
