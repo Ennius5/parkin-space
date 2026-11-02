@@ -43,9 +43,15 @@ func test_gold_tip_shrinks_after_ten_seconds() -> void:
 	c.parked_in_gold = true
 	c.wait = 10.0
 	assert_eq(c.tip(), 40)
-	c.wait = 12.5
-	assert_eq(c.tip(), 28)
-	c.wait = 25.0
+	c.wait = 14.9
+	assert_eq(c.tip(), 40)
+	c.wait = 15.0
+	assert_eq(c.tip(), 36)  # ₵4 lost every 5 s after the first 10 s
+	c.wait = 22.0
+	assert_eq(c.tip(), 32)
+	c.wait = 59.9
+	assert_eq(c.tip(), 4)
+	c.wait = 60.0
 	assert_eq(c.tip(), 0)
 
 
@@ -100,9 +106,9 @@ func test_tier_colors() -> void:
 
 func test_gold_tip_on_offer_ignores_space() -> void:
 	var c := _customer(Customer.Tier.GOLD)
-	c.wait = 12.5
+	c.wait = 17.0
 	assert_eq(c.tip(), 0)
-	assert_eq(c.tip_on_offer(), 28)
+	assert_eq(c.tip_on_offer(), 36)
 
 
 func test_roll_without_gold_never_gold() -> void:

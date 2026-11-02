@@ -62,7 +62,7 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 |---|---|---|
 | Bronze | 30% | Patient; a 50% chance of a ₵10 tip |
 | Silver (most common) | 50% | Always tips ₵15, minus ₵5 for each dent on their ship |
-| Gold | 20% | ₵40 for the first 10 s of waiting, then ₵4 less each second. Paid only if the ship is parked in a gold space ★ (the ones nearest the exit). The coin shows the tip still on offer. Only ships that fit a gold space can be gold customers (in Level 2, heavies never are). |
+| Gold | 20% | ₵40 for the first 10 s of waiting, then ₵4 less every 5 s (gone at 60 s). Paid only if the ship is parked in a gold space ★ (the ones nearest the exit). The coin shows the tip still on offer. Only ships that fit a gold space can be gold customers (in Level 2, heavies never are). |
 
 **Waiting** counts from arrival until parked, and again from a retrieval request until the ship is returned.
 

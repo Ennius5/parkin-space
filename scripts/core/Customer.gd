@@ -16,7 +16,8 @@ const SILVER_TIP := 15
 const SILVER_DENT_COST := 5
 const GOLD_TIP := 40
 const GOLD_PATIENCE := 10.0  # seconds of waiting before the gold tip starts to shrink
-const GOLD_DROP_PER_SECOND := 4
+const GOLD_DROP := 4  # lost every GOLD_DROP_INTERVAL seconds once patience runs out
+const GOLD_DROP_INTERVAL := 5.0
 const REQUEST_DELAY_MIN := 20.0
 const REQUEST_DELAY_MAX := 40.0
 const REQUEST_TIME_RESERVE := 30.0  # a retrieval request always leaves this long to finish it
@@ -60,7 +61,8 @@ func tip_on_offer() -> int:
 		Tier.SILVER:
 			return maxi(0, SILVER_TIP - SILVER_DENT_COST * dents)
 		Tier.GOLD:
-			return maxi(0, GOLD_TIP - GOLD_DROP_PER_SECOND * ceili(maxf(0.0, wait - GOLD_PATIENCE)))
+			var drops := floori(maxf(0.0, wait - GOLD_PATIENCE) / GOLD_DROP_INTERVAL)
+			return maxi(0, GOLD_TIP - GOLD_DROP * drops)
 	return 0
 
 
