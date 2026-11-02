@@ -159,49 +159,49 @@ position = Vector2(2260, 700)
 [node name="FA1" type="PointLight2D" parent="Floodlights"]
 position = Vector2(650, 550)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FA2" type="PointLight2D" parent="Floodlights"]
 position = Vector2(650, 1000)
 script = ExtResource("50_flood")
 flicker = true
-radius = 300.0
+radius = 375.0
 
 [node name="FB1" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1150, 575)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FB2" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1150, 950)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FG1" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1700, 380)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FG2" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1700, 740)
 script = ExtResource("50_flood")
 flicker = true
-radius = 300.0
+radius = 375.0
 
 [node name="FG3" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1700, 1100)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FEntrance" type="PointLight2D" parent="Floodlights"]
 position = Vector2(300, 700)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="FExit" type="PointLight2D" parent="Floodlights"]
 position = Vector2(2120, 700)
 script = ExtResource("50_flood")
-radius = 300.0
+radius = 375.0
 
 [node name="Ships" type="Node2D" parent="."]
 

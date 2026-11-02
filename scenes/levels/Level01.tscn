@@ -112,27 +112,27 @@ label = "C2"
 [node name="FA" type="PointLight2D" parent="Floodlights"]
 position = Vector2(760, 260)
 script = ExtResource("50_flood")
-radius = 300.0
-strength = 1.8
+radius = 375.0
+strength = 2.3
 
 [node name="FB" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1375, 1180)
 script = ExtResource("50_flood")
-radius = 300.0
-strength = 1.8
+radius = 375.0
+strength = 2.3
 flicker = true
 
 [node name="FC" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1985, 450)
 script = ExtResource("50_flood")
-radius = 300.0
-strength = 1.8
+radius = 375.0
+strength = 2.3
 
 [node name="FEntrance" type="PointLight2D" parent="Floodlights"]
 position = Vector2(300, 700)
 script = ExtResource("50_flood")
-radius = 300.0
-strength = 1.8
+radius = 375.0
+strength = 2.3
 flicker = true
 
 [node name="Ships" type="Node2D" parent="." unique_id=1210579741]

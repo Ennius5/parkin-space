@@ -159,3 +159,14 @@ func test_every_level_has_two_flickering_floodlights() -> void:
 				flickering += 1
 		assert_eq(flickering, 2, path)
 		level.free()
+
+
+func test_floodlights_are_strong_and_reach_far() -> void:
+	var flood := Floodlight.new()
+	assert_true(flood.radius >= 350.0 and flood.strength >= 1.8, "r=%s s=%s" % [flood.radius, flood.strength])
+	flood.free()
+	for path in LEVELS:
+		var level: Level = load(path).instantiate()
+		for f in _floodlights(level):
+			assert_true(f.radius >= 350.0 and f.strength >= 1.8, "%s %s r=%s s=%s" % [path, f.name, f.radius, f.strength])
+		level.free()

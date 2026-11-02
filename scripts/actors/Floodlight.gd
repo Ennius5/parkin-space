@@ -3,8 +3,8 @@ extends PointLight2D
 ## A lamp over the lot. In the dark it's the only way to see the floor, ships and rocks around it.
 ## A flickering one cuts out briefly now and then.
 
-@export var radius := 280.0  # how far the light reaches, in pixels
-@export var strength := 1.3
+@export var radius := 350.0  # how far the light reaches, in pixels
+@export var strength := 1.8
 @export var flicker := false
 
 
