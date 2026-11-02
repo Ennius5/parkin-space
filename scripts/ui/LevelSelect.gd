@@ -64,3 +64,16 @@ func build() -> void:
 func _on_level_pressed(level: int) -> void:
 	GameState.current_level = level
 	get_tree().change_scene_to_file(GameState.level_scene_path(level))
+
+
+## Where Android's back gesture leads from this screen ("" = quit the app).
+func back_target() -> String:
+	return MODE_SELECT
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if back_target() == "":
+			get_tree().quit()
+		else:
+			get_tree().change_scene_to_file(back_target())

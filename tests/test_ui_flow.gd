@@ -170,3 +170,19 @@ func test_mode_select_has_credits() -> void:
 	tree.root.add_child(screen)
 	assert_true(screen.get_node_or_null("%Credits") is Button)
 	screen.free()
+
+
+func test_back_gesture_goes_somewhere_on_every_menu() -> void:
+	var expected := {
+		"res://scenes/ui/Title.tscn": "",  # quits the app
+		"res://scenes/ui/ModeSelect.tscn": "res://scenes/ui/Title.tscn",
+		"res://scenes/ui/LevelSelect.tscn": "res://scenes/ui/ModeSelect.tscn",
+		"res://scenes/ui/Credits.tscn": "res://scenes/ui/ModeSelect.tscn",
+		"res://scenes/ui/Result.tscn": "res://scenes/ui/LevelSelect.tscn",
+	}
+	for path: String in expected:
+		var screen: Control = load(path).instantiate()
+		assert_true(screen.has_method("back_target"), "%s handles back" % path)
+		if screen.has_method("back_target"):
+			assert_eq(screen.call("back_target"), expected[path], path)
+		screen.free()
