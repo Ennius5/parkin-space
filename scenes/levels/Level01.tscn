@@ -14,6 +14,7 @@
 [ext_resource type="Resource" path="res://resources/ships/Miner.tres" id="16_miner"]
 [ext_resource type="Resource" path="res://resources/ships/Nostrom.tres" id="17_nostrom"]
 
+[ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
 [sub_resource type="RectangleShape2D" id="shape_WallTop"]
 size = Vector2(2480, 40)
 
@@ -105,6 +106,34 @@ label = "C1"
 position = Vector2(2070, 450)
 rotation = 0.785398
 label = "C2"
+
+[node name="Floodlights" type="Node2D" parent="."]
+
+[node name="FA" type="PointLight2D" parent="Floodlights"]
+position = Vector2(760, 260)
+script = ExtResource("50_flood")
+radius = 300.0
+strength = 1.8
+
+[node name="FB" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1375, 1180)
+script = ExtResource("50_flood")
+radius = 300.0
+strength = 1.8
+flicker = true
+
+[node name="FC" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1985, 450)
+script = ExtResource("50_flood")
+radius = 300.0
+strength = 1.8
+
+[node name="FEntrance" type="PointLight2D" parent="Floodlights"]
+position = Vector2(300, 700)
+script = ExtResource("50_flood")
+radius = 300.0
+strength = 1.8
+flicker = true
 
 [node name="Ships" type="Node2D" parent="." unique_id=1210579741]
 

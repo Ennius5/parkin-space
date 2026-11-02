@@ -46,6 +46,8 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing. Drifting asteroids block the bay too.
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).
 
+**Lighting:** every lot is pitch black, like space, including everything beyond its walls. Floodlights light pools of the lot (each level places its own; every parking space sits under one; Level 1's are extra strong and two of them flicker). Each ship carries a headlight beam and a soft glow. Markings the player must always read (parking spaces, radiation zones, the arrival bay, the exit, tier coins, ↩ and the wanted-back glow) ignore the dark and stay fully bright. Walls, the island, wrecks and asteroids show only when lit.
+
 ## 5. Level plan
 **Shift length** is set by the difficulty chosen on Level Select, the same for every level: Easy 10:00, Normal 5:00 (default), Hard 2:30. Stars use the same earnings targets on every difficulty; the result screen names the difficulty played.
 

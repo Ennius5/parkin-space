@@ -8,6 +8,8 @@ signal dented(ship: Ship, cost: int)
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
 const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
+const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
+const HEADLIGHT_SCALE := 1.6
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
 	ShipSpec.ShipClass.MEDIUM: Color(0.98, 0.85, 0.3),
@@ -31,6 +33,7 @@ var _prev_velocity := Vector2.ZERO
 @onready var _drive_camera: Camera2D = $DriveCamera
 
 var _badge := Node2D.new()
+var _request_glow := Node2D.new()
 
 
 func _ready() -> void:
@@ -64,7 +67,32 @@ func _ready() -> void:
 	_badge.top_level = true  # stays upright while the ship turns
 	_badge.z_index = 10
 	_badge.draw.connect(_draw_badge)
+	_badge.material = Lighting.unlit()
 	add_child(_badge)
+	_request_glow.name = "RequestGlow"
+	_request_glow.show_behind_parent = true
+	_request_glow.material = Lighting.unlit()
+	_request_glow.draw.connect(_draw_glow)
+	add_child(_request_glow)
+	_add_lights()
+
+
+## A headlight beam from the nose and a soft glow around the hull, so a ship lights its own way.
+func _add_lights() -> void:
+	var head := PointLight2D.new()
+	head.name = "Headlight"
+	head.texture = Lighting.cone_texture()
+	head.texture_scale = HEADLIGHT_SCALE
+	head.energy = 1.4
+	head.color = Color(0.85, 0.92, 1.0)
+	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE)
+	add_child(head)
+	var glow := PointLight2D.new()
+	glow.name = "Glow"
+	glow.texture = Lighting.round_texture()
+	glow.texture_scale = maxf(spec.hull_size.x, spec.hull_size.y) / Lighting.TEXTURE_SIZE * GLOW_SCALE
+	glow.energy = 0.6
+	add_child(glow)
 
 
 func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
@@ -75,8 +103,7 @@ func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
 
 
 func _process(_delta: float) -> void:
-	if is_glowing():
-		queue_redraw()  # the glow pulses
+	_request_glow.queue_redraw()  # the glow pulses, and must vanish once the ship is picked up
 	if _lights.visible:
 		_lights.modulate.a = lights_level()
 	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0))
@@ -163,7 +190,6 @@ func set_driven(on: bool) -> void:
 		_drive_camera.make_current()
 		if customer and customer.requested:
 			customer.request_seen = true
-			queue_redraw()
 
 
 func set_parked() -> void:
@@ -215,8 +241,6 @@ func is_glowing() -> bool:
 func _draw() -> void:
 	if spec == null:
 		return
-	if is_glowing():
-		_draw_glow()
 	if spec.texture == null:
 		_draw_placeholder_hull()
 	for i in firing:
@@ -225,6 +249,8 @@ func _draw() -> void:
 
 ## A translucent pulsing outline around the hull, drawn under the ship's art.
 func _draw_glow() -> void:
+	if not is_glowing():
+		return
 	var outline := spec.hull_polygon
 	if outline.size() < 3:
 		var h := spec.hull_size / 2
@@ -232,8 +258,8 @@ func _draw_glow() -> void:
 	var closed := outline.duplicate()
 	closed.append(outline[0])
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 250.0)
-	draw_polyline(closed, Color(GLOW_COLOR, 0.15 + 0.15 * pulse), 18.0, true)
-	draw_polyline(closed, Color(GLOW_COLOR, 0.35 + 0.3 * pulse), 6.0, true)
+	_request_glow.draw_polyline(closed, Color(GLOW_COLOR, 0.15 + 0.15 * pulse), 18.0, true)
+	_request_glow.draw_polyline(closed, Color(GLOW_COLOR, 0.35 + 0.3 * pulse), 6.0, true)
 
 
 ## Exhaust points away from the push; bigger thrusters get longer flames.

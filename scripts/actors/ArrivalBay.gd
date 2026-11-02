@@ -10,6 +10,7 @@ const ROCK_BARRIER_LAYER := 2  # physics layer only asteroids collide with: ship
 
 ## An invisible wall over the bay that keeps drifting rocks out, so they can never stall arrivals.
 func _ready() -> void:
+	material = Lighting.unlit()  # a marking, always readable in the dark
 	var wall := StaticBody2D.new()
 	wall.collision_layer = ROCK_BARRIER_LAYER
 	wall.collision_mask = 0

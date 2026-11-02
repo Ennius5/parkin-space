@@ -72,6 +72,7 @@ func _ready() -> void:
 	_controls.done_pressed.connect(release_ship)
 	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
+	_add_darkness()
 	_add_arrival_bay()
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
@@ -427,3 +428,11 @@ func _in_radiation(ship: Ship) -> bool:
 		if zone.touches(ship):
 			return true
 	return false
+
+
+## Every lot is pitch black: only floodlights and the ships' own lights show what's there.
+func _add_darkness() -> void:
+	var dark := CanvasModulate.new()
+	dark.name = "Darkness"
+	dark.color = Color.BLACK
+	add_child(dark)

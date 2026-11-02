@@ -31,6 +31,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip3_green.png" id="41_ship3"]
 [ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip3_damage3.png" id="42_dmg3"]
 
+[ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
 [sub_resource type="RectangleShape2D" id="shape_WallTop"]
 size = Vector2(2480, 40)
 
@@ -239,6 +240,32 @@ position = Vector2(1700, 240)
 script = ExtResource("32_rock")
 texture = ExtResource("40_rock3")
 art_scale = 1.0
+
+[node name="Floodlights" type="Node2D" parent="."]
+
+[node name="FA" type="PointLight2D" parent="Floodlights"]
+position = Vector2(760, 260)
+script = ExtResource("50_flood")
+
+[node name="FB" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1375, 1180)
+script = ExtResource("50_flood")
+
+[node name="FC" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1985, 450)
+script = ExtResource("50_flood")
+
+[node name="FD" type="PointLight2D" parent="Floodlights"]
+position = Vector2(490, 1180)
+script = ExtResource("50_flood")
+
+[node name="FE" type="PointLight2D" parent="Floodlights"]
+position = Vector2(2260, 950)
+script = ExtResource("50_flood")
+
+[node name="FEntrance" type="PointLight2D" parent="Floodlights"]
+position = Vector2(300, 700)
+script = ExtResource("50_flood")
 
 [node name="Ships" type="Node2D" parent="."]
 

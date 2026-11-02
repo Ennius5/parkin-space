@@ -9,6 +9,10 @@ const RINGS := 3
 @export var radius := 110.0
 
 
+
+func _ready() -> void:
+	material = Lighting.unlit()  # a marking, always readable in the dark
+
 func touches(ship: Ship) -> bool:
 	for p in ship.hull_points():
 		if p.distance_to(global_position) <= radius:

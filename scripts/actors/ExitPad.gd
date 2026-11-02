@@ -6,6 +6,10 @@ const SIZE := Vector2(140, 220)
 const COLOR := Color(1, 0.82, 0.2)
 
 
+
+func _ready() -> void:
+	material = Lighting.unlit()  # a marking, always readable in the dark
+
 func contains(point: Vector2) -> bool:
 	return Rect2(-SIZE / 2, SIZE).has_point(to_local(point))
 

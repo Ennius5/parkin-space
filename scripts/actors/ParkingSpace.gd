@@ -19,6 +19,10 @@ var occupant: Ship = null
 var _pulse := 0.0
 
 
+
+func _ready() -> void:
+	material = Lighting.unlit()  # a marking, always readable in the dark
+
 func size() -> Vector2:
 	return ParkingRules.SPACE_SIZES[space_class]
 

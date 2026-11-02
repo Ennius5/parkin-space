@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/ShipPicker.tscn" id="11_picker"]
 [ext_resource type="PackedScene" path="res://scenes/actors/ExitPad.tscn" id="20_exit"]
 
+[ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
 [sub_resource type="RectangleShape2D" id="shape_WallTop"]
 size = Vector2(2480, 40)
 
@@ -152,6 +153,36 @@ gold = true
 
 [node name="Exit" parent="." instance=ExtResource("20_exit")]
 position = Vector2(2260, 700)
+
+[node name="Floodlights" type="Node2D" parent="."]
+
+[node name="F1" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1467, 894)
+script = ExtResource("50_flood")
+
+[node name="F2" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1098, 1014)
+script = ExtResource("50_flood")
+
+[node name="F3" type="PointLight2D" parent="Floodlights"]
+position = Vector2(870, 700)
+script = ExtResource("50_flood")
+
+[node name="F4" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1098, 386)
+script = ExtResource("50_flood")
+
+[node name="F5" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1467, 506)
+script = ExtResource("50_flood")
+
+[node name="FEntrance" type="PointLight2D" parent="Floodlights"]
+position = Vector2(300, 700)
+script = ExtResource("50_flood")
+
+[node name="FExit" type="PointLight2D" parent="Floodlights"]
+position = Vector2(2120, 700)
+script = ExtResource("50_flood")
 
 [node name="Ships" type="Node2D" parent="."]
 
