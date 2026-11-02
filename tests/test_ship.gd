@@ -443,3 +443,36 @@ func test_faster_driven_ship_pays() -> void:
 	slow.is_driven = false
 	fast.queue_free()
 	slow.queue_free()
+
+
+func test_net_pilot_drives_ship() -> void:
+	var ship := _spawn("light_scout")
+	var pilot := NetPilot.new()
+	pilot.bits = 1 << NetPilot.ACTIONS.find(StringName(Ship.DRIVE_ACTIONS[0]))
+	ship.pilot = pilot
+	ship.set_driven(true, false)
+	await _frames(10)
+	assert_true(ship.linear_velocity.length() > 0.0, "net bits thrust the ship")
+	ship.queue_free()
+
+
+func test_remote_drive_keeps_camera() -> void:
+	var cam := Camera2D.new()
+	tree.root.add_child(cam)
+	cam.make_current()
+	var ship := _spawn("light_scout")
+	ship.set_driven(true, false)
+	assert_true(cam.is_current(), "remote drive leaves the camera alone")
+	ship.set_driven(false, false)
+	ship.queue_free()
+	cam.queue_free()
+
+
+func test_bits_round_trip() -> void:
+	assert_true(NetPilot.ACTIONS.size() <= 16)
+	var pilot := NetPilot.new()
+	pilot.bits = 1 << NetPilot.ACTIONS.find(&"brake")
+	assert_true(pilot.is_pressed(&"brake"))
+	for a in NetPilot.ACTIONS:
+		if a != &"brake":
+			assert_false(pilot.is_pressed(a), str(a))

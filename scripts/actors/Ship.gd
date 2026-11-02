@@ -25,6 +25,9 @@ var paint_color := Color.WHITE  # set before the ship enters the tree
 var customer: Customer  # null = no badge
 
 var is_driven: bool = false
+var pilot: ShipPilot = LocalPilot.new()  # where the buttons come from; a NetPilot for a rival simulated over the network
+var last_driver := -1  # valet id of the last driver, set by the Level
+var _local_drive := true  # driven from this device: it takes the camera and the thruster sound
 var is_parked: bool = false
 var firing := PackedInt32Array()  # indices into spec.thrusters that fired this physics frame
 
@@ -168,7 +171,7 @@ func _physics_process(_delta: float) -> void:
 		_fire_thrusters()
 	if firing != was_firing:
 		_flames.queue_redraw()
-	if is_driven:
+	if is_driven and _local_drive:
 		if firing.is_empty():
 			Sound.stop_thruster()
 		else:
@@ -178,10 +181,10 @@ func _physics_process(_delta: float) -> void:
 func _fire_thrusters() -> void:
 	var held := PackedStringArray()
 	for action in DRIVE_ACTIONS:
-		if Input.is_action_pressed(action):
+		if pilot.is_pressed(action):
 			held.append(action)
-	var braking := Input.is_action_pressed("brake") and linear_velocity.length() > 0.5
-	var stopping_spin := Input.is_action_pressed("stop_rotation") and absf(angular_velocity) > 0.01
+	var braking := pilot.is_pressed("brake") and linear_velocity.length() > 0.5
+	var stopping_spin := pilot.is_pressed("stop_rotation") and absf(angular_velocity) > 0.01
 	var against_drift := _local_against_drift()
 	var spin_sign := -signf(angular_velocity)
 	for i in spec.thrusters.size():
@@ -200,13 +203,13 @@ func _fire_thrusters() -> void:
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if not is_driven:
 		return
-	if Input.is_action_pressed("brake") and state.linear_velocity.length() > 0.0:
+	if pilot.is_pressed("brake") and state.linear_velocity.length() > 0.0:
 		var against := global_transform.basis_xform_inv(-state.linear_velocity).normalized()
 		var brake_force := 0.0
 		for t in spec.thrusters:
 			brake_force += t.push_along(against)
 		state.linear_velocity = state.linear_velocity.move_toward(Vector2.ZERO, brake_force / mass * state.step)
-	if Input.is_action_pressed("stop_rotation") and state.angular_velocity != 0.0:
+	if pilot.is_pressed("stop_rotation") and state.angular_velocity != 0.0:
 		var spin_sign := -signf(state.angular_velocity)
 		var spin_torque := 0.0
 		for t in spec.thrusters:
@@ -220,13 +223,16 @@ func _local_against_drift() -> Vector2:
 	return global_transform.basis_xform_inv(-linear_velocity).normalized()
 
 
-func set_driven(on: bool) -> void:
+## A local drive takes the drive camera and plays the thruster sound; a remote one (the rival) does neither.
+func set_driven(on: bool, local := true) -> void:
 	is_driven = on
-	if not on:
+	_local_drive = local
+	if not on and local:
 		Sound.stop_thruster()
 	if on:
 		driven_since_free = true
-		_drive_camera.make_current()
+		if local:
+			_drive_camera.make_current()
 		if customer and customer.requested:
 			customer.request_seen = true
 
@@ -368,5 +374,5 @@ func _pays_for_collision_with(other: Ship) -> bool:
 
 
 func _exit_tree() -> void:
-	if is_driven:
+	if is_driven and _local_drive:
 		Sound.stop_thruster()
