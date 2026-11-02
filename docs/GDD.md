@@ -43,7 +43,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Lose:** pay reaches zero ("You're fired!"), or the shift ends with customers still waiting.
 - **Parked** = the whole ship is inside a valid green space, nearly stopped, for 1 second. The space flashes and the customer pays.
 - **Space sizes:** light, medium and heavy spaces. A ship can park in a space of its own class or larger, so wasting a big space on a small ship may leave a later heavy ship nowhere to go.
-- **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing.
+- **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing. Drifting asteroids block the bay too.
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).
 
 ## 5. Level plan
@@ -51,7 +51,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 |---|---|---|---|
 | 1 – Starter Lot (tutorial) | "Park 4 ships before the shift ends" | Light and medium ships; one diagonal, one parallel, one perpendicular lane; on-screen hints | 3:00 |
 | 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right | 3:00 |
-| 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them | 3:00 |
+| 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them. 9 spaces (2 heavy D1–D2, gold C1–C2), fixed wrecks and drifting asteroids, radiation dents ₵5 every 2 s inside | 3:00 |
 | 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject | 3:30 |
 | 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above | 4:00 |
 
@@ -104,7 +104,7 @@ Title → Main Menu (Play, Settings, Credits) → Mode Select (Offline / Online)
   - `<name>_thrusters.png`: markers read only by `tools/build_ships.gd`, which writes `resources/ships/<name>.tres`. Red `#FF0000` main engine (Fwd), blue `#0000FF` retro (Back), green `#00FF00` side thruster, yellow `#FFFF00` rotation thruster, magenta `#FF00FF` centre of mass (optional; default = centre of the opaque pixels). Touching same-colour pixels form one thruster. Green and yellow push away from the nearest edge of the outline along their row; green fires the strafe in that push direction; yellow fires the rotation its torque gives. Each class has a force budget per button (and a torque budget for rotation), shared between that button's thrusters by pixel count, so ships stay balanced and quirks come from placement. The build reports quirks and refuses layouts missing Fwd, Back, either strafe or either rotation.
 - **Sound:** jazzy lounge music; thruster puffs, soft bump, crunchy dent, cash-register tip. Effects made in jsfxr/Audacity; music from OpenGameArt (CC0 preferred).
 - **Font:** Google Fonts (Open Font License), at least 28 px body text.
-- Every non-original asset is listed in `docs/CREDITS.md` and the in-game Credits screen.
+- Every non-original asset is listed in `docs/CREDITS.md` (currently Kenney's Space Shooter Redux, CC0) and the in-game Credits screen.
 
 ## 11. Risks and simpler fallbacks
 | Risk | Fallback |

@@ -38,11 +38,21 @@ func test_level_select_locks() -> void:
 	if buttons.size() == 5:
 		assert_false((buttons[0] as Button).disabled, "level 1 open")
 		assert_false((buttons[1] as Button).disabled, "level 2 open")
-		assert_true((buttons[2] as Button).disabled, "level 3 has no scene yet")
-		assert_true((buttons[2] as Button).text.contains("Coming soon"))
+		assert_false((buttons[2] as Button).disabled, "level 3 open")
 		for i in range(3, 5):
 			assert_true((buttons[i] as Button).disabled)
 			assert_true((buttons[i] as Button).text.contains("LOCKED"), "level %d" % (i + 1))
+	screen.queue_free()
+	_restore_state()
+
+
+func test_level4_says_coming_soon() -> void:
+	_setup_state(4)
+	var screen: Control = load("res://scenes/ui/LevelSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	var button := screen.get_node("%Grid").get_child(3) as Button
+	assert_true(button.disabled, "level 4 has no scene yet")
+	assert_true(button.text.contains("Coming soon"))
 	screen.queue_free()
 	_restore_state()
 

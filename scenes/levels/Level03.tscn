@@ -1,0 +1,236 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cjip8y5x1sewc" path="res://scripts/Level.gd" id="1_level"]
+[ext_resource type="Script" uid="uid://be0h6ylj18qcb" path="res://scripts/core/ShipSpec.gd" id="2_spec"]
+[ext_resource type="PackedScene" path="res://scenes/actors/ParkingSpace.tscn" id="5_space"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ShipControls.tscn" id="7_ctrl"]
+[ext_resource type="Resource" path="res://resources/ships/ManipulatorDrone.tres" id="10_drone"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ShipPicker.tscn" id="11_picker"]
+[ext_resource type="Resource" path="res://resources/ships/AsteroidJunker.tres" id="12_junker"]
+[ext_resource type="Resource" path="res://resources/ships/ReconDrone.tres" id="13_recon"]
+[ext_resource type="Resource" path="res://resources/ships/RecreationalDrone.tres" id="14_rec"]
+[ext_resource type="Resource" path="res://resources/ships/Milano.tres" id="15_milano"]
+[ext_resource type="Resource" path="res://resources/ships/Miner.tres" id="16_miner"]
+[ext_resource type="Resource" path="res://resources/ships/Nostrom.tres" id="17_nostrom"]
+[ext_resource type="Resource" path="res://resources/ships/AgriShip.tres" id="18_agri"]
+[ext_resource type="Resource" path="res://resources/ships/Hammerhead.tres" id="21_hammer"]
+[ext_resource type="Resource" path="res://resources/ships/Researcher.tres" id="22_research"]
+[ext_resource type="PackedScene" path="res://scenes/actors/ExitPad.tscn" id="20_exit"]
+[ext_resource type="Script" path="res://scripts/actors/RadiationZone.gd" id="30_zone"]
+[ext_resource type="Script" path="res://scripts/actors/Wreck.gd" id="31_wreck"]
+[ext_resource type="Script" path="res://scripts/actors/Asteroid.gd" id="32_rock"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big1.png" id="40_rock1"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big2.png" id="40_rock2"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big3.png" id="40_rock3"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/meteorBrown_big4.png" id="40_rock4"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip1_orange.png" id="41_ship1"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip1_damage3.png" id="42_dmg1"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip2_blue.png" id="41_ship2"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip2_damage3.png" id="42_dmg2"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip3_green.png" id="41_ship3"]
+[ext_resource type="Texture2D" path="res://assets/art/kenney/playerShip3_damage3.png" id="42_dmg3"]
+
+[sub_resource type="RectangleShape2D" id="shape_WallTop"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallBottom"]
+size = Vector2(2480, 40)
+
+[sub_resource type="RectangleShape2D" id="shape_WallLeft"]
+size = Vector2(40, 1480)
+
+[sub_resource type="RectangleShape2D" id="shape_WallRight"]
+size = Vector2(40, 1480)
+
+[node name="Level03" type="Node2D"]
+script = ExtResource("1_level")
+level_number = 3
+goal_text = "Serve 7 customers"
+customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("21_hammer"), ExtResource("22_research")])
+random_customers = 7
+shift_seconds = 180.0
+base_pay = 100
+silver_target = 260
+gold_target = 300
+arrival_interval = 10.0
+use_tiers = true
+retrieval_count = 2
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.12, 0.13, 0.18, 1)
+polygon = PackedVector2Array(0, 0, 2400, 0, 2400, 1400, 0, 1400)
+
+[node name="IslandFloor" type="Polygon2D" parent="."]
+position = Vector2(-176.00002, -243)
+scale = Vector2(1.3290514, 1.3166667)
+color = Color(0.3, 0.32, 0.38, 1)
+polygon = PackedVector2Array(675, 534, 1513.1093, 617.46826, 1550, 760, 538, 894)
+
+[node name="Radiation" type="Node2D" parent="."]
+
+[node name="Z1" type="Node2D" parent="Radiation"]
+position = Vector2(1300, 330)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Z2" type="Node2D" parent="Radiation"]
+position = Vector2(1050, 1100)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Z3" type="Node2D" parent="Radiation"]
+position = Vector2(2040, 880)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, -20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
+shape = SubResource("shape_WallTop")
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, 1420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
+shape = SubResource("shape_WallBottom")
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(-20, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
+shape = SubResource("shape_WallLeft")
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(2420, 700)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
+shape = SubResource("shape_WallRight")
+
+[node name="Island" type="StaticBody2D" parent="Walls"]
+position = Vector2(1200, 700)
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Walls/Island"]
+polygon = PackedVector2Array(-658, 237, -478, -239, 630, -125, 686, 53)
+
+[node name="Spaces" type="Node2D" parent="."]
+
+[node name="A1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(700, 250)
+label = "A1"
+
+[node name="A2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(820, 250)
+label = "A2"
+
+[node name="B1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1300, 1200)
+rotation = 1.570796
+space_class = 0
+label = "B1"
+
+[node name="B2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1450, 1200)
+rotation = 1.570796
+space_class = 0
+label = "B2"
+
+[node name="C1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(1900, 450)
+rotation = 0.785398
+label = "C1"
+gold = true
+
+[node name="C2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(2070, 450)
+rotation = 0.785398
+label = "C2"
+gold = true
+
+[node name="D1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(420, 1180)
+space_class = 2
+label = "D1"
+
+[node name="D2" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(560, 1180)
+space_class = 2
+label = "D2"
+
+[node name="E1" parent="Spaces" instance=ExtResource("5_space")]
+position = Vector2(2260, 1050)
+label = "E1"
+
+[node name="Exit" parent="." instance=ExtResource("20_exit")]
+position = Vector2(2260, 700)
+
+[node name="Wrecks" type="Node2D" parent="."]
+
+[node name="W1" type="StaticBody2D" parent="Wrecks"]
+position = Vector2(350, 300)
+rotation = 0.4
+script = ExtResource("31_wreck")
+texture = ExtResource("41_ship1")
+overlay = ExtResource("42_dmg1")
+
+[node name="W2" type="StaticBody2D" parent="Wrecks"]
+position = Vector2(800, 1300)
+rotation = -1.2
+script = ExtResource("31_wreck")
+texture = ExtResource("41_ship2")
+overlay = ExtResource("42_dmg2")
+
+[node name="W3" type="StaticBody2D" parent="Wrecks"]
+position = Vector2(1800, 1150)
+rotation = 2.5
+script = ExtResource("31_wreck")
+texture = ExtResource("41_ship3")
+overlay = ExtResource("42_dmg3")
+
+[node name="W4" type="StaticBody2D" parent="Wrecks"]
+position = Vector2(2250, 200)
+rotation = -0.3
+script = ExtResource("31_wreck")
+texture = ExtResource("41_ship1")
+overlay = ExtResource("42_dmg1")
+
+[node name="Asteroids" type="Node2D" parent="."]
+
+[node name="R1" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(450, 450)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock1")
+
+[node name="R2" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(1500, 330)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock2")
+
+[node name="R3" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(1600, 950)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock3")
+
+[node name="R4" type="RigidBody2D" parent="Asteroids"]
+position = Vector2(2000, 1250)
+script = ExtResource("32_rock")
+texture = ExtResource("40_rock4")
+
+[node name="Ships" type="Node2D" parent="."]
+
+[node name="Entrance" type="Marker2D" parent="."]
+position = Vector2(140, 700)
+rotation = 1.570796
+
+[node name="LotCamera" type="Camera2D" parent="."]
+position = Vector2(1200, 700)
+zoom = Vector2(0.5, 0.5)
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="Controls" parent="." instance=ExtResource("7_ctrl")]
+
+[node name="ShipPicker" parent="." instance=ExtResource("11_picker")]
