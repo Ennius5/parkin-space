@@ -109,3 +109,28 @@ func test_rival_left_on_close() -> void:
 	assert_false(ge.left, "the side that closed does not get rival_left")
 	assert_false(host.is_active())
 	_cleanup([host, guest] as Array[NetSession])
+
+
+func test_rematch_and_leave_reach_the_rival() -> void:
+	var host := _side("H", LOOP_PORT + 2)
+	var guest := _side("G", LOOP_PORT + 2)
+	var he := _watch(host)
+	var ge := _watch(guest)
+	assert_eq(host.host(), OK)
+	assert_eq(guest.join("127.0.0.1"), OK)
+	var ok: bool = await _wait(func() -> bool: return he.connected and ge.connected)
+	assert_true(ok, "both connected")
+	if not ok:
+		_cleanup([host, guest] as Array[NetSession])
+		return
+	guest.ask_rematch()
+	var asked: bool = await _wait(func() -> bool: return host.rival_wants_rematch)
+	assert_true(asked, "the host heard the rematch request")
+	assert_false(guest.rival_wants_rematch)
+	guest.leave()
+	assert_false(guest.is_active(), "leaving closes this side")
+	assert_false(ge.left, "the leaver gets no rival_left")
+	var gone: bool = await _wait_seconds(func() -> bool: return he.left, 2.0)
+	assert_true(gone, "the host got rival_left")
+	assert_false(host.rival_wants_rematch, "cleared on close")
+	_cleanup([host, guest] as Array[NetSession])

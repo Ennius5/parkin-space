@@ -22,6 +22,9 @@ var difficulty: int = Difficulty.NORMAL  # sets every shift's length
 var cctv_level: int = CCTV_MEDIUM  # index into CctvFilter.STRENGTHS (0 = off)
 var duel_minutes: int = DUEL_MIN  # chosen duel length
 var last_ip: String = ""  # last address typed on the join screen
+var duel_role := ""  # "host" or "guest" when the lobby opened the duel, else "" (not saved)
+var duel_result: Dictionary = {}  # {mine, rival} from the last online match (not saved)
+var notice := ""  # one-time message for Mode Select, e.g. a rival leaving (not saved)
 
 
 func _ready() -> void:

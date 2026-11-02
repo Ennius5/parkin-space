@@ -80,6 +80,7 @@ var _orphan_hint_shown := false
 var _request_indexes: Array[int] = []  # queue positions of customers with a special request
 var _request_hint_shown := false
 var last_pause_action := ""  # "restart" or "quit" when scene changes are off (tests)
+var pauses_tree := true  # false online: the pause menu opens but the match keeps running
 var _pause_menu := PauseMenu.new()
 var _cctv: CctvFilter
 var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
@@ -892,7 +893,7 @@ func _update_pin(label: String) -> void:
 func open_pause() -> void:
 	if _ended or _pause_menu.is_open():
 		return
-	get_tree().paused = true
+	get_tree().paused = pauses_tree
 	_pause_menu.open()
 	Sound.play("open")
 

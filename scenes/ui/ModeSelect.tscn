@@ -56,13 +56,12 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(420, 120)
 theme_override_font_sizes/font_size = 36
 text = "Play Online"
-disabled = true
 
 [node name="OnlineNote" type="Label" parent="Center/Box"]
 layout_mode = 2
 unique_name_in_owner = true
+visible = false
 theme_override_font_sizes/font_size = 28
-text = "Online – coming soon"
 horizontal_alignment = 1
 mouse_filter = 2
 

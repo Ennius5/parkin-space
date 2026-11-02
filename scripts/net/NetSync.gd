@@ -79,17 +79,7 @@ func _on_done() -> void:
 	level.press_done(level.valets[1])
 
 
-# --- Either way (Task 10 gives these their behaviour) ---
-
-@rpc("any_peer", "call_remote", "reliable")
-func rematch() -> void:
-	_from_rival()
-
-
-@rpc("any_peer", "call_remote", "reliable")
-func leave() -> void:
-	_from_rival()
-
+# Rematch and leave are NetSession messages: the result screen outlives this node.
 
 # --- Host -> guest (handed to the level's GuestMirror) ---
 

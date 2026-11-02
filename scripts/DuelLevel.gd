@@ -3,6 +3,8 @@ extends Level
 ## The 1v1 duel lot: a timed shift with no win or loss, only earnings. The queue length and
 ## retrievals follow the duel's minutes, and the result never touches campaign progress.
 ## The host runs the real shift for both valets and streams it to the guest through NetSync.
+## Opened from the lobby (GameState.duel_role set), it takes its role and minutes from there,
+## goes to the Online Result screen when the match ends and to Mode Select if the rival leaves.
 
 signal match_ended(my_score: int, rival_score: int)
 
@@ -10,6 +12,10 @@ enum Role { HOST, GUEST }
 enum Phase { WAITING, COUNTDOWN, PLAYING }  # waiting for the guest's loaded, 3-2-1, the shift
 
 const COUNTDOWN := 3.0
+const START_RESEND := 0.5  # host: match_start repeats this often until the guest has loaded
+const MODE_SELECT := "res://scenes/ui/ModeSelect.tscn"
+const ONLINE_RESULT := "res://scenes/ui/OnlineResult.tscn"
+const RIVAL_LEFT := "Your rival left the match"
 const SNAPSHOT_INTERVAL := 1.0 / 20.0
 const RING_COLORS: Array[Color] = [HexStyle.CYAN, HexStyle.MAGENTA]  # by valet id: host, guest
 
@@ -21,7 +27,10 @@ var rival_gone := false  # the guest left or went silent
 var sync: NetSync
 var mirror: GuestMirror  # guest role only: draws the host's shift
 
+var _from_lobby := false  # role and minutes came from the lobby; scene changes follow the match
 var _phase := Phase.WAITING
+var _start_args: Array = []  # host: the match_start message, kept to repeat while waiting
+var _resend_clock := 0.0
 var _countdown_left := COUNTDOWN
 var _snapshot_clock := 0.0
 var _tick := 0
@@ -33,6 +42,10 @@ var _next_ship_id := 0
 func _ready() -> void:
 	if session == null:
 		session = Net
+	_from_lobby = GameState.duel_role != ""
+	if _from_lobby:
+		role = Role.HOST if GameState.duel_role == "host" else Role.GUEST
+		minutes = GameState.duel_minutes if role == Role.HOST else session.duel_minutes
 	if match_seed == 0 and role == Role.HOST:
 		match_seed = randi_range(1, 0x7fffffff)
 	super._ready()
@@ -42,6 +55,13 @@ func _ready() -> void:
 	sync.session = session
 	add_child(sync)
 	recolor_floodlights()
+	pauses_tree = false
+	_pause_menu.set_online(true)
+	if _from_lobby:
+		if not session.is_active():  # the rival dropped while this scene loaded
+			_leave_for_mode_select(RIVAL_LEFT)
+			return
+		match_ended.connect(_show_online_result)
 	session.rival_left.connect(_on_rival_left)
 	if role == Role.GUEST:
 		_become_mirror()
@@ -50,7 +70,8 @@ func _ready() -> void:
 	var ships: Array = []
 	for ship: Ship in _ship_ids:
 		ships.append(_ship_entry(ship))
-	sync.send(&"match_start", [match_seed, minutes * 60.0, NetProtocol.pack_ship_list(ships)])
+	_start_args = [match_seed, minutes * 60.0, NetProtocol.pack_ship_list(ships)]
+	sync.send(&"match_start", _start_args)
 	if not session.is_active():
 		on_guest_loaded()  # no guest to wait for (tests): loaded counts as received at once
 
@@ -133,6 +154,7 @@ func _physics_process(delta: float) -> void:
 	(valets[1].pilot as NetPilot).bits = 0 if rival_gone else sync.guest_bits
 	match _phase:
 		Phase.WAITING:
+			_resend_start_when_due(delta)
 			return
 		Phase.COUNTDOWN:
 			_count_down(delta)
@@ -140,6 +162,15 @@ func _physics_process(delta: float) -> void:
 			super._physics_process(delta)
 	if not _ended:
 		_send_snapshot_when_due(delta)
+
+
+## The guest's lot may still be loading when the first match_start goes out, so it repeats
+## until the guest answers with loaded. A repeat that arrives is harmless (see GuestMirror).
+func _resend_start_when_due(delta: float) -> void:
+	_resend_clock += delta
+	if _resend_clock >= START_RESEND and session.is_active():
+		_resend_clock = 0.0
+		sync.send(&"match_start", _start_args)
 
 
 ## The shift clock and arrivals wait until the countdown ends; then the first customer arrives.
@@ -290,6 +321,33 @@ func _on_rival_left() -> void:
 	sync.guest_bits = 0
 	if role == Role.HOST and valets.size() > 1:
 		release_ship(valets[1])
+	if _from_lobby:
+		_leave_for_mode_select(RIVAL_LEFT)
+
+
+## Online pause: Leave match (after its Yes) tells the rival and goes to Mode Select.
+func _on_pause_quit() -> void:
+	_pause_menu.close()
+	last_pause_action = "leave"
+	session.leave()
+	_leave_for_mode_select("")
+
+
+## Ends this lot for good and goes to Mode Select, which shows `notice` once.
+func _leave_for_mode_select(notice: String) -> void:
+	_ended = true
+	Sound.stop_thruster()
+	GameState.notice = notice
+	GameState.duel_role = ""
+	if change_scene_on_end:
+		get_tree().change_scene_to_file.call_deferred(MODE_SELECT)
+
+
+## The match is over: both scores go to the Online Result screen.
+func _show_online_result(my_score: int, rival_score: int) -> void:
+	GameState.duel_result = {"mine": my_score, "rival": rival_score}
+	if change_scene_on_end:
+		get_tree().change_scene_to_file.call_deferred(ONLINE_RESULT)
 
 
 ## Stops the shift without recording campaign progress, stars or a result screen. The host

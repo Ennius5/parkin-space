@@ -6,7 +6,8 @@ extends Node
 
 signal connected  ## both sides, after the version handshake succeeds
 signal join_failed(reason: String)  ## guest only: timeout or version mismatch
-signal rival_left  ## the other side disconnected or went silent
+signal rival_left  ## the other side disconnected, went silent or left the match
+signal rival_rematch  ## the rival asked for a rematch
 
 const PORT := 24557
 const PROTOCOL_VERSION := 1
@@ -20,6 +21,7 @@ var port := PORT  # tests may change it
 var join_timeout := JOIN_TIMEOUT  # tests may lower it
 var silence_limit := SILENCE_LIMIT  # tests may lower it
 var duel_minutes := 3  # the host's choice, sent in the handshake
+var rival_wants_rematch := false  # the rival asked for a rematch since the last match started
 
 var _peer: ENetMultiplayerPeer
 var _api: MultiplayerAPI  # the API the peer was set on
@@ -85,6 +87,7 @@ func close() -> void:
 	_joining = false
 	_connected = false
 	_rival_id = 0
+	rival_wants_rematch = false
 	set_process(false)
 
 
@@ -173,6 +176,7 @@ func _lose_rival() -> void:
 
 func _start_match(rival: int) -> void:
 	_rival_id = rival
+	rival_wants_rematch = false
 	_joining = false
 	_connected = true
 	_silence = 0.0
@@ -231,6 +235,36 @@ func _welcome(minutes: int) -> void:
 func _reject() -> void:
 	if _joining:
 		_fail_join.call_deferred(MSG_VERSION)
+
+
+## Asks the rival for a rematch. These two live here, not on the duel's NetSync, because the
+## result screen outlives the duel scene.
+func ask_rematch() -> void:
+	if _connected:
+		_rematch.rpc_id(_rival_id)
+
+
+## Tells the rival this side is leaving, then closes. The rival gets rival_left.
+func leave() -> void:
+	if _connected and _rival_id in _api.get_peers():
+		_leave.rpc_id(_rival_id)
+		_peer.host.flush()  # send it before close() drops the peer
+	close()
+
+
+@rpc("any_peer", "reliable")
+func _rematch() -> void:
+	if not _connected or _api.get_remote_sender_id() != _rival_id:
+		return
+	heard()
+	rival_wants_rematch = true
+	rival_rematch.emit()
+
+
+@rpc("any_peer", "reliable")
+func _leave() -> void:
+	if _connected and _api.get_remote_sender_id() == _rival_id:
+		_lose_rival.call_deferred()
 
 
 @rpc("any_peer", "unreliable")

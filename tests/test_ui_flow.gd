@@ -179,6 +179,8 @@ func test_back_gesture_goes_somewhere_on_every_menu() -> void:
 		"res://scenes/ui/LevelSelect.tscn": "res://scenes/ui/ModeSelect.tscn",
 		"res://scenes/ui/Credits.tscn": "res://scenes/ui/ModeSelect.tscn",
 		"res://scenes/ui/Result.tscn": "res://scenes/ui/LevelSelect.tscn",
+		"res://scenes/ui/Lobby.tscn": "res://scenes/ui/ModeSelect.tscn",
+		"res://scenes/ui/OnlineResult.tscn": "res://scenes/ui/ModeSelect.tscn",
 	}
 	for path: String in expected:
 		var screen: Control = load(path).instantiate()
@@ -186,3 +188,106 @@ func test_back_gesture_goes_somewhere_on_every_menu() -> void:
 		if screen.has_method("back_target"):
 			assert_eq(screen.call("back_target"), expected[path], path)
 		screen.free()
+
+
+# --- Online screens ---
+# Screens that change scenes take `change_scenes = false` in tests and record where they
+# would have gone in `last_target`.
+
+func test_mode_select_online_opens_lobby() -> void:
+	var screen: Control = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	screen.change_scenes = false
+	tree.root.add_child(screen)
+	var online := screen.get_node("%Online") as Button
+	assert_false(online.disabled, "Online is playable")
+	online.pressed.emit()
+	assert_eq(screen.last_target, "res://scenes/ui/Lobby.tscn")
+	assert_eq(GameState.mode, "online")
+	GameState.mode = "offline"
+	screen.free()
+
+
+func test_lobby_minutes_clamped_and_saved() -> void:
+	_setup_state(1)
+	var real: int = GameState.duel_minutes
+	GameState.duel_minutes = GameState.DUEL_MIN
+	var screen: Control = load("res://scenes/ui/Lobby.tscn").instantiate()
+	screen.change_scenes = false
+	tree.root.add_child(screen)
+	var minutes := screen.get_node("%Minutes") as Label
+	assert_eq(minutes.text, "3:00")
+	(screen.get_node("%Less") as Button).pressed.emit()
+	assert_eq(GameState.duel_minutes, 3, "Less at 3 stays at 3")
+	assert_eq(minutes.text, "3:00")
+	for i in 20:
+		(screen.get_node("%More") as Button).pressed.emit()
+	assert_eq(GameState.duel_minutes, 20, "More stops at 20")
+	assert_eq(minutes.text, "20:00")
+	GameState.duel_minutes = 5
+	GameState.load_progress()
+	assert_eq(GameState.duel_minutes, 20, "the length was saved")
+	screen.free()
+	GameState.duel_minutes = real
+	_restore_state()
+
+
+func test_lobby_back_closes_session() -> void:
+	_setup_state(1)
+	var session := NetSession.new()
+	session.port = 24611
+	tree.root.add_child(session)
+	var screen: Control = load("res://scenes/ui/Lobby.tscn").instantiate()
+	screen.change_scenes = false
+	screen.session = session
+	tree.root.add_child(screen)
+	assert_eq(screen.back_target(), "res://scenes/ui/ModeSelect.tscn")
+	(screen.get_node("%Host") as Button).pressed.emit()
+	assert_true(session.is_active(), "hosting")
+	assert_true((screen.get_node("%Status") as Label).text.ends_with("— waiting for a rival…"))
+	(screen.get_node("%Back") as Button).pressed.emit()
+	assert_false(session.is_active(), "Back closed the connection")
+	assert_eq(screen.last_target, "res://scenes/ui/ModeSelect.tscn")
+	screen.free()
+	session.free()
+	_restore_state()
+
+
+func test_online_result_texts() -> void:
+	var real: Dictionary = GameState.duel_result
+	GameState.duel_result = {"mine": 50, "rival": 20}
+	var screen: Control = load("res://scenes/ui/OnlineResult.tscn").instantiate()
+	screen.change_scenes = false
+	tree.root.add_child(screen)
+	assert_eq((screen.get_node("%Title") as Label).text, "You win")
+	var scores := (screen.get_node("%Scores") as Label).text
+	assert_true(scores.contains("50") and scores.contains("20"), scores)
+	screen.show_result({"mine": 20, "rival": 20})
+	assert_eq((screen.get_node("%Title") as Label).text, "Draw")
+	screen.show_result({"mine": -5, "rival": 20})
+	assert_eq((screen.get_node("%Title") as Label).text, "You lose")
+	screen.free()
+	GameState.duel_result = real
+
+
+func test_rival_left_notice_shows_once() -> void:
+	var result: Control = load("res://scenes/ui/OnlineResult.tscn").instantiate()
+	result.change_scenes = false
+	result.session = NetSession.new()
+	tree.root.add_child(result)
+	result.session.rival_left.emit()
+	assert_eq(GameState.notice, "Your rival left the match")
+	assert_eq(result.last_target, "res://scenes/ui/ModeSelect.tscn")
+	var session: NetSession = result.session
+	result.free()
+	session.free()
+	var screen: Control = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	var note := screen.get_node("%OnlineNote") as Label
+	assert_true(note.visible)
+	assert_eq(note.text, "Your rival left the match")
+	assert_eq(GameState.notice, "", "shown once")
+	screen.free()
+	screen = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	assert_false((screen.get_node("%OnlineNote") as Label).visible, "no notice the second time")
+	screen.free()
