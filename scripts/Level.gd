@@ -336,6 +336,7 @@ func end_level() -> void:
 		"difficulty": GameState.difficulty_name(),
 		"earnings": ledger.earnings(),
 		"tips": ledger.tips,
+		"bonuses": ledger.bonuses,
 		"served": ledger.served,
 		"customers": ledger.customers,
 		"reason": reasons.get(ledger.outcome, "timeout"),

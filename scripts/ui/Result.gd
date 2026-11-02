@@ -30,6 +30,10 @@ func show_result(result: Dictionary) -> void:
 	if tips > 0:
 		%Earnings.text += "
 Tips ₵%d" % tips
+	var bonuses: int = result.get("bonuses", 0)
+	if bonuses > 0:
+		%Earnings.text += "
+Bonuses ₵%d" % bonuses
 	if result.has("difficulty"):
 		%Earnings.text += "
 Difficulty: %s" % result["difficulty"]

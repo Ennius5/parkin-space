@@ -10,6 +10,7 @@ const PARK_FEE := 20
 var pay: int  # salary left after dents; reaching 0 = fired
 var earned: int = 0  # fees and tips
 var tips: int = 0
+var bonuses: int = 0  # orphan removal bonuses
 var served: int = 0
 var customers: int
 var time_left: float
@@ -41,6 +42,14 @@ func add_tip(amount: int) -> void:
 	if outcome != Outcome.PLAYING:
 		return
 	tips += amount
+	earned += amount
+
+
+## A removal bonus for an orphaned ship ejected on time.
+func add_bonus(amount: int) -> void:
+	if outcome != Outcome.PLAYING:
+		return
+	bonuses += amount
 	earned += amount
 
 

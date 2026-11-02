@@ -80,3 +80,13 @@ func test_no_money_after_outcome() -> void:
 	l.add_tip(10)
 	assert_eq(l.earned, 20)
 	assert_eq(l.tips, 0)
+
+
+func test_ledger_bonus_adds_to_earnings() -> void:
+	var l := ShiftLedger.new(100, 1, 60.0)
+	l.add_bonus(25)
+	assert_eq(l.bonuses, 25)
+	assert_eq(l.earned, 25)
+	l.serve_customer()
+	l.add_bonus(25)
+	assert_eq(l.bonuses, 25, "ignored once the shift is won")

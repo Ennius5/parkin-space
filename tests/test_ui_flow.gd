@@ -88,6 +88,20 @@ func test_result_shows_the_difficulty() -> void:
 	_restore_state()
 
 
+func test_result_shows_bonuses() -> void:
+	_setup_state(2)
+	var screen := _result_screen()
+	var result := _result("won", 2)
+	result["bonuses"] = 50
+	screen.show_result(result)
+	assert_true(screen.get_node("%Earnings").text.contains("Bonuses ₵50"))
+	result["bonuses"] = 0
+	screen.show_result(result)
+	assert_false(screen.get_node("%Earnings").text.contains("Bonuses"))
+	screen.queue_free()
+	_restore_state()
+
+
 func test_result_win() -> void:
 	_setup_state(2)
 	var screen := _result_screen()
