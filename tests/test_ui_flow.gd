@@ -30,16 +30,17 @@ func _result(reason: String, stars: int) -> Dictionary:
 
 
 func test_level_select_locks() -> void:
-	_setup_state(2)
+	_setup_state(3)
 	var screen: Control = load("res://scenes/ui/LevelSelect.tscn").instantiate()
 	tree.root.add_child(screen)
 	var buttons := screen.get_node("%Grid").get_children()
 	assert_eq(buttons.size(), 5)
 	if buttons.size() == 5:
 		assert_false((buttons[0] as Button).disabled, "level 1 open")
-		assert_true((buttons[1] as Button).disabled, "level 2 has no scene yet")
-		assert_true((buttons[1] as Button).text.contains("Coming soon"))
-		for i in range(2, 5):
+		assert_false((buttons[1] as Button).disabled, "level 2 open")
+		assert_true((buttons[2] as Button).disabled, "level 3 has no scene yet")
+		assert_true((buttons[2] as Button).text.contains("Coming soon"))
+		for i in range(3, 5):
 			assert_true((buttons[i] as Button).disabled)
 			assert_true((buttons[i] as Button).text.contains("LOCKED"), "level %d" % (i + 1))
 	screen.queue_free()
@@ -53,7 +54,7 @@ func test_result_win() -> void:
 	assert_eq(screen.get_node("%Title").text, "Shift complete!")
 	assert_eq(screen.get_node("%Stars").text, "★★☆")
 	assert_true(screen.get_node("%Earnings").text.contains("160"))
-	assert_true(screen.get_node("%Next").disabled, "Level02 does not exist yet")
+	assert_false(screen.get_node("%Next").disabled, "Level02 exists")
 	screen.queue_free()
 	_restore_state()
 

@@ -3,5 +3,4 @@
 [ext_resource type="Script" path="res://scripts/actors/ExitPad.gd" id="1_exit"]
 
 [node name="ExitPad" type="Node2D"]
-z_index = -1
 script = ExtResource("1_exit")

@@ -49,17 +49,30 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 | Level | Goal shown on screen | What is new or harder | Shift limit |
 |---|---|---|---|
 | 1 – Starter Lot (tutorial) | "Park 4 ships before the shift ends" | Light and medium ships; one diagonal, one parallel, one perpendicular lane; on-screen hints | 3:00 |
-| 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; spaces arranged like flower petals; **tip tiers** and **retrieval** requests | 3:00 |
+| 2 – Blossom Lot | "Serve 6 customers" | Heavy ships; 10 spaces arranged like flower petals around a round island (3 heavy, 5 medium, 2 light; the 2 nearest the exit are gold spaces ★); **tip tiers** and **retrieval** requests; an EXIT pad on the right | 3:00 |
 | 3 – Wreckage Lot | "Serve 7 customers" | Starter Lot layout filled with asteroids and wrecks; **radiation zones** slowly dent ships inside them | 3:00 |
 | 4 – Gravity Well Lot | "Serve 7 customers" | A small black hole pulls every ship toward it; **orphaned ships** to eject | 3:30 |
 | 5 – Gold Lounge Rush Hour | "Serve 9 customers" | Mostly gold customers; **special requests** ("I want space C2", which is occupied, so move that ship first); everything above | 4:00 |
 
 Ship quirks (saucer, junker) first appear in Levels 3–5.
 
-**Tier cards (from Level 2):**
-- **Bronze:** patient; 50% chance to tip.
-- **Silver (most common):** always tips; the tip shrinks with each dent.
-- **Gold:** large tip that shrinks quickly after 10 seconds of waiting. Gold customers expect the space nearest the exit.
+**Tier cards (from Level 2):** every customer pays the ₵20 park fee. A coin above the ship shows its tier.
+
+| Tier | Chance | Tip |
+|---|---|---|
+| Bronze | 30% | Patient; a 50% chance of a ₵10 tip |
+| Silver (most common) | 50% | Always tips ₵15, minus ₵5 for each dent on their ship |
+| Gold | 20% | ₵40 for the first 10 s of waiting, then ₵4 less each second. Paid only if the ship is parked in a gold space ★ (the ones nearest the exit). The coin shows the tip still on offer. |
+
+**Waiting** counts from arrival until parked, and again from a retrieval request until the ship is returned.
+
+**Retrieval (from Level 2):**
+- **Who:** 2 of the shift's customers want their ship back, 20–40 s after it parks. A request always leaves at least 30 s of the shift to finish it.
+- **What you do:** the ship shows ↩ and can be driven again. Drive it onto the EXIT pad to hand it over.
+- **Payment:** the fee is paid at parking. The tip, and the customer counting as served, come at the hand-over.
+- **Served:** a customer is served when parked (if they stay) or returned (if they leave). The shift is won when everyone is served.
+
+**Random customers:** a level can draw its customers at random from a pool. Each ship has a **spawn weight** (1 = normal; the Recon Drone is 0.25 and the Nostrom 0.5), and a draw never deals more ships of a class than the lot has spaces for.
 
 **Orphaned ships (from Level 4):** an ownerless ship shows a countdown. Ejecting it through the far exit after the countdown pays a removal bonus; ejecting it early costs pay.
 
