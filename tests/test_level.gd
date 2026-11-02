@@ -1322,19 +1322,42 @@ func test_flung_ship_is_not_flung_again_at_once() -> void:
 	_restore_state()
 
 
-func test_asteroids_ignore_the_hole() -> void:
-	_setup_state()
-	var level := await _make_level()
+## A Level 1 with a black hole and one resting rock (allowed up to fling speed) under "Asteroids".
+func _hole_and_rock(level: Level, offset: Vector2) -> Asteroid:
 	var hole := _add_hole(level)
+	var rocks := Node2D.new()
+	rocks.name = "Asteroids"
+	level.add_child(rocks)
+	level._asteroids = rocks
 	var img := Image.create(100, 60, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	var rock := Asteroid.new()
 	rock.texture = ImageTexture.create_from_image(img)
 	rock.drift_speed = 0.0
-	rock.position = hole.position + Vector2(200, 0)
-	level.add_child(rock)
+	rock.max_speed = BlackHole.FLING_SPEED
+	rock.position = hole.position + offset
+	rocks.add_child(rock)
+	rock.angular_velocity = 0.0
+	return rock
+
+
+func test_asteroid_is_pulled_towards_the_hole() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var rock := _hole_and_rock(level, Vector2(200, 0))
 	await _physics_frames(30)
-	assert_true(rock.linear_velocity.length() < 0.01, "v=%s" % rock.linear_velocity)
+	assert_true(rock.linear_velocity.x < 0.0, "v=%s" % rock.linear_velocity)
+	level.free()
+	_restore_state()
+
+
+func test_asteroid_reaching_the_core_is_flung() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var rock := _hole_and_rock(level, Vector2.ZERO)
+	rock.linear_velocity = Vector2(50, 0)
+	await _physics_frames(2)
+	assert_true(rock.linear_velocity.length() >= BlackHole.FLING_SPEED * 0.9, "v=%s" % rock.linear_velocity)
 	level.free()
 	_restore_state()
 
@@ -1357,4 +1380,41 @@ func test_level04_has_asteroids_clear_of_spaces() -> void:
 				reach = maxf(reach, p.length())
 			for k in keep_clear:
 				assert_false(_circle_hits_rect(rock.position, reach, k[1], k[2]), "%s starts on %s" % [rock.name, k[0]])
+	level.free()
+
+
+
+func test_level04_rocks_can_fly_and_slow_down() -> void:
+	if not GameState.has_level_scene(4):
+		return
+	var level: Level = load(LEVEL04_PATH).instantiate()
+	for rock: Asteroid in level.get_node("Asteroids").get_children():
+		assert_eq(rock.max_speed, BlackHole.FLING_SPEED, "%s can be flung at full speed" % rock.name)
+		assert_true(rock.drag > 0.0, "%s slows back to a drift" % rock.name)
+	level.free()
+
+
+func test_level04_boulders_stay_clear() -> void:
+	if not GameState.has_level_scene(4):
+		return
+	var level: Level = load(LEVEL04_PATH).instantiate()
+	var boulders := level.get_node_or_null("Boulders")
+	assert_true(boulders != null and boulders.get_child_count() >= 4)
+	if boulders:
+		var hole: Node2D = level.get_node("BlackHole")
+		var keep_clear := []
+		for space: ParkingSpace in level.get_node("Spaces").get_children():
+			keep_clear.append([space.label, space.transform, space.size()])
+		keep_clear.append(["bay", (level.get_node("Entrance") as Node2D).transform, ArrivalBay.SIZE])
+		keep_clear.append(["exit", (level.get_node("Exit") as Node2D).transform, ExitPad.SIZE])
+		for boulder: Wreck in boulders.get_children():
+			var reach := 0.0
+			for p in SpriteOutline.outline(boulder.texture, boulder.art_scale):
+				reach = maxf(reach, p.length())
+			assert_true(reach >= 80.0, "%s is big" % boulder.name)
+			assert_true(boulder.position.distance_to(hole.position) - reach > 150.0, "%s is out of the strongest pull" % boulder.name)
+			for k in keep_clear:
+				assert_false(_circle_hits_rect(boulder.position, reach, k[1], k[2]), "%s overlaps %s" % [boulder.name, k[0]])
+			for rock: Asteroid in level.get_node("Asteroids").get_children():
+				assert_true(rock.position.distance_to(boulder.position) > reach + 60.0, "%s starts clear of %s" % [rock.name, boulder.name])
 	level.free()

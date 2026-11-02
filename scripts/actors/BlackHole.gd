@@ -1,14 +1,14 @@
 class_name BlackHole
 extends Node2D
 ## A small black hole. Its pull drags ships towards it, gently from afar and hard up close, but never
-## harder than a ship can thrust. A ship that reaches the very centre is flung out, spinning.
+## harder than a ship can thrust. Anything that reaches the very centre is flung out, spinning.
 
 const PULL_K := 1_800_000.0  # pull = PULL_K / distance², so 20 px/s² at 300 px
 const MAX_PULL := 80.0  # px/s², reached at 150 px; below every ship's forward thrust
 const CORE_RADIUS := 60.0  # the black disc drawn at the centre
 const FLING_RADIUS := 30.0  # a ship whose centre gets this close is flung
-const FLING_SPEED := 450.0
-const FLING_SPIN := 6.0  # rad/s
+const FLING_SPEED := 300.0
+const FLING_SPIN := 4.0  # rad/s
 const FLING_COOLDOWN_MS := 1000  # a flung ship can't be flung again this soon
 const RING_COLORS: Array[Color] = [Color(1.0, 0.55, 0.2), Color(0.8, 0.3, 1.0), Color(1.0, 0.8, 0.4)]
 

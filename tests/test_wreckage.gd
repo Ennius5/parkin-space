@@ -100,3 +100,16 @@ func test_shoved_asteroid_slows_to_its_speed_cap() -> void:
 		await tree.physics_frame
 	assert_true(rock.linear_velocity.length() <= Asteroid.MAX_SPEED + 0.5, "speed %s" % rock.linear_velocity.length())
 	rock.queue_free()
+
+
+
+func test_asteroid_speed_cap_and_drag_are_settable() -> void:
+	var rock := _asteroid(Vector2(300, 300))
+	rock.max_speed = 300.0
+	rock.drag = 0.3
+	rock.linear_velocity = Vector2(500, 0)
+	for i in 3:
+		await tree.physics_frame
+	assert_true(rock.linear_velocity.length() <= 300.5, "speed %s" % rock.linear_velocity.length())
+	assert_almost(rock.linear_damp, 0.3, 0.001)
+	rock.queue_free()

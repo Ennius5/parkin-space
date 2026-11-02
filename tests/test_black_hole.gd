@@ -32,3 +32,9 @@ func test_hole_ignores_the_dark() -> void:
 	var m := hole.material as CanvasItemMaterial
 	assert_true(m != null and m.light_mode == CanvasItemMaterial.LIGHT_MODE_UNSHADED)
 	hole.queue_free()
+
+
+
+func test_fling_is_gentler() -> void:
+	assert_eq(BlackHole.FLING_SPEED, 300.0)
+	assert_eq(BlackHole.FLING_SPIN, 4.0)

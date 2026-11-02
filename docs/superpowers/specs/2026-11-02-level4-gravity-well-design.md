@@ -41,7 +41,7 @@ Level 4 adds two systems. A **black hole** at the centre of the lot pulls every 
 
 ## The black hole
 
-- **Core (revised after review, 2026-11-02):** not solid. A ship whose centre comes within 30 px of the centre is flung out the far side at 450 px/s, the way it was going, spinning at 6 rad/s. A ship that arrives nearly still is thrown in a random direction. A flung ship can't be flung again for 1 s. The fling itself is free; whatever the ship hits next dents as usual.
+- **Core (revised after review, 2026-11-02):** not solid. A ship whose centre comes within 30 px of the centre is flung out the far side at 300 px/s (lowered from 450 on 2026-11-02), the way it was going, spinning at 4 rad/s. A ship that arrives nearly still is thrown in a random direction. A flung ship can't be flung again for 1 s. The fling itself is free; whatever the ship hits next dents as usual.
 - **Pull:**
   - Every ship the valet has taken in hand since it arrived or left its space, and that isn't parked, accelerates towards the hole's centre. Untouched ships (waiting arrivals, ships wanted back that haven't been picked up yet, orphans in their spaces) feel no pull. (Revised after review, 2026-11-02.)
   - A ship resting fully inside a free space it fits, or the space holding it, is shielded from the pull, so it can always settle and park.
@@ -51,7 +51,8 @@ Level 4 adds two systems. A **black hole** at the centre of the lot pulls every 
   - The cap is below every ship's forward acceleration (the weakest is a heavy, at 1000 / 6 ≈ 167 px/s²), so the pull is always escapable.
   - The force is applied as `mass × acceleration` at the ship's centre of mass, so it never spins a ship.
 - **Parked ships:** they are frozen and unaffected.
-- **Asteroids:** 5 drifting asteroids (as in Level 3), immune to the hole: it neither pulls nor flings them.
+- **Asteroids (revised 2026-11-02):** 5 drifting asteroids. The hole pulls and flings them too: they may reach 300 px/s (Level 3's rocks stay capped at 120) and have a little drag (0.3), so a flung rock is a burst of danger that slows back to a drift before being pulled in again. A flung rock hitting a ship dents by the usual rule.
+- **Boulders:** 4 big static asteroids (Kenney meteors at 2× scale), solid like wrecks, in the lanes between the rim and the hole; kept off spaces, the bay and the exit, and out of the 150 px strongest-pull zone.
 - **Look:**
   - a black disc with a swirling, glowing accretion ring, plus a faint purple PointLight2D
   - the disc and ring ignore the dark, like the other markers, so the hole is always visible

@@ -54,7 +54,7 @@ var _pool: Array[ShipSpec] = []  # every ship this level can draw, kept for orph
 var _orphans_due: Array[float] = []  # shift seconds at which orphans are due to appear
 var _orphan_clock := 0.0
 var _orphan_hint_shown := false
-var _flung_at: Dictionary = {}  # Ship -> msec it was last flung out of a black hole
+var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -464,11 +464,14 @@ func _add_darkness() -> void:
 ## The black hole drags every ship the valet has taken in hand and that isn't parked, at its centre
 ## of mass so it never spins it. Untouched ships (waiting arrivals, ships whose owner wants them
 ## back) stay put until picked up. A ship resting inside a space it fits is shielded, so it can
-## always settle and park.
+## always settle and park. Drifting asteroids are always pulled.
 func _apply_pull() -> void:
 	for ship: Ship in _ships.get_children():
 		if ship.driven_since_free and not ship.is_parked and not _sheltered(ship):
 			ship.apply_central_force(_black_hole.pull_on(ship.global_position) * ship.mass)
+	if _asteroids:
+		for rock: Asteroid in _asteroids.get_children():
+			rock.apply_central_force(_black_hole.pull_on(rock.global_position) * rock.mass)
 
 
 func _sheltered(ship: Ship) -> bool:
@@ -593,14 +596,21 @@ func _eject_orphan(ship: Ship) -> void:
 
 
 
-## A ship whose centre reaches the hole's core is flung out the far side, spinning hard.
+## A ship or asteroid whose centre reaches the hole's core is flung out the far side, spinning.
 func _fling_from_core() -> void:
 	var now := Time.get_ticks_msec()
+	var bodies: Array[RigidBody2D] = []
 	for ship: Ship in _ships.get_children():
-		if ship.is_parked or ship.global_position.distance_to(_black_hole.global_position) > BlackHole.FLING_RADIUS:
+		if not ship.is_parked:
+			bodies.append(ship)
+	if _asteroids:
+		for rock: Asteroid in _asteroids.get_children():
+			bodies.append(rock)
+	for body in bodies:
+		if body.global_position.distance_to(_black_hole.global_position) > BlackHole.FLING_RADIUS:
 			continue
-		if now - int(_flung_at.get(ship, -BlackHole.FLING_COOLDOWN_MS)) < BlackHole.FLING_COOLDOWN_MS:
+		if now - int(_flung_at.get(body, -BlackHole.FLING_COOLDOWN_MS)) < BlackHole.FLING_COOLDOWN_MS:
 			continue
-		_flung_at[ship] = now
-		ship.linear_velocity = BlackHole.fling_velocity(ship.linear_velocity, _rng)
-		ship.angular_velocity = BlackHole.FLING_SPIN * (1.0 if _rng.randf() < 0.5 else -1.0)
+		_flung_at[body] = now
+		body.linear_velocity = BlackHole.fling_velocity(body.linear_velocity, _rng)
+		body.angular_velocity = BlackHole.FLING_SPIN * (1.0 if _rng.randf() < 0.5 else -1.0)

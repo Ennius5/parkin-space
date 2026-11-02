@@ -9,6 +9,11 @@ const ROCK_LAYER := 1 | ArrivalBay.ROCK_BARRIER_LAYER  # collides with everythin
 @export var texture: Texture2D
 @export var art_scale := 0.6
 @export var drift_speed := 25.0
+@export var max_speed := MAX_SPEED  # Level 4 raises this so a black hole's fling can send rocks flying
+@export var drag := 0.0:  # how fast a speeding rock slows back down; 0 = drifts forever
+	set(value):
+		drag = value
+		linear_damp = value
 
 var _outline := PackedVector2Array()
 
@@ -17,7 +22,7 @@ func _ready() -> void:
 	mass = MASS
 	gravity_scale = 0.0
 	linear_damp_mode = DAMP_MODE_REPLACE
-	linear_damp = 0.0
+	linear_damp = drag
 	angular_damp_mode = DAMP_MODE_REPLACE
 	angular_damp = 0.0
 	collision_mask = ROCK_LAYER
@@ -38,7 +43,7 @@ func _ready() -> void:
 
 
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
-	state.linear_velocity = state.linear_velocity.limit_length(maxf(drift_speed, MAX_SPEED))
+	state.linear_velocity = state.linear_velocity.limit_length(maxf(drift_speed, max_speed))
 
 
 ## The outline and the centre in global coordinates, like Ship.hull_points().
