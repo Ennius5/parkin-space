@@ -108,9 +108,9 @@ Title → Main Menu (Play, Settings, Credits) → Mode Select (Offline / Online)
   - `<name>_paint.png` (optional): paintable areas in greys, tinted with each customer's random paint colour.
   - `<name>_lights.png` (optional): glowing parts, drawn additively. On while driven, slow blink while waiting, dim when parked.
   - `<name>_thrusters.png`: markers read only by `tools/build_ships.gd`, which writes `resources/ships/<name>.tres`. Red `#FF0000` main engine (Fwd), blue `#0000FF` retro (Back), green `#00FF00` side thruster, yellow `#FFFF00` rotation thruster, magenta `#FF00FF` centre of mass (optional; default = centre of the opaque pixels). Touching same-colour pixels form one thruster. Green and yellow push away from the nearest edge of the outline along their row; green fires the strafe in that push direction; yellow fires the rotation its torque gives. Each class has a force budget per button (and a torque budget for rotation), shared between that button's thrusters by pixel count, so ships stay balanced and quirks come from placement. The build reports quirks and refuses layouts missing Fwd, Back, either strafe or either rotation.
-- **Sound:** jazzy lounge music; thruster puffs, soft bump, crunchy dent, cash-register tip. Effects made in jsfxr/Audacity; music from OpenGameArt (CC0 preferred).
+- **Sound:** effects from Kenney's CC0 Sci-Fi, Impact, Interface and Casino packs (thruster loop, soft bump, metal dent / crunch, chip sounds for fees, tips and bonuses, fling, radiation glitch, UI clicks). Music: five ccMixter tracks under CC BY-NC 3.0 (non-commercial use only); "Descent Mind Ascent" loops on menus, the other four play at random in levels. A Pause menu (HUD "II" button, or the back gesture) holds the Sound on/off toggle.
 - **Font:** Google Fonts (Open Font License), at least 28 px body text.
-- Every non-original asset is listed in `docs/CREDITS.md` (currently Kenney's Space Shooter Redux, CC0) and the in-game Credits screen.
+- Every non-original asset is listed in `docs/CREDITS.md` and on the Credits screen (Mode Select → Credits) (currently Kenney's Space Shooter Redux, CC0) and the in-game Credits screen.
 
 ## 11. Risks and simpler fallbacks
 | Risk | Fallback |

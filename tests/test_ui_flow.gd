@@ -149,3 +149,24 @@ func test_result_with_empty_result_does_not_crash() -> void:
 	assert_true(screen.get_node("%Next").disabled)
 	screen.queue_free()
 	_restore_state()
+
+
+
+func test_credits_lists_every_track() -> void:
+	var screen: Control = load("res://scenes/ui/Credits.tscn").instantiate()
+	tree.root.add_child(screen)
+	var text: String = (screen.get_node("%Text") as Label).text
+	for title in ["Descent Mind Ascent", "Strange", "Never Stop Rising", "squidgy", "just not right"]:
+		assert_true(text.contains(title), title)
+	assert_true(text.contains("CC BY-NC 3.0"))
+	assert_true(text.contains("Kenney"))
+	assert_true(text.contains("The music is licensed for non-commercial use only."))
+	assert_true(screen.get_node_or_null("%Back") is Button)
+	screen.free()
+
+
+func test_mode_select_has_credits() -> void:
+	var screen: Control = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	assert_true(screen.get_node_or_null("%Credits") is Button)
+	screen.free()
