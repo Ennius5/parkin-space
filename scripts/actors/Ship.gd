@@ -38,6 +38,7 @@ var orphan: Orphan  # set on an abandoned ship with no customer
 var driven_since_free := false  # taken in hand since it arrived or left its space; only then does a black hole pull it
 var _badge := Node2D.new()
 var _request_glow := Node2D.new()
+var _flames := Node2D.new()  # thruster exhaust: it glows, so the dark never shades it
 
 
 func _ready() -> void:
@@ -78,6 +79,11 @@ func _ready() -> void:
 	_request_glow.material = Lighting.unlit()
 	_request_glow.draw.connect(_draw_glow)
 	add_child(_request_glow)
+	_flames.name = "Flames"
+	_flames.show_behind_parent = true
+	_flames.material = Lighting.unlit()
+	_flames.draw.connect(_draw_flames)
+	add_child(_flames)
 	_add_lights()
 
 
@@ -156,7 +162,7 @@ func _physics_process(_delta: float) -> void:
 	if is_driven:
 		_fire_thrusters()
 	if firing != was_firing:
-		queue_redraw()
+		_flames.queue_redraw()
 
 
 func _fire_thrusters() -> void:
@@ -271,6 +277,9 @@ func _draw() -> void:
 		return
 	if spec.texture == null:
 		_draw_placeholder_hull()
+
+
+func _draw_flames() -> void:
 	for i in firing:
 		_draw_flame(spec.thrusters[i])
 
@@ -296,10 +305,10 @@ func _draw_flame(t: ThrusterSpec) -> void:
 	var side := back.orthogonal()
 	var length := clampf(t.force / 10.0, 12.0, 28.0)
 	var width := length * 0.3
-	draw_colored_polygon(PackedVector2Array([
+	_flames.draw_colored_polygon(PackedVector2Array([
 		t.position + side * width, t.position + back * length, t.position - side * width,
 	]), Color(1.0, 0.5, 0.1, 0.9))
-	draw_colored_polygon(PackedVector2Array([
+	_flames.draw_colored_polygon(PackedVector2Array([
 		t.position + side * width * 0.5, t.position + back * length * 0.55, t.position - side * width * 0.5,
 	]), Color(1.0, 0.95, 0.5))
 

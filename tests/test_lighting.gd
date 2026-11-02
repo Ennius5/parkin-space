@@ -170,3 +170,13 @@ func test_floodlights_are_strong_and_reach_far() -> void:
 		for f in _floodlights(level):
 			assert_true(f.radius >= 350.0 and f.strength >= 1.8, "%s %s r=%s s=%s" % [path, f.name, f.radius, f.strength])
 		level.free()
+
+
+func test_thruster_flames_glow_in_the_dark() -> void:
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = ship_spec("light_scout")
+	ship.freeze = true
+	tree.root.add_child(ship)
+	var flames := ship.get_node_or_null("Flames") as CanvasItem
+	assert_true(flames != null and _is_unlit(flames), "flames ignore the dark")
+	ship.queue_free()
