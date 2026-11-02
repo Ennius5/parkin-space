@@ -752,3 +752,30 @@ func test_level01_has_no_radiation() -> void:
 	assert_true(level._radiation_time.is_empty())
 	level.free()
 	_restore_state()
+
+
+func test_asteroid_in_the_bay_holds_the_next_arrival() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ships := level.get_node("Ships")
+	var asteroids := Node2D.new()
+	asteroids.name = "Asteroids"
+	level.add_child(asteroids)
+	level._asteroids = asteroids
+	var img := Image.create(100, 60, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	var rock := Asteroid.new()
+	rock.texture = ImageTexture.create_from_image(img)
+	rock.drift_speed = 0.0
+	rock.freeze = true
+	asteroids.add_child(rock)
+	rock.global_position = level.get_node("ArrivalBay").global_position
+	_move(_first_ship(level), OPEN_FLOOR)
+	level._arrival_timer = 999.0
+	await _physics_frames(90)
+	assert_eq(ships.get_child_count(), 1, "a rock sits in the bay")
+	rock.global_position = OPEN_FLOOR + Vector2(600, 0)
+	await _physics_frames(70)
+	assert_eq(ships.get_child_count(), 2)
+	level.free()
+	_restore_state()

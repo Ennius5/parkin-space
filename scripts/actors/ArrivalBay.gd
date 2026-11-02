@@ -1,23 +1,29 @@
 class_name ArrivalBay
 extends Node2D
 ## The marked area at the entrance where customers arrive. The next ship only arrives once
-## no part of any ship has been inside it for a moment. Sized for the biggest ship.
+## no part of any ship or asteroid has been inside it for a moment. Sized for the biggest ship.
 
 const SIZE := Vector2(140, 220)  # local Y is the arriving ship's length
 const COLOR := Color(0.6, 0.65, 0.75, 0.5)
 
 
-func touches(ship: Ship) -> bool:
+## True when any part of a ship or asteroid is inside the bay.
+func touches(body: Node2D) -> bool:
+	var points := PackedVector2Array()
+	if body is Ship:
+		points = (body as Ship).hull_points()
+	elif body is Asteroid:
+		points = (body as Asteroid).hull_points()
 	var rect := Rect2(-SIZE / 2, SIZE)
-	for p in ship.hull_points():
+	for p in points:
 		if rect.has_point(to_local(p)):
 			return true
 	return false
 
 
-func is_clear(ships: Array[Node]) -> bool:
-	for ship: Ship in ships:
-		if touches(ship):
+func is_clear(bodies: Array[Node]) -> bool:
+	for body: Node2D in bodies:
+		if touches(body):
 			return false
 	return true
 

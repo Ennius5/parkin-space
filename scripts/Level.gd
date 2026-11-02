@@ -58,6 +58,7 @@ var _radiation_hint_shown := false
 @onready var _picker: ShipPicker = $ShipPicker
 @onready var _exit: ExitPad = get_node_or_null("Exit")
 @onready var _radiation: Node = get_node_or_null("Radiation")
+@onready var _asteroids: Node = get_node_or_null("Asteroids")
 
 
 func _ready() -> void:
@@ -83,7 +84,10 @@ func _physics_process(delta: float) -> void:
 		return
 	ledger.tick(delta)
 	_arrival_timer += delta
-	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(_ships.get_children()) else 0.0
+	var in_the_way: Array[Node] = _ships.get_children()
+	if _asteroids:
+		in_the_way.append_array(_asteroids.get_children())
+	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(in_the_way) else 0.0
 	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
 		if spawn_next_customer():
 			_arrival_timer = 0.0
