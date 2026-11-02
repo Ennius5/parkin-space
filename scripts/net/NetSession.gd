@@ -1,0 +1,233 @@
+class_name NetSession
+extends Node
+## One LAN duel connection over ENet: host or join, version handshake, join timeout
+## and a silence watchdog. The autoload `Net` is one instance; tests make their own,
+## each under a root with its own SceneMultiplayer.
+
+signal connected  ## both sides, after the version handshake succeeds
+signal join_failed(reason: String)  ## guest only: timeout or version mismatch
+signal rival_left  ## the other side disconnected or went silent
+
+const PORT := 24557
+const PROTOCOL_VERSION := 1
+const JOIN_TIMEOUT := 5.0
+const SILENCE_LIMIT := 3.0
+const KEEPALIVE_INTERVAL := 0.5
+const MSG_UNREACHABLE := "Cannot reach host. Check that you are on the same Wi-Fi."
+const MSG_VERSION := "Your rival has a different version of the game."
+
+var port := PORT  # tests may change it
+var join_timeout := JOIN_TIMEOUT  # tests may lower it
+var silence_limit := SILENCE_LIMIT  # tests may lower it
+var duel_minutes := 3  # the host's choice, sent in the handshake
+
+var _peer: ENetMultiplayerPeer
+var _api: MultiplayerAPI  # the API the peer was set on
+var _is_host := false
+var _joining := false  # guest: waiting for welcome or reject
+var _connected := false  # handshake done
+var _rival_id := 0
+var _join_elapsed := 0.0
+var _silence := 0.0
+var _keepalive := 0.0
+
+
+func _ready() -> void:
+	set_process(false)  # idle until host() or join()
+
+
+func _exit_tree() -> void:
+	close()
+
+
+## Starts listening for one guest on `port`.
+func host() -> Error:
+	close()
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_server(port, 1)
+	if err != OK:
+		return err
+	_is_host = true
+	_open(peer)
+	return OK
+
+
+## Connects to a host at `ip`; emits connected or join_failed.
+func join(ip: String) -> Error:
+	close()
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_client(ip, port)
+	if err != OK:
+		return err
+	_is_host = false
+	_joining = true
+	_join_elapsed = 0.0
+	_open(peer)
+	return OK
+
+
+## Frees the peer and resets state. Safe to call repeatedly; never emits rival_left.
+func close() -> void:
+	if _peer == null:
+		return
+	if _api != null:
+		_api.peer_connected.disconnect(_on_peer_connected)
+		_api.peer_disconnected.disconnect(_on_peer_disconnected)
+		_api.connected_to_server.disconnect(_on_connected_to_server)
+		_api.connection_failed.disconnect(_on_connection_failed)
+		_api.server_disconnected.disconnect(_on_server_disconnected)
+		if _api.multiplayer_peer == _peer:
+			_api.multiplayer_peer = OfflineMultiplayerPeer.new()
+	_peer.close()
+	_peer = null
+	_api = null
+	_is_host = false
+	_joining = false
+	_connected = false
+	_rival_id = 0
+	set_process(false)
+
+
+func is_host() -> bool:
+	return _is_host
+
+
+## True while a peer is open (listening, joining or connected).
+func is_active() -> bool:
+	return _peer != null
+
+
+## The first private IPv4 address (192.168/16, 10/8, 172.16/12), else "".
+static func private_ip(addresses: PackedStringArray) -> String:
+	for a in addresses:
+		var parts := a.split(".")
+		if parts.size() != 4 or not a.is_valid_ip_address():
+			continue
+		var b0 := parts[0].to_int()
+		var b1 := parts[1].to_int()
+		if (b0 == 192 and b1 == 168) or b0 == 10 or (b0 == 172 and b1 >= 16 and b1 <= 31):
+			return a
+	return ""
+
+
+## This device's Wi-Fi address to show when hosting.
+func local_ip() -> String:
+	return private_ip(IP.get_local_addresses())
+
+
+## Resets the silence watchdog; called for every message from the rival.
+func heard() -> void:
+	_silence = 0.0
+
+
+func _open(peer: ENetMultiplayerPeer) -> void:
+	_peer = peer
+	_api = multiplayer
+	_api.multiplayer_peer = peer
+	_api.peer_connected.connect(_on_peer_connected)
+	_api.peer_disconnected.connect(_on_peer_disconnected)
+	_api.connected_to_server.connect(_on_connected_to_server)
+	_api.connection_failed.connect(_on_connection_failed)
+	_api.server_disconnected.connect(_on_server_disconnected)
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if _joining:
+		_join_elapsed += delta
+		if _join_elapsed >= join_timeout:
+			_fail_join(MSG_UNREACHABLE)
+		return
+	if not _connected:
+		return
+	_silence += delta
+	if _silence >= silence_limit:
+		_lose_rival()
+		return
+	_keepalive += delta
+	if _keepalive >= KEEPALIVE_INTERVAL:
+		_keepalive = 0.0
+		_ping.rpc_id(_rival_id)
+
+
+## Handlers run inside the multiplayer poll, so they defer these two (the peer is
+## swapped out in close()); the guards drop a call that arrives after a close().
+func _fail_join(reason: String) -> void:
+	if not _joining:
+		return
+	close()
+	join_failed.emit(reason)
+
+
+func _lose_rival() -> void:
+	if not _connected:
+		return
+	close()
+	rival_left.emit()
+
+
+func _start_match(rival: int) -> void:
+	_rival_id = rival
+	_joining = false
+	_connected = true
+	_silence = 0.0
+	_keepalive = 0.0
+	connected.emit()
+
+
+func _on_peer_connected(_id: int) -> void:
+	pass  # the host waits for _hello
+
+
+func _on_peer_disconnected(id: int) -> void:
+	if _is_host and _connected and id == _rival_id:
+		_lose_rival.call_deferred()
+	# a guest that never finished the handshake just frees the slot; keep listening
+
+
+func _on_connected_to_server() -> void:
+	_hello.rpc_id(1, PROTOCOL_VERSION)
+
+
+func _on_connection_failed() -> void:
+	if _joining:
+		_fail_join.call_deferred(MSG_UNREACHABLE)
+
+
+func _on_server_disconnected() -> void:
+	if _connected:
+		_lose_rival.call_deferred()
+	elif _joining:
+		_fail_join.call_deferred(MSG_UNREACHABLE)
+
+
+@rpc("any_peer", "reliable")
+func _hello(version: int) -> void:
+	if not _is_host or _connected:
+		return
+	var sender := _api.get_remote_sender_id()
+	if version != PROTOCOL_VERSION:
+		_reject.rpc_id(sender)
+		_peer.get_peer(sender).peer_disconnect_later()  # after the reject is delivered
+		return
+	_welcome.rpc_id(sender, duel_minutes)
+	_start_match(sender)
+
+
+@rpc("authority", "reliable")
+func _welcome(minutes: int) -> void:
+	if not _joining:
+		return
+	duel_minutes = minutes
+	_start_match(1)
+
+
+@rpc("authority", "reliable")
+func _reject() -> void:
+	if _joining:
+		_fail_join.call_deferred(MSG_VERSION)
+
+
+@rpc("any_peer", "unreliable")
+func _ping() -> void:
+	heard()  # keep-alive while no match messages flow
