@@ -4,7 +4,7 @@
 
 ## Goal
 Two players on the same Wi-Fi play a real-time 1-vs-1 valet shift in one shared lot. Whoever has the higher
-score after 3:00 wins. This meets the lab's online-multiplayer requirement (GDD §8). The design favours
+score when the match time runs out wins. This meets the lab's online-multiplayer requirement (GDD §8). The design favours
 something we can test automatically over network cleverness.
 
 ## Decisions (from brainstorming)
@@ -16,12 +16,13 @@ something we can test automatically over network cleverness.
 
 ## 1. Match flow and screens
 - **Mode Select → Online** opens a new **Lobby** screen (`scenes/ui/Lobby.tscn`):
+  - **Match length:** a stepper (− 3:00 +) above the Host button sets the length in **1-minute steps from 3 to 20 minutes**. It is saved in `save.cfg` as the next default; 3:00 on first run. Only the host's choice counts, and the guest sees it in the lobby status and the HUD timer.
   - **Host:** shows "Hosting on <IP> — waiting for a rival…" with the Wi-Fi IP in large text.
   - **Join:** an IP field (the last IP is saved in `save.cfg`) and a Join button.
     - If the host can't be reached within **5 s**: "Cannot reach host. Check that you are on the same Wi-Fi."
     - If the versions differ: "Your rival has a different version of the game."
   - **Back** (and the Android back gesture) closes any connection and returns to Mode Select.
-- **When the guest connects,** both phones load the duel lot. The host waits for the guest's **Loaded** message, then both show a **3-2-1 countdown** and the shift starts. The shift is **3:00** whatever difficulty is set.
+- **When the guest connects,** both phones load the duel lot. The host waits for the guest's **Loaded** message, then both show a **3-2-1 countdown** and the shift starts. The shift lasts the host's chosen match length, whatever difficulty is set. A rematch keeps the same length.
 - **HUD in a duel:**
   - "You ₵X · Rival ₵Y", the shared timer and the queue.
   - **Host = cyan, guest = magenta.** A ship being driven gets a ring in its driver's colour.
@@ -44,8 +45,8 @@ something we can test automatically over network cleverness.
 - **Customers:**
   - random draws with the usual tier odds (`use_tiers = true`)
   - `arrival_interval = 6.0`
-  - a pool large enough for the shift (about 30)
-  - about **4 retrievals**
+  - a pool that scales with the match length: `ceil(minutes × 60 / 6) + 5` customers (35 at 3:00, 205 at 20:00)
+  - retrievals also scale: `round(minutes × 4 / 3)` (4 at 3:00, 27 at 20:00)
 - **Lighting:** pitch black, floodlights with 2 flickering, and headlights. The host chooses an **RNG seed** and sends it at match start. Floodlight colours, flicker and headlight colours come from that seed, so both phones look identical. The CCTV filter follows each phone's own setting.
 - Exact coordinates are set when the scene is built. The user may tweak them in the editor later.
 
@@ -53,7 +54,7 @@ something we can test automatically over network cleverness.
 - **Score:**
   - Each player starts at **₵0**, with no salary and no firing.
   - Fees and tips add. Dent costs subtract, and the score can go negative.
-- **End:** only when the 3:00 runs out. Higher score wins; an equal score is a draw.
+- **End:** only when the match time runs out. Higher score wins; an equal score is a draw.
 - **Credit:**
   - The player who presses **Done** to park a ship gets its fee and tier tip.
   - The player who drives a returning ship onto the **EXIT** gets the retrieval payout.
@@ -77,7 +78,7 @@ something we can test automatically over network cleverness.
 | Message | Direction | Mode | Content |
 |---|---|---|---|
 | hello | guest→host | reliable | protocol version |
-| match_start | host→guest | reliable | seed, ship list (id → spec name, tier, customer flags) |
+| match_start | host→guest | reliable | seed, match length in seconds, ship list (id → spec name, tier, customer flags) |
 | loaded / go | both | reliable | the countdown handshake |
 | input | guest→host | unreliable_ordered, 30 Hz | bit flags: thrust actions, brake, stop_rotation |
 | select / done | guest→host | reliable | ship id / — |
@@ -101,7 +102,7 @@ something we can test automatically over network cleverness.
   - `Level` holds `valets`. Offline has exactly one, and `driven_ship` and `ledger` remain as shortcuts to valet 0.
   - Parking, Done, dents and exit hand-overs credit the valet driving the ship.
 - **`scripts/DuelLevel.gd`** (extends `Level`, used by `Duel.tscn`):
-  - **Host mode:** two valets, with valet 1's pilot a `NetPilot`. It handles guest select/done requests, sends snapshots, ship add/remove messages and events, and ends at 3:00 with `match_end`.
+  - **Host mode:** two valets, with valet 1's pilot a `NetPilot`. It handles guest select/done requests, sends snapshots, ship add/remove messages and events, and ends when the match time runs out, with `match_end`.
   - **Guest mirror mode:** no physics process, spawning or scoring.
     - Ships are built from the ship list and frozen with collisions off, positioned from the `SnapshotBuffer`.
     - Flames, rings and glows come from the flags, and the HUD comes from the snapshot.
@@ -130,6 +131,7 @@ something we can test automatically over network cleverness.
   - rammer-pays collision rule
   - duel scoring (starts at 0, can go negative, credit goes to the right valet)
   - Valet refactor keeps offline single-valet behaviour (the whole existing suite stays green)
+  - match length: clamped to 3–20 minutes in 1-minute steps, saved, and sent to the guest; the pool and retrieval counts follow the length
   - duel lot layout (22 spaces with the right class counts, mirrored, bay and exit present)
   - private-IP filter
 - **Loopback integration test:** host and guest in one process on 127.0.0.1 (separate `SceneMultiplayer` roots).
