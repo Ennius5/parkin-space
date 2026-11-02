@@ -6,6 +6,7 @@ const TITLE := "res://scenes/ui/Title.tscn"
 
 
 func _ready() -> void:
+	Sound.play_menu_music()
 	%Offline.pressed.connect(_on_offline_pressed)
 	%Back.pressed.connect(get_tree().change_scene_to_file.bind(TITLE))
 

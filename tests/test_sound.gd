@@ -73,3 +73,30 @@ func test_saved_mute_applies_at_start() -> void:
 	assert_true(AudioServer.is_bus_mute(0))
 	GameState.sound_on = real_on
 	Sound.apply_mute()
+
+
+func test_level_plays_a_level_track() -> void:
+	var level: Level = load("res://scenes/levels/Level01.tscn").instantiate()
+	level.change_scene_on_end = false
+	tree.root.add_child(level)
+	await tree.process_frame
+	assert_true(Sound.current_track() in Sound.LEVEL_TRACKS, Sound.current_track())
+	level.free()
+
+
+func test_level_select_plays_menu_music() -> void:
+	Sound.play_level_music()
+	var screen: Control = load("res://scenes/ui/LevelSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	assert_eq(Sound.current_track(), Sound.MENU_TRACK)
+	screen.free()
+
+
+func test_menu_track_isnt_restarted_between_menus() -> void:
+	Sound.play_menu_music()
+	for i in 40:
+		await tree.process_frame
+	var player: AudioStreamPlayer = Sound.get("_music")
+	var stream := player.stream
+	Sound.play_menu_music()
+	assert_true(player.stream == stream, "the same track keeps playing")

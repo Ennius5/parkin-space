@@ -91,6 +91,7 @@ func _ready() -> void:
 	_controls.done_pressed.connect(_on_done_pressed)
 	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
+	Sound.play_level_music()
 	_add_darkness()
 	_add_arrival_bay()
 	spawn_next_customer()

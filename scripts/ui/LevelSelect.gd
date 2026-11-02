@@ -7,6 +7,7 @@ const MODE_SELECT := "res://scenes/ui/ModeSelect.tscn"
 
 
 func _ready() -> void:
+	Sound.play_menu_music()
 	%Back.pressed.connect(get_tree().change_scene_to_file.bind(MODE_SELECT))
 	_add_difficulty_row()
 	build()
