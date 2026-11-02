@@ -12,7 +12,7 @@ After the first PC-vs-phone playtest, three problems showed up:
 Players are also pushing ships into each other as a bumper-car tactic. That is kept, but it must punish the attacker, not the victim.
 
 ## 1. Two paired arrival bays (replaces spec §2 "Arrivals bay")
-- **Two bays,** named `EntranceL` and `EntranceR`, sit at the top of the lot, mirrored left and right of the centre line. Each has its own `ArrivalBay`. Both bays are shared: either player may take a ship from either bay.
+- **Two bays,** the existing `Entrance` marker (left bay, so `Level` keeps working) and a new `EntranceR`, sit at the top of the lot, mirrored left and right of the centre line. Each has its own `ArrivalBay`. Both bays are shared: either player may take a ship from either bay.
 - **Seeded slot list.** At match start the host draws a list of **slot pairs** from the match seed.
   - Slot N has the same **ship class** and **tier** in both bays.
   - The **model** is drawn separately for each bay from the ships of that class, using spawn weights.
