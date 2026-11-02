@@ -115,3 +115,25 @@ func test_difficulty_is_saved() -> void:
 	reloaded.load_progress()
 	assert_eq(reloaded.difficulty, reloaded.Difficulty.EASY)
 	reloaded.free()
+
+
+func test_cctv_defaults_to_medium_and_is_saved() -> void:
+	var gs := _fresh_state()
+	assert_eq(gs.cctv_level, 2, "Medium by default")
+	gs.cctv_level = 0
+	gs.save_progress()
+	gs.free()
+	var reloaded := _new_state()
+	reloaded.load_progress()
+	assert_eq(reloaded.cctv_level, 0)
+	reloaded.free()
+
+
+func test_bad_cctv_value_falls_back_to_medium() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("settings", "cctv_level", 9)
+	cfg.save(TEST_PATH)
+	var gs := _new_state()
+	gs.load_progress()
+	assert_eq(gs.cctv_level, 2)
+	gs.free()

@@ -64,6 +64,7 @@ var _request_indexes: Array[int] = []  # queue positions of customers with a spe
 var _request_hint_shown := false
 var last_pause_action := ""  # "restart" or "quit" when scene changes are off (tests)
 var _pause_menu := PauseMenu.new()
+var _cctv: CctvFilter
 var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
 
 @onready var _spaces: Node2D = $Spaces
@@ -103,6 +104,7 @@ func _ready() -> void:
 	_lot_camera.make_current()
 	Sound.play_level_music()
 	_add_darkness()
+	_add_cctv()
 	_add_arrival_bay()
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
@@ -545,6 +547,17 @@ func _in_radiation(ship: Ship) -> bool:
 
 
 ## Every lot is pitch black: only floodlights and the ships' own lights show what's there.
+## The compressed surveillance-video look over the world. Added first so it draws under the HUD,
+## the driving pad and the picker, which share or sit above its canvas layer.
+func _add_cctv() -> void:
+	_cctv = CctvFilter.new()
+	_cctv.name = "CctvFilter"
+	_cctv.set_level(GameState.cctv_level)
+	add_child(_cctv)
+	move_child(_cctv, 0)
+	_pause_menu.cctv_changed.connect(_cctv.set_level)
+
+
 func _add_darkness() -> void:
 	var dark := CanvasModulate.new()
 	dark.name = "Darkness"
