@@ -956,3 +956,173 @@ func test_parked_ships_feel_no_pull() -> void:
 	assert_true(ship.global_position.distance_to(at) < 0.01)
 	level.free()
 	_restore_state()
+
+
+# --- Orphaned ships ---
+
+## A tiered Level 1 with an exit and a fixed customer list; its first ship is moved out of the way.
+func _orphan_level(queue_names: Array) -> Level:
+	var level: Level = LEVEL01.instantiate()
+	level.change_scene_on_end = false
+	level.use_tiers = true
+	level.random_customers = 0
+	var queue: Array[ShipSpec] = []
+	for n: String in queue_names:
+		queue.append(ship_spec(n))
+	level.customer_queue = queue
+	var exit: ExitPad = EXIT_SCENE.instantiate()
+	exit.name = "Exit"
+	exit.position = EXIT_POS
+	level.add_child(exit)
+	tree.root.add_child(level)
+	await tree.process_frame
+	_move(_first_ship(level), OPEN_FLOOR)
+	return level
+
+
+func _space_held_by(level: Level, ship: Ship) -> ParkingSpace:
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		if space.occupant == ship:
+			return space
+	return null
+
+
+func test_orphan_times_fall_in_the_window() -> void:
+	var rng := RandomNumberGenerator.new()
+	for i in 50:
+		var times := Level.orphan_times(rng, 2, 300.0)
+		assert_eq(times.size(), 2)
+		for t in times:
+			assert_true(t >= 75.0 and t <= 180.0, str(t))
+
+
+func test_orphan_takes_an_allowed_free_space() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	assert_true(orphan != null)
+	if orphan:
+		assert_true(orphan.orphan != null and orphan.is_parked)
+		var space := _space_held_by(level, orphan)
+		assert_true(space != null)
+		if space:
+			assert_true(ParkingRules.fits_class(orphan.spec.ship_class, space.space_class))
+	level.free()
+	_restore_state()
+
+
+func test_orphan_never_blocks_the_shift() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout", "light_scout", "medium_shuttle", "medium_shuttle", "medium_shuttle", "medium_shuttle"])
+	assert_true(level._spawn_orphan() == null, "all 6 spaces are needed by customers")
+	level.free()
+	_restore_state()
+
+
+func test_orphan_waits_for_a_free_space() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var blocker := _first_ship(level)
+	for space: ParkingSpace in level.get_node("Spaces").get_children():
+		space.claim(blocker)
+	level._orphans_due = [0.0] as Array[float]
+	level._update_orphans(0.1)
+	assert_eq(level.get_node("Ships").get_child_count(), 1, "nowhere to put it yet")
+	_space_a1(level).release()
+	level._update_orphans(0.5)
+	level._update_orphans(0.5)
+	level._update_orphans(0.1)
+	var held := _space_a1(level).occupant
+	assert_true(held != null and held.orphan != null, "it took A1 once A1 was free")
+	level.free()
+	_restore_state()
+
+
+func test_parked_orphan_can_be_driven() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	level.select_ship(orphan)
+	assert_true(level.driven_ship == orphan)
+	assert_false(orphan.is_parked)
+	level.free()
+	_restore_state()
+
+
+func test_orphan_ejected_after_countdown_pays_bonus() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	var served := level.ledger.served
+	orphan.orphan.time_left = 0.0
+	orphan.unpark()
+	_move(orphan, EXIT_POS)
+	level._update_orphans(0.1)
+	assert_false(orphan in level.get_node("Ships").get_children())
+	assert_eq(level.ledger.bonuses, Orphan.BONUS)
+	assert_eq(level.ledger.served, served)
+	level.free()
+	_restore_state()
+
+
+func test_orphan_ejected_early_costs_pay() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	var pay := level.ledger.pay
+	orphan.unpark()
+	_move(orphan, EXIT_POS)
+	level._update_orphans(0.1)
+	assert_eq(level.ledger.pay, pay - Orphan.EARLY_COST)
+	assert_eq(level.ledger.bonuses, 0)
+	assert_eq(level.ledger.served, 0)
+	level.free()
+	_restore_state()
+
+
+func test_orphan_ejected_while_driven_releases_it() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	level.select_ship(orphan)
+	_move(orphan, EXIT_POS)
+	level._update_orphans(0.1)
+	assert_true(level.driven_ship == null)
+	level.free()
+	_restore_state()
+
+
+func test_orphan_never_counts_as_parked() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	var orphan := level._spawn_orphan()
+	var space := _space_held_by(level, orphan)
+	level.select_ship(orphan)
+	level.release_ship()
+	_move(orphan, space.global_position)
+	orphan.global_rotation = space.global_rotation
+	for i in 4:
+		level._check_parking(0.5)
+	assert_eq(level.ledger.served, 0)
+	assert_false(orphan.is_parked)
+	level.free()
+	_restore_state()
+
+
+func test_shift_wins_with_an_orphan_present() -> void:
+	_setup_state()
+	var level := await _orphan_level(["light_scout"])
+	level._spawn_orphan()
+	var ship := _first_ship(level)
+	level._on_ship_parked(ship, level.get_node("Spaces/B1"))
+	assert_eq(level.ledger.outcome, ShiftLedger.Outcome.WON)
+	level.free()
+	_restore_state()
+
+
+func test_level_without_orphans_rolls_none() -> void:
+	_setup_state()
+	var level := await _make_level()
+	assert_true(level._orphans_due.is_empty())
+	level.free()
+	_restore_state()

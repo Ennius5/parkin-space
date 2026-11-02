@@ -8,6 +8,7 @@ signal dented(ship: Ship, cost: int)
 const DRIVE_ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right", "rotate_left", "rotate_right"]
 const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
+const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
 const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
 const HEADLIGHT_SCALE := 1.6
 const CLASS_COLORS := {
@@ -32,6 +33,7 @@ var _prev_velocity := Vector2.ZERO
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _drive_camera: Camera2D = $DriveCamera
 
+var orphan: Orphan  # set on an abandoned ship with no customer
 var _badge := Node2D.new()
 var _request_glow := Node2D.new()
 
@@ -93,6 +95,22 @@ func _add_lights() -> void:
 	glow.texture_scale = maxf(spec.hull_size.x, spec.hull_size.y) / Lighting.TEXTURE_SIZE * GLOW_SCALE
 	glow.energy = 0.6
 	add_child(glow)
+
+
+## An abandoned ship: unpainted, lights out, with a countdown badge.
+func make_orphan(o: Orphan) -> void:
+	orphan = o
+	_paint.visible = false
+	_lights.visible = false
+	_sprite.modulate = ORPHAN_TINT
+
+
+func _draw_orphan_badge() -> void:
+	var ready := orphan.ready_to_eject()
+	var coin := Color(0.3, 0.9, 0.4) if ready else Color(0.6, 0.6, 0.6)
+	_badge.draw_circle(Vector2.ZERO, 14.0, coin)
+	_badge.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 2.0)
+	_badge.draw_string(ThemeDB.fallback_font, Vector2(20, 9), orphan.badge_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, coin)
 
 
 func _show_layer(sprite: Sprite2D, texture: Texture2D) -> void:
@@ -208,6 +226,9 @@ func unpark() -> void:
 
 ## Tier coin (with the gold tip still on offer) and a return arrow when the customer wants the ship back.
 func _draw_badge() -> void:
+	if orphan:
+		_draw_orphan_badge()
+		return
 	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested):
 		return
 	var font := ThemeDB.fallback_font

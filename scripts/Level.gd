@@ -10,6 +10,7 @@ const PAINT_COLORS: Array[Color] = [
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
+const ORPHAN_RETRY_SECONDS := 1.0  # no space for a due orphan: look again this much later
 const ARRIVAL_CLEAR_SECONDS := 1.0  # the arrival bay must stay empty this long before the next ship
 const RADIATION_DENT_COST := 5
 const RADIATION_INTERVAL := 2.0  # seconds inside radiation per dent
@@ -28,6 +29,7 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var use_tiers := false  # bronze/silver/gold customers who tip
 ## How many customers want their ship back at the exit. Needs an ExitPad named Exit.
 @export var retrieval_count: int = 0
+@export var orphan_count := 0  # abandoned ships that appear partway through the shift
 
 var ledger: ShiftLedger
 var customers: Dictionary = {}  # Ship -> Customer
@@ -47,6 +49,10 @@ var _bay: ArrivalBay
 var _bay_clear_for := 0.0
 var _radiation_time: Dictionary = {}  # Ship -> seconds inside radiation since its last dent
 var _radiation_hint_shown := false
+var _pool: Array[ShipSpec] = []  # every ship this level can draw, kept for orphans
+var _orphans_due: Array[float] = []  # shift seconds at which orphans are due to appear
+var _orphan_clock := 0.0
+var _orphan_hint_shown := false
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -63,11 +69,14 @@ var _radiation_hint_shown := false
 
 func _ready() -> void:
 	_rng.randomize()
+	_pool = customer_queue.duplicate()
 	if random_customers > 0:
 		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
 	if _exit:
 		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
 	ledger = ShiftLedger.new(base_pay, customer_queue.size(), GameState.shift_seconds())
+	if orphan_count > 0:
+		_orphans_due = orphan_times(_rng, orphan_count, GameState.shift_seconds())
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
 	_controls.done_pressed.connect(release_ship)
@@ -99,6 +108,7 @@ func _physics_process(delta: float) -> void:
 		_apply_pull()
 	_check_parking(delta)
 	_update_customers(delta)
+	_update_orphans(delta)
 	_refresh()
 
 
@@ -263,7 +273,7 @@ func ships_near_world(world: Vector2, radius: float) -> Array[Ship]:
 	var found: Array[Ship] = []
 	var distance := {}
 	for ship: Ship in _ships.get_children():
-		if ship.is_parked:
+		if ship.is_parked and ship.orphan == null:
 			continue
 		var d := _distance_to_hull(ship, world)
 		if d <= radius:
@@ -293,10 +303,13 @@ func _on_picked(ship: Ship) -> void:
 ## Takes control of a ship. Ignored while already driving (press Done first)
 ## and for a moment after Done, so the same touch doesn't grab a ship under the button.
 func select_ship(ship: Ship) -> void:
-	if _ended or ship.is_parked or driven_ship != null:
+	if _ended or (ship.is_parked and ship.orphan == null) or driven_ship != null:
 		return
 	if Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
 		return
+	if ship.is_parked:  # an orphan: driving it away from its space
+		ship.unpark()
+		_trackers.erase(ship)
 	_picker.close()
 	driven_ship = ship
 	ship.set_driven(true)
@@ -348,7 +361,7 @@ func end_level() -> void:
 func _check_parking(delta: float) -> void:
 	for ship: Ship in _ships.get_children():
 		var c := customer_for(ship)
-		if ship.is_parked or (c and c.requested):
+		if ship.is_parked or ship.orphan or (c and c.requested):
 			continue
 		var hit: ParkingSpace = null
 		for space: ParkingSpace in _spaces.get_children():
@@ -447,3 +460,105 @@ func _apply_pull() -> void:
 	for ship: Ship in _ships.get_children():
 		if not ship.is_parked:
 			ship.apply_central_force(_black_hole.pull_on(ship.global_position) * ship.mass)
+
+
+# --- Orphaned ships ---
+
+## When each orphan shows up: a random moment between 25% and 60% of the shift.
+static func orphan_times(rng: RandomNumberGenerator, count: int, shift: float) -> Array[float]:
+	var times: Array[float] = []
+	for i in count:
+		times.append(rng.randf_range(0.25, 0.6) * shift)
+	return times
+
+
+## Appears due orphans (trying again a second later when no space is allowed), counts down their
+## timers, frees a space behind an orphan driven out of it, and settles orphans at the exit.
+func _update_orphans(delta: float) -> void:
+	_orphan_clock += delta
+	for i in _orphans_due.size():
+		if _orphans_due[i] <= _orphan_clock and _spawn_orphan() == null:
+			_orphans_due[i] = _orphan_clock + ORPHAN_RETRY_SECONDS
+		elif _orphans_due[i] <= _orphan_clock:
+			_orphans_due[i] = INF
+	_orphans_due = _orphans_due.filter(func(t: float) -> bool: return t != INF)
+	for ship: Ship in _ships.get_children():
+		if ship.orphan == null or ship.is_queued_for_deletion():
+			continue
+		ship.orphan.tick(delta)
+		if ship.is_parked:
+			continue
+		var space := _space_of(ship)
+		if space and not space.touches(ship):
+			space.release()
+		if _exit and _exit.contains(ship.global_position):
+			_eject_orphan(ship)
+
+
+## Spaces an orphan may take: free, and losing them still leaves room for every customer.
+func _allowed_orphan_spaces() -> Array[ParkingSpace]:
+	var needed: Array[int] = []
+	for spec in customer_queue:
+		needed.append(spec.ship_class)
+	var allowed: Array[ParkingSpace] = []
+	for space: ParkingSpace in _spaces.get_children():
+		if space.occupant != null or _space_touched(space):
+			continue
+		var left: Array[int] = []
+		for other: ParkingSpace in _spaces.get_children():
+			if other != space and not (other.occupant and other.occupant.orphan):
+				left.append(other.space_class)
+		if ParkingRules.fits_lot(needed, left):
+			allowed.append(space)
+	return allowed
+
+
+func _space_touched(space: ParkingSpace) -> bool:
+	for ship: Ship in _ships.get_children():
+		if space.touches(ship):
+			return true
+	return false
+
+
+## Leaves an abandoned ship parked in an allowed space. Returns null when there is none.
+func _spawn_orphan() -> Ship:
+	var spaces := _allowed_orphan_spaces()
+	spaces.shuffle()
+	for space in spaces:
+		var fitting := _pool.filter(func(spec: ShipSpec) -> bool:
+			return ParkingRules.fits_class(spec.ship_class, space.space_class))
+		if fitting.is_empty():
+			continue
+		var ship: Ship = SHIP_SCENE.instantiate()
+		ship.spec = fitting.pick_random()
+		ship.global_position = space.global_position
+		ship.rotation = space.global_rotation
+		_ships.add_child(ship)
+		ship.make_orphan(Orphan.new())
+		ship.dented.connect(_on_ship_dented)
+		space.claim(ship)
+		ship.set_parked()
+		if not _orphan_hint_shown:
+			_orphan_hint_shown = true
+			_hud.show_hint("Orphaned ship! Eject it at the EXIT after its timer", 4.0)
+		return ship
+	return null
+
+
+## An orphan leaves through the exit: a bonus once its timer has run out, a fine before that.
+func _eject_orphan(ship: Ship) -> void:
+	if ship == driven_ship:
+		release_ship()
+	if _picker.is_open():
+		_picker.close()
+	var space := _space_of(ship)
+	if space:
+		space.release()
+	_trackers.erase(ship)
+	_ships.remove_child(ship)
+	ship.queue_free()
+	if ship.orphan.ready_to_eject():
+		ledger.add_bonus(Orphan.BONUS)
+	else:
+		ledger.add_dent(Orphan.EARLY_COST)
+		_hud.show_hint("-₵%d ejected too early" % Orphan.EARLY_COST, 1.5)
