@@ -55,6 +55,19 @@ func _watch(s: NetSession) -> Dictionary:
 	return ev
 
 
+func test_pick_lan_ip_skips_virtual_adapters() -> void:
+	var mixed: Array = [
+		{"name": "ethernet_32", "friendly": "VMware Network Adapter VMnet8", "addresses": PackedStringArray(["192.168.200.1"])},
+		{"name": "radmin", "friendly": "Radmin VPN", "addresses": PackedStringArray(["26.5.116.168"])},
+		{"name": "wireless_1", "friendly": "Wi-Fi", "addresses": PackedStringArray(["fe80::1", "192.168.18.226"])},
+	]
+	assert_eq(NetSession.pick_lan_ip(mixed), "192.168.18.226")
+	var vm_only: Array = [{"name": "vmnet1", "friendly": "x", "addresses": PackedStringArray(["192.168.200.1"])}]
+	assert_eq(NetSession.pick_lan_ip(vm_only), "")
+	var eth: Array = [{"name": "eth0", "friendly": "Ethernet", "addresses": PackedStringArray(["10.0.0.4"])}]
+	assert_eq(NetSession.pick_lan_ip(eth), "10.0.0.4")
+
+
 func test_private_ip_filter() -> void:
 	assert_eq(NetSession.private_ip(PackedStringArray(["127.0.0.1", "fe80::1", "192.168.1.7"])), "192.168.1.7")
 	assert_eq(NetSession.private_ip(PackedStringArray(["10.0.0.4"])), "10.0.0.4")

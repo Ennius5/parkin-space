@@ -118,9 +118,39 @@ static func private_ip(addresses: PackedStringArray) -> String:
 	return ""
 
 
+## The LAN address of the best real adapter (Wi-Fi/Ethernet preferred), skipping
+## virtual/VPN adapters. Takes IP.get_local_interfaces() entries; "" if none fit.
+static func pick_lan_ip(interfaces: Array) -> String:
+	const SKIP := ["vmware", "vmnet", "virtualbox", "vbox", "hyper-v", "vethernet", "wsl",
+		"docker", "radmin", "hamachi", "zerotier", "tailscale", "vpn", "tap-", "tun", "loopback", "bluetooth"]
+	const PREFER := ["wi-fi", "wifi", "wlan", "wireless", "ethernet", "en0", "eth"]
+	var fallback := ""
+	for itf in interfaces:
+		var label := (str(itf.get("name", "")) + " " + str(itf.get("friendly", ""))).to_lower()
+		var skip := false
+		for s in SKIP:
+			if label.contains(s):
+				skip = true
+				break
+		if skip:
+			continue
+		var ip := private_ip(itf.get("addresses", PackedStringArray()))
+		if ip == "":
+			continue
+		for p in PREFER:
+			if label.contains(p):
+				return ip
+		if fallback == "":
+			fallback = ip
+	return fallback
+
+
 ## This device's Wi-Fi address to show when hosting.
 func local_ip() -> String:
-	return private_ip(IP.get_local_addresses())
+	var ip := pick_lan_ip(IP.get_local_interfaces())
+	if ip == "":
+		ip = private_ip(IP.get_local_addresses())
+	return ip
 
 
 ## Resets the silence watchdog; called for every message from the rival.
