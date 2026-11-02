@@ -459,11 +459,13 @@ func _add_darkness() -> void:
 	add_child(dark)
 
 
-## The black hole drags every ship that isn't parked, at its centre of mass so it never spins it.
-## A ship resting inside a space it fits is shielded, so it can always settle and park.
+## The black hole drags every ship the valet has taken in hand and that isn't parked, at its centre
+## of mass so it never spins it. Untouched ships (waiting arrivals, ships whose owner wants them
+## back) stay put until picked up. A ship resting inside a space it fits is shielded, so it can
+## always settle and park.
 func _apply_pull() -> void:
 	for ship: Ship in _ships.get_children():
-		if not ship.is_parked and not _sheltered(ship):
+		if ship.driven_since_free and not ship.is_parked and not _sheltered(ship):
 			ship.apply_central_force(_black_hole.pull_on(ship.global_position) * ship.mass)
 
 

@@ -34,6 +34,7 @@ var _prev_velocity := Vector2.ZERO
 @onready var _drive_camera: Camera2D = $DriveCamera
 
 var orphan: Orphan  # set on an abandoned ship with no customer
+var driven_since_free := false  # taken in hand since it arrived or left its space; only then does a black hole pull it
 var _badge := Node2D.new()
 var _request_glow := Node2D.new()
 
@@ -205,6 +206,7 @@ func _local_against_drift() -> Vector2:
 func set_driven(on: bool) -> void:
 	is_driven = on
 	if on:
+		driven_since_free = true
 		_drive_camera.make_current()
 		if customer and customer.requested:
 			customer.request_seen = true
@@ -220,6 +222,7 @@ func set_parked() -> void:
 ## The customer wants their ship back: it can be driven again.
 func unpark() -> void:
 	is_parked = false
+	driven_since_free = false
 	set_deferred("freeze", false)
 	modulate = Color.WHITE
 

@@ -937,6 +937,8 @@ func test_free_ship_drifts_towards_the_hole() -> void:
 	var level := await _make_level()
 	_add_hole(level)
 	var ship := _first_ship(level)
+	level.select_ship(ship)
+	level.release_ship()  # driven once: from now on it feels the pull
 	_move(ship, OPEN_FLOOR)
 	ship.linear_velocity = Vector2.ZERO
 	ship.freeze = false
@@ -1243,5 +1245,38 @@ func test_level04_every_space_parks_a_resting_ship() -> void:
 	await _physics_frames(120)
 	for label: String in placed:
 		assert_true((placed[label] as Ship).is_parked, "a ship left at rest in %s parks" % label)
+	level.free()
+	_restore_state()
+
+
+
+func test_waiting_arrival_feels_no_pull_until_driven() -> void:
+	_setup_state()
+	var level := await _make_level()
+	_add_hole(level)
+	var ship := _first_ship(level)
+	_move(ship, OPEN_FLOOR)
+	ship.freeze = false
+	ship.linear_velocity = Vector2.ZERO
+	await _physics_frames(30)
+	assert_true(ship.linear_velocity.length() < 0.01, "untouched, it stays put: v=%s" % ship.linear_velocity)
+	level.select_ship(ship)
+	level.release_ship()
+	await _physics_frames(30)
+	assert_true(ship.linear_velocity.x > 0.0, "after driving it, the pull takes it")
+	level.free()
+	_restore_state()
+
+
+func test_requested_ship_feels_no_pull_until_picked_up() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	_add_hole(level)
+	var ship := _park_silver_leaver(level)
+	level._request(ship)
+	await _physics_frames(5)
+	var at := ship.global_position
+	await _physics_frames(30)
+	assert_true(ship.global_position.distance_to(at) < 0.01, "waits where it was parked")
 	level.free()
 	_restore_state()
