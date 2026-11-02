@@ -918,3 +918,41 @@ func test_glow_stops_once_the_ship_is_selected() -> void:
 	assert_false(ship.is_glowing(), "and it stays off after letting go")
 	level.free()
 	_restore_state()
+
+
+# --- Black hole ---
+
+func _add_hole(level: Level) -> BlackHole:
+	var hole := BlackHole.new()
+	hole.name = "BlackHole"
+	hole.position = OPEN_FLOOR + Vector2(400, 0)
+	level.add_child(hole)
+	level._black_hole = hole
+	return hole
+
+
+func test_free_ship_drifts_towards_the_hole() -> void:
+	_setup_state()
+	var level := await _make_level()
+	_add_hole(level)
+	var ship := _first_ship(level)
+	_move(ship, OPEN_FLOOR)
+	ship.linear_velocity = Vector2.ZERO
+	ship.freeze = false
+	await _physics_frames(30)
+	assert_true(ship.linear_velocity.x > 0.0, "v=%s" % ship.linear_velocity)
+	level.free()
+	_restore_state()
+
+
+func test_parked_ships_feel_no_pull() -> void:
+	_setup_state()
+	var level := await _make_tiered_level()
+	_add_hole(level)
+	var ship := _park_silver_leaver(level)
+	await tree.physics_frame
+	var at := ship.global_position
+	await _physics_frames(30)
+	assert_true(ship.global_position.distance_to(at) < 0.01)
+	level.free()
+	_restore_state()

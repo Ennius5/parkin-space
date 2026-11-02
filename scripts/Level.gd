@@ -58,6 +58,7 @@ var _radiation_hint_shown := false
 @onready var _exit: ExitPad = get_node_or_null("Exit")
 @onready var _radiation: Node = get_node_or_null("Radiation")
 @onready var _asteroids: Node = get_node_or_null("Asteroids")
+@onready var _black_hole: BlackHole = get_node_or_null("BlackHole")
 
 
 func _ready() -> void:
@@ -94,6 +95,8 @@ func _physics_process(delta: float) -> void:
 			_bay_clear_for = 0.0
 	if _radiation:
 		_update_radiation(delta)
+	if _black_hole:
+		_apply_pull()
 	_check_parking(delta)
 	_update_customers(delta)
 	_refresh()
@@ -436,3 +439,10 @@ func _add_darkness() -> void:
 	dark.name = "Darkness"
 	dark.color = Color.BLACK
 	add_child(dark)
+
+
+## The black hole drags every ship that isn't parked, at its centre of mass so it never spins it.
+func _apply_pull() -> void:
+	for ship: Ship in _ships.get_children():
+		if not ship.is_parked:
+			ship.apply_central_force(_black_hole.pull_on(ship.global_position) * ship.mass)
