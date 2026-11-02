@@ -10,7 +10,7 @@ signal rival_left  ## the other side disconnected, went silent or left the match
 signal rival_rematch  ## the rival asked for a rematch
 
 const PORT := 24557
-const PROTOCOL_VERSION := 2  # bump whenever any RPC (here or on NetSync) is added, removed or renamed
+const PROTOCOL_VERSION := 3  # bump whenever any RPC (here or on NetSync) or a message layout changes
 const JOIN_TIMEOUT := 5.0
 const SILENCE_LIMIT := 3.0
 const KEEPALIVE_INTERVAL := 0.5

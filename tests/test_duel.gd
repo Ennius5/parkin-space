@@ -88,7 +88,7 @@ func test_duel_pillars_mirrored() -> void:
 
 func test_duel_queue_follows_minutes() -> void:
 	var level := await _duel(4)
-	assert_eq(level.customer_queue.size(), GameState.duel_customers(4))
+	assert_eq(level.customer_queue.size(), 2 * DuelLevel.slots_per_bay(4), "both bays' slots")
 	assert_true(level.ledger.endless)
 	assert_almost(level.ledger.time_left, 240.0, 0.5)
 	_done(level)
@@ -110,12 +110,71 @@ func _world_polygon(pillar: Node2D) -> PackedVector2Array:
 
 func test_duel_pillars_block_straight_route() -> void:
 	var level := await _duel()
-	var route := PackedVector2Array([level.get_node("Entrance").position, level.get_node("Exit").position])
-	var blocked := false
-	for pillar: Node2D in level.get_node("Pillars").get_children():
-		if not Geometry2D.intersect_polyline_with_polygon(route, _world_polygon(pillar)).is_empty():
-			blocked = true
-	assert_true(blocked, "a pillar stands between the entrance and the exit")
+	for bay: String in ["Entrance", "EntranceR"]:
+		var route := PackedVector2Array([level.get_node(bay).position, level.get_node("Exit").position])
+		var blocked := false
+		for pillar: Node2D in level.get_node("Pillars").get_children():
+			if not Geometry2D.intersect_polyline_with_polygon(route, _world_polygon(pillar)).is_empty():
+				blocked = true
+		assert_true(blocked, "a pillar stands between %s and the exit" % bay)
+	_done(level)
+
+
+func test_duel_has_two_bays_and_black_hole() -> void:
+	var level := await _duel()
+	var left := level.get_node("Entrance") as Marker2D
+	var right := level.get_node_or_null("EntranceR") as Marker2D
+	assert_true(right != null, "a right bay")
+	if right == null:
+		_done(level)
+		return
+	assert_almost(right.position.x, 2400.0 - left.position.x, 1.0)
+	assert_almost(right.position.y, left.position.y, 1.0)
+	assert_almost(right.rotation, left.rotation, 0.01)
+	assert_true(left.position.x < 1200.0, "the left bay is left of the centre line")
+	assert_true(level.get_node_or_null("ArrivalBay") is ArrivalBay)
+	var bay_r := level.get_node_or_null("ArrivalBayR") as ArrivalBay
+	assert_true(bay_r != null, "the right bay is marked")
+	if bay_r:
+		assert_true(bay_r.global_position.distance_to(right.global_position) < 0.5)
+	var hole := level.get_node_or_null("BlackHole") as BlackHole
+	assert_true(hole != null, "a black hole")
+	if hole:
+		assert_almost(hole.position.x, 1200.0, 1.0)
+		assert_true(hole.position.y > left.position.y, "below the bays")
+	assert_true(level.get_node_or_null("Asteroids") == null, "no asteroids in the duel")
+	_done(level)
+
+
+## Gap between two pillars' visual outlines (approximate: centroid distance minus both radii).
+func _radius(pillar: Node2D) -> float:
+	var best := 0.0
+	var c := _centroid(pillar)
+	for p in _world_polygon(pillar):
+		best = maxf(best, p.distance_to(c))
+	return best
+
+
+func test_duel_lanes_around_black_hole_and_bays() -> void:
+	var level := await _duel()
+	var hole := level.get_node("BlackHole") as Node2D
+	var ring := BlackHole.CORE_RADIUS * 1.75  # the outermost accretion ring
+	var bays: Array[PackedVector2Array] = [_corners(level.get_node("Entrance"), ArrivalBay.SIZE),
+			_corners(level.get_node("EntranceR"), ArrivalBay.SIZE)]
+	var pillars := level.get_node("Pillars").get_children()
+	for pillar: Node2D in pillars:
+		var c := _centroid(pillar)
+		var r := _radius(pillar)
+		assert_true(c.distance_to(hole.position) - r - ring >= 160.0,
+				"%s leaves a 160 px lane around the black hole" % pillar.name)
+		for bay in bays:
+			var rect := Rect2(bay[0], Vector2.ZERO).expand(bay[2])
+			var nearest := Vector2(clampf(c.x, rect.position.x, rect.end.x), clampf(c.y, rect.position.y, rect.end.y))
+			assert_true(c.distance_to(nearest) - r >= 160.0, "%s leaves a 160 px lane around a bay" % pillar.name)
+		for other: Node2D in pillars:
+			if other != pillar:
+				assert_true(c.distance_to(_centroid(other)) - r - _radius(other) >= 160.0,
+						"%s and %s leave a 160 px lane" % [pillar.name, other.name])
 	_done(level)
 
 
@@ -125,6 +184,7 @@ func test_duel_layout_clear_of_hud() -> void:
 	for space: ParkingSpace in level.get_node("Spaces").get_children():
 		rects[space.name] = _corners(space, space.size())
 	rects["bay"] = _corners(level.get_node("Entrance"), ArrivalBay.SIZE)
+	rects["bay R"] = _corners(level.get_node("EntranceR"), ArrivalBay.SIZE)
 	rects["exit"] = _corners(level.get_node("Exit"), ExitPad.SIZE)
 	for key: String in rects:
 		for p: Vector2 in rects[key]:
@@ -277,9 +337,9 @@ func test_countdown_holds_the_clock() -> void:
 		level._physics_process(0.1)
 	assert_eq(level.ledger.time_left, start, "the clock waits for the countdown")
 	assert_eq(level.valets[1].ledger.time_left, rival_start)
-	assert_eq(level.get_node("Ships").get_child_count(), 0, "the first customer waits too")
+	assert_eq(level.get_node("Ships").get_child_count(), 0, "the first customers wait too")
 	level._physics_process(0.2)  # the countdown ends
-	assert_eq(level.get_node("Ships").get_child_count(), 1, "the first customer arrives at go")
+	assert_eq(level.get_node("Ships").get_child_count(), 2, "one customer arrives in each bay at go")
 	level._physics_process(0.5)
 	assert_true(level.ledger.time_left < start, "the shift runs after go")
 	_done_host(level)
@@ -388,9 +448,11 @@ func test_host_streams_ship_list_and_snapshots() -> void:
 	_skip_countdown(level)
 	var ship := _first_ship(level)
 	var added: Array = _sent(level, "ship_added")
-	assert_eq(added.size(), 1)
+	assert_eq(added.size(), 2, "one per bay")
 	var entry: Dictionary = NetProtocol.unpack_ship_list(added[0][0])[0]
 	assert_eq(entry.id, level.ship_id(ship))
+	assert_eq(entry.bay, 0)
+	assert_eq(NetProtocol.unpack_ship_list(added[1][0])[0].bay, 1)
 	assert_eq(entry.spec_path, ship.spec.resource_path)
 	assert_eq(entry.paint, ship.paint_index)
 	assert_eq(entry.headlight, ship.headlight_index)
@@ -401,7 +463,7 @@ func test_host_streams_ship_list_and_snapshots() -> void:
 	assert_true(snaps.size() > 0)
 	var snap := NetProtocol.unpack_snapshot(snaps[-1][0])
 	assert_eq(snap.scores[1], 7)
-	assert_eq(snap.ships.size(), 1)
+	assert_eq(snap.ships.size(), 2)
 	assert_eq(snap.ships[0].driver, 1)
 	assert_eq(snap.lit.size(), 22)
 	_done_host(level)
@@ -574,4 +636,171 @@ func test_rival_cannot_take_driven_parked_move() -> void:
 	_sync(level)._on_select(level.ship_id(ship))
 	assert_true(level.valets[1].ship == null, "the rival can't take a ship being moved")
 	assert_true(level.valets[0].ship == ship)
+	_done_host(level)
+
+
+# --- Two paired bays ---
+
+func _pool() -> Array[ShipSpec]:
+	var pool: Array[ShipSpec] = []
+	for ship_name in ["AsteroidJunker", "ManipulatorDrone", "ReconDrone", "RecreationalDrone", "Milano",
+			"Miner", "Nostrom", "AgriShip", "Hammerhead", "Researcher"]:
+		pool.append(ship_spec(ship_name))
+	return pool
+
+
+func _slot_list(seed: int) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var no_gold_for_heavy := func(ship_class: int) -> bool: return ship_class != ShipSpec.ShipClass.HEAVY
+	return BaySlots.build(_pool(), 30, rng, no_gold_for_heavy, true, {})
+
+
+func test_bay_slots_pair_class_and_tier() -> void:
+	var slots := _slot_list(777)
+	assert_eq(slots.size(), 30)
+	var models_differ := false
+	for pair: Array in slots:
+		assert_eq(pair.size(), 2)
+		var a: Dictionary = pair[0]
+		var b: Dictionary = pair[1]
+		assert_eq(a.spec.ship_class, b.spec.ship_class, "same class in both bays")
+		assert_eq(a.tier, b.tier, "same tier in both bays")
+		assert_true(a.tier != Customer.Tier.NONE, "tiers in use")
+		if a.spec.ship_class == ShipSpec.ShipClass.HEAVY:
+			assert_true(a.tier != Customer.Tier.GOLD, "gold only where gold_allowed says so")
+		if a.spec != b.spec:
+			models_differ = true
+	assert_true(models_differ, "each bay draws its own model")
+	var again := _slot_list(777)
+	for i in slots.size():
+		for bay in 2:
+			assert_eq(again[i][bay].spec, slots[i][bay].spec, "the same seed, the same slots")
+			assert_eq(again[i][bay].tier, slots[i][bay].tier)
+
+
+func test_slots_per_bay() -> void:
+	assert_eq(DuelLevel.slots_per_bay(3), 21)
+	assert_eq(DuelLevel.slots_per_bay(20), 123)
+
+
+## Moves every ship sitting in a bay (but the kept one) out to the lot floor.
+func _clear_bays(level: DuelLevel, keep: Ship, dumped: Array) -> void:
+	for ship: Ship in level.get_node("Ships").get_children():
+		if ship == keep or ship in dumped:
+			continue
+		ship.freeze = true
+		ship.global_position = Vector2(300.0 + 40.0 * dumped.size(), 1040.0)
+		dumped.append(ship)
+
+
+func test_camped_bay_catches_up() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	assert_eq(level.bay_index(0), 1)
+	assert_eq(level.bay_index(1), 1)
+	var blocker: Ship = null
+	for ship: Ship in level.get_node("Ships").get_children():
+		if level.bay_of(ship) == 1:
+			blocker = ship
+	assert_true(blocker != null)
+	blocker.freeze = true
+	var dumped := []
+	var step := 0.1
+	var t := 0.0
+	var spawned_at := [[0.0], [0.0]]  # per bay: shift seconds of each arrival
+	var last := [level.bay_index(0), level.bay_index(1)]
+	var freed_at := -1.0
+	while t < 120.0:
+		_clear_bays(level, blocker, dumped)
+		level._physics_process(step)
+		t += step
+		for bay in 2:
+			if level.bay_index(bay) != last[bay]:
+				assert_eq(level.bay_index(bay), last[bay] + 1, "one slot at a time, none skipped")
+				last[bay] = level.bay_index(bay)
+				spawned_at[bay].append(t)
+		if freed_at < 0.0 and level.bay_index(0) >= 4:
+			assert_eq(level.bay_index(1), 1, "the camped bay waited")
+			blocker.global_position = Vector2(1900.0, 1040.0)  # the camper drives off
+			dumped.append(blocker)
+			blocker = null
+			freed_at = t
+		elif freed_at >= 0.0 and level.bay_index(1) >= level.bay_index(0):
+			break
+	assert_true(freed_at > 0.0, "bay L spawned three slots")
+	assert_eq(level.bay_index(1), level.bay_index(0), "bay R caught up")
+	var catch_up: Array = spawned_at[1].slice(1)
+	assert_true(catch_up.size() >= 3, "bay R spawned its missed slots: %s" % [catch_up])
+	var previous := freed_at
+	for at: float in catch_up:
+		assert_true(at - previous <= Level.ARRIVAL_CLEAR_SECONDS + 0.25,
+				"a catching-up bay only waits for a clear bay (%.2f s)" % (at - previous))
+		previous = at
+	for bay in 2:
+		for i in range(1, spawned_at[bay].size()):
+			assert_true(spawned_at[bay][i] - spawned_at[bay][i - 1] >= Level.ARRIVAL_CLEAR_SECONDS - 0.001,
+					"bay %d never spawns twice within the clear time" % bay)
+	# Level again: bay R goes back to its interval.
+	var index: int = level.bay_index(1)
+	for i in 30:
+		_clear_bays(level, null, dumped)
+		level._physics_process(step)
+	assert_true(level.bay_index(1) <= level.bay_index(0), "bay R never runs ahead of bay L")
+	assert_eq(level.bay_index(1), index, "caught up, bay R waits for its interval again")
+	_done_host(level)
+
+
+func test_duel_black_hole_pulls_driven_ship() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var hole := level.get_node("BlackHole") as Node2D
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	assert_true(level.driven_ship == ship)
+	ship.global_position = hole.global_position + Vector2(-190, 60)
+	ship.linear_velocity = Vector2.ZERO
+	ship.angular_velocity = 0.0
+	await tree.physics_frame
+	var start := ship.global_position.distance_to(hole.global_position)
+	for i in 30:
+		await tree.physics_frame
+	var now := ship.global_position.distance_to(hole.global_position)
+	assert_true(now < start - 1.0, "the hole pulled the driven ship (%.1f -> %.1f px)" % [start, now])
+	_done_host(level)
+
+
+## A guest-role duel with its own unconnected session (freed by _done_host).
+func _guest() -> DuelLevel:
+	_real_save = GameState.save_path
+	GameState.save_path = TEST_SAVE
+	var level: DuelLevel = load(DUEL).instantiate()
+	level.change_scene_on_end = false
+	level.session = NetSession.new()
+	level.role = DuelLevel.Role.GUEST
+	tree.root.add_child(level)
+	await tree.process_frame
+	return level
+
+
+func test_guest_mirror_does_not_simulate_black_hole() -> void:
+	var level := await _guest()
+	assert_true(level.get_node_or_null("BlackHole") is BlackHole, "the guest draws the black hole")
+	assert_true(level.get_node_or_null("ArrivalBayR") is ArrivalBay, "and both bays")
+	var mirror := level.mirror
+	mirror.add_ships([{"id": 3, "spec_path": "res://resources/ships/Milano.tres", "paint": 1, "headlight": 0,
+			"tier": 2, "wants_retrieval": true, "bay": 1}])
+	var ship := mirror.ship_by_id(3)
+	assert_true(ship != null)
+	var right := level.get_node("EntranceR") as Node2D
+	assert_true(ship.global_position.distance_to(right.global_position) < 0.5, "it arrives at bay R")
+	var hole := level.get_node("BlackHole") as Node2D
+	var spot := hole.global_position + Vector2(-90, 20)
+	ship.driven_since_free = true
+	mirror.on_snapshot({"tick": 1, "time_left": 100.0, "scores": PackedInt32Array([0, 0]),
+			"lit": PackedInt32Array(), "ships": [{"id": 3, "pos": spot, "rot": 0.25, "driver": 0,
+			"parked": false, "glowing": false, "firing": 0}]})
+	for i in 30:
+		await tree.physics_frame
+	assert_eq(ship.global_position, spot, "the mirror stays exactly where the snapshot puts it")
 	_done_host(level)

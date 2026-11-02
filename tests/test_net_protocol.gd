@@ -59,6 +59,18 @@ func test_ship_list_round_trip() -> void:
 		assert_eq(u[i].wants_retrieval, list[i].wants_retrieval)
 
 
+func test_ship_list_bay_round_trip() -> void:
+	var list: Array = [
+		{"id": 1, "spec_path": "res://resources/ships/Milano.tres", "paint": 2, "headlight": 1, "tier": 3, "wants_retrieval": true, "bay": 0},
+		{"id": 2, "spec_path": "res://resources/ships/Miner.tres", "paint": 0, "headlight": 0, "tier": 3, "wants_retrieval": true, "bay": 1},
+	]
+	var u: Array = NetProtocol.unpack_ship_list(NetProtocol.pack_ship_list(list))
+	assert_eq(u.size(), 2)
+	assert_eq(u[0].bay, 0)
+	assert_eq(u[1].bay, 1)
+	assert_eq(u[1].spec_path, list[1].spec_path)
+
+
 func test_buffer_interpolates() -> void:
 	var b := SnapshotBuffer.new()
 	b.push(_snap(0.0, 1), 1.0)

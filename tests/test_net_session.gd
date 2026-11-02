@@ -162,5 +162,5 @@ func test_handshake_rpcs_keep_the_lowest_ids() -> void:
 	assert_true(names.size() >= 4, str(names))
 	if names.size() >= 4:
 		assert_eq(names.slice(0, 4), ["_hello", "_ping", "_reject", "_welcome"])
-	assert_eq(NetSession.PROTOCOL_VERSION, 2, "bumped when the RPC set changed")
+	assert_eq(NetSession.PROTOCOL_VERSION, 3, "bumped when the RPC set changed")
 	s.free()

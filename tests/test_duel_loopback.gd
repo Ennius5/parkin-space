@@ -108,8 +108,18 @@ func test_loopback_match() -> void:
 	if not listed:
 		_cleanup()
 		return
+	var both: bool = await _wait_seconds(func() -> bool:
+		var bays := {}
+		for s: Ship in host.get_node("Ships").get_children():
+			if guest.mirror.ship_by_id(host.ship_id(s)) != null:
+				bays[host.bay_of(s)] = true
+		return bays.size() == 2, 5.0)
+	assert_true(both, "the guest mirrors a ship from each bay")
+	if not both:
+		_cleanup()
+		return
 	var ship := _first_ship(host)
-	var mirror := _first_ship(guest)
+	var mirror := guest.mirror.ship_by_id(host.ship_id(ship))
 	assert_eq(mirror.spec.resource_path, ship.spec.resource_path)
 	assert_true(mirror.freeze, "mirror ships are frozen")
 	assert_eq(mirror.collision_layer, 0)

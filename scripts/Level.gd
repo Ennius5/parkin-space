@@ -173,15 +173,10 @@ func _physics_process(delta: float) -> void:
 		return
 	for v in valets:
 		v.ledger.tick(delta)
-	_arrival_timer += delta
 	var in_the_way: Array[Node] = _ships.get_children()
 	if _asteroids:
 		in_the_way.append_array(_asteroids.get_children())
-	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(in_the_way) else 0.0
-	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
-		if spawn_next_customer():
-			_arrival_timer = 0.0
-			_bay_clear_for = 0.0
+	_update_arrivals(delta, in_the_way)
 	if _radiation:
 		_update_radiation(delta)
 	if _black_hole:
@@ -191,6 +186,17 @@ func _physics_process(delta: float) -> void:
 	_update_customers(delta)
 	_update_orphans(delta)
 	_refresh()
+
+
+## The next customer arrives once the interval has passed and the bay has stayed clear of
+## in_the_way (ships and asteroids) for ARRIVAL_CLEAR_SECONDS. A duel overrides it with two bays.
+func _update_arrivals(delta: float, in_the_way: Array[Node]) -> void:
+	_arrival_timer += delta
+	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(in_the_way) else 0.0
+	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
+		if spawn_next_customer():
+			_arrival_timer = 0.0
+			_bay_clear_for = 0.0
 
 
 ## A customer can only be gold if the lot has a gold space their ship fits.
@@ -322,16 +328,21 @@ func spawn_next_customer() -> Ship:
 			if not _request_hint_shown:
 				_request_hint_shown = true
 				_hud.show_hint("Special request: park them in their space", 4.0)
+	_next_customer += 1
+	_place_arrival(ship, c, _entrance)
+	return ship
+
+
+## Puts a new customer's ship into the lot at an entrance marker, facing the way it points.
+func _place_arrival(ship: Ship, c: Customer, entrance: Node2D) -> void:
 	ship.customer = c
 	customers[ship] = c
-	ship.global_position = _entrance.global_position
-	ship.rotation = _entrance.global_rotation
-	_next_customer += 1
+	ship.global_position = entrance.global_position
+	ship.rotation = entrance.global_rotation
 	_ships.add_child(ship)
 	ship.dented.connect(_on_ship_dented)
 	ship.bumped.connect(_on_ship_bumped)
 	Sound.play("arrive")
-	return ship
 
 
 ## Picks a new ship's paint before it enters the tree. A duel overrides it to choose the paint
@@ -607,14 +618,20 @@ func _charge_dent(ship: Ship, cost: int, effect: String) -> void:
 
 ## Drawn on the floor at the entrance, under the ships.
 func _add_arrival_bay() -> void:
-	_bay = ArrivalBay.new()
-	_bay.name = "ArrivalBay"
+	_bay = _make_arrival_bay(_entrance, "ArrivalBay")
+
+
+## An ArrivalBay marking drawn just above the floor at an entrance marker.
+func _make_arrival_bay(entrance: Node2D, bay_name: String) -> ArrivalBay:
+	var bay := ArrivalBay.new()
+	bay.name = bay_name
 	var floor_node := get_node_or_null("Floor")
 	if floor_node:
-		floor_node.add_sibling(_bay)
+		floor_node.add_sibling(bay)
 	else:
-		add_child(_bay)
-	_bay.global_transform = _entrance.global_transform
+		add_child(bay)
+	bay.global_transform = entrance.global_transform
+	return bay
 
 
 func _refresh() -> void:

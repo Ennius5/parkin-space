@@ -67,7 +67,7 @@ static func unpack_snapshot(b: PackedByteArray) -> Dictionary:
 	return s
 
 
-## Packs the ship list (id, spec_path, paint, headlight, tier, wants_retrieval).
+## Packs the ship list (id, spec_path, paint, headlight, tier, wants_retrieval, bay).
 static func pack_ship_list(ships: Array) -> PackedByteArray:
 	var p := StreamPeerBuffer.new()
 	p.put_u16(ships.size())
@@ -78,6 +78,7 @@ static func pack_ship_list(ships: Array) -> PackedByteArray:
 		p.put_u8(int(e.headlight))
 		p.put_u8(int(e.tier))
 		p.put_u8(1 if e.wants_retrieval else 0)
+		p.put_u8(int(e.get("bay", 0)))  # the arrival bay: 0 = left, 1 = right
 	return p.data_array
 
 
@@ -94,5 +95,6 @@ static func unpack_ship_list(b: PackedByteArray) -> Array:
 		e.headlight = p.get_u8()
 		e.tier = p.get_u8()
 		e.wants_retrieval = p.get_u8() != 0
+		e.bay = p.get_u8()
 		out.append(e)
 	return out

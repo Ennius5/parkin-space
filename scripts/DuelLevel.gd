@@ -37,6 +37,10 @@ var _tick := 0
 var _ship_ids: Dictionary = {}  # Ship -> network id
 var _ships_by_id: Dictionary = {}  # network id -> Ship
 var _next_ship_id := 0
+var _ship_bays: Dictionary = {}  # Ship -> the bay it arrived in (0 = left, 1 = right)
+var _arrivals: DuelArrivals  # host: the two bays' slot list and timers
+
+@onready var _entrance_r: Marker2D = $EntranceR
 
 
 func _ready() -> void:
@@ -50,6 +54,7 @@ func _ready() -> void:
 		match_seed = randi_range(1, 0x7fffffff)
 	allow_moving_parked = true
 	super._ready()
+	_arrivals.bays = [_bay, _make_arrival_bay(_entrance_r, "ArrivalBayR")]
 	sync = NetSync.new()
 	sync.name = "NetSync"
 	sync.level = self
@@ -99,13 +104,32 @@ func seed_rng() -> void:
 	_rng.seed = match_seed
 
 
-## Draws enough customers for the whole duel from the pool. No space classes: far more ships
-## arrive than the lot holds at once, so a draw that had to fit them all would stop early.
+## Draws the seeded slot list for both bays from the pool; customer_queue lists every ship in
+## it. No space classes: far more ships arrive than the lot holds at once.
 func prepare_queue() -> void:
-	customer_queue = draw_customers(_pool, GameState.duel_customers(minutes), _rng)
-	retrieval_count = GameState.duel_retrievals(minutes)
-	if _exit:
-		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
+	_arrivals = DuelArrivals.new(BaySlots.build(_pool, slots_per_bay(minutes), _rng, gold_allowed,
+			use_tiers, tier_weights))
+	customer_queue = _arrivals.all_specs()
+
+
+## Arrival slots each bay works through in a duel of this length.
+static func slots_per_bay(duel_minutes: int) -> int:
+	return ceili(duel_minutes * 6) + 3
+
+
+## The entrance marker of a bay: 0 = left (Entrance), 1 = right (EntranceR).
+func entrance(bay: int) -> Marker2D:
+	return _entrance_r if bay == 1 else _entrance
+
+
+## How many slots this bay has spawned.
+func bay_index(bay: int) -> int:
+	return _arrivals.index(bay)
+
+
+## The bay a duel ship arrived in, or -1.
+func bay_of(ship: Ship) -> int:
+	return _ship_bays.get(ship, -1)
 
 
 ## A duel customer asks for the ship back 20-30 s after it first parks.
@@ -179,29 +203,56 @@ func _resend_start_when_due(delta: float) -> void:
 		sync.send(&"match_start", _start_args)
 
 
-## The shift clock and arrivals wait until the countdown ends; then the first customer arrives.
+## The shift clock and arrivals wait until the countdown ends; then each bay's first customer
+## arrives.
 func _count_down(delta: float) -> void:
 	var shown := ceili(_countdown_left)
 	_countdown_left -= delta
 	if _countdown_left <= 0.0:
 		_phase = Phase.PLAYING
 		_hud.show_hint("Go!", 1.0)
-		spawn_next_customer()
-		_arrival_timer = 0.0
+		for bay in DuelArrivals.BAYS:
+			_spawn_in_bay(bay)
 	elif ceili(_countdown_left) != shown:
 		_hud.show_hint(str(ceili(_countdown_left)), 1.0)
 
 
+## Each bay spawns on its own clock (see DuelArrivals). Replaces Level's single bay.
+func _update_arrivals(delta: float, in_the_way: Array[Node]) -> void:
+	_arrivals.tick(delta, in_the_way)
+	for bay in DuelArrivals.BAYS:
+		if _arrivals.due(bay):
+			_spawn_in_bay(bay)
+
+
+## The next slot of whichever bay is further behind (left on a tie).
 func spawn_next_customer() -> Ship:
+	return _spawn_in_bay(_arrivals.next_bay()) if _arrivals else null
+
+
+## Host: brings this bay's next slot in, ship and customer as the slot list says, and tells the
+## guest. Null before go, on the guest, or once the bay has spawned every slot.
+func _spawn_in_bay(bay: int) -> Ship:
 	if _phase != Phase.PLAYING or role != Role.HOST:
 		return null
-	var ship := super.spawn_next_customer()
-	if ship:
-		customer_for(ship).wants_retrieval = true  # every duel ship leaves again
-		_ship_ids[ship] = _next_ship_id
-		_ships_by_id[_next_ship_id] = ship
-		_next_ship_id += 1
-		sync.send(&"ship_added", [NetProtocol.pack_ship_list([_ship_entry(ship)])])
+	var slot := _arrivals.next_slot(bay)
+	if slot.is_empty():
+		return null
+	var ship: Ship = SHIP_SCENE.instantiate()
+	ship.spec = slot.spec
+	_dress_ship(ship)
+	var c := Customer.new()
+	c.tier = slot.tier
+	c.bronze_tips = slot.bronze_tips
+	c.wants_retrieval = true  # every duel ship leaves again
+	_next_customer += 1
+	_arrivals.spawned(bay)
+	_place_arrival(ship, c, entrance(bay))
+	_ship_ids[ship] = _next_ship_id
+	_ships_by_id[_next_ship_id] = ship
+	_ship_bays[ship] = bay
+	_next_ship_id += 1
+	sync.send(&"ship_added", [NetProtocol.pack_ship_list([_ship_entry(ship)])])
 	return ship
 
 
@@ -227,7 +278,7 @@ func _ship_entry(ship: Ship) -> Dictionary:
 	return {
 		"id": ship_id(ship), "spec_path": ship.spec.resource_path, "paint": ship.paint_index,
 		"headlight": ship.headlight_index, "tier": c.tier if c else 0,
-		"wants_retrieval": c != null and c.wants_retrieval,
+		"wants_retrieval": c != null and c.wants_retrieval, "bay": maxi(0, bay_of(ship)),
 	}
 
 
@@ -237,6 +288,7 @@ func _return(ship: Ship) -> void:
 	super._return(ship)
 	_ship_ids.erase(ship)
 	_ships_by_id.erase(id)
+	_ship_bays.erase(ship)
 	if id >= 0:
 		sync.send(&"ship_removed", [id])
 

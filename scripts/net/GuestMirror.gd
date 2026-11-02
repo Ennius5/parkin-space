@@ -52,7 +52,7 @@ func on_match_start(match_seed: int, seconds: float, ships: Array) -> void:
 	level.match_seed = match_seed
 	level.minutes = roundi(seconds / 60.0)
 	level.recolor_floodlights()
-	_ships_total = GameState.duel_customers(level.minutes)
+	_ships_total = DuelArrivals.BAYS * DuelLevel.slots_per_bay(level.minutes)
 	_hud.set_time(seconds)
 	add_ships(ships, false)
 	level.sync.send(&"loaded", [])
@@ -261,7 +261,7 @@ func _send_input_when_due(delta: float) -> void:
 	level.sync.send(&"input", [NetPilot.bits_from_input()])
 
 
-## A frozen ship with collisions off, dressed as the host's.
+## A frozen ship with collisions off, dressed as the host's, waiting at its bay.
 func _build_ship(e: Dictionary) -> Ship:
 	var path := String(e.spec_path)
 	if not path.begins_with(SHIP_DIR) or not ResourceLoader.exists(path):
@@ -281,7 +281,8 @@ func _build_ship(e: Dictionary) -> Ship:
 	ship.freeze = true
 	ship.collision_layer = 0
 	ship.collision_mask = 0
-	var entrance := level.get_node("Entrance") as Node2D
+	# At its bay until the first snapshot places it.
+	var entrance := level.entrance(clampi(int(e.get("bay", 0)), 0, DuelArrivals.BAYS - 1))
 	ship.global_position = entrance.global_position
 	ship.rotation = entrance.global_rotation
 	_ships_node.add_child(ship)
