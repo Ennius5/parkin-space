@@ -340,6 +340,26 @@ func test_knocked_ship_crash_charges_knocker() -> void:
 	_done_host(level)
 
 
+func test_knocked_ship_into_driven_rival_charges_rammer() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var k := _first_ship(level)
+	var d := level.spawn_next_customer()
+	level.select_ship(d)  # valet 0 drives D, slowly
+	k.last_driver = 1  # K was knocked by valet 1...
+	k._physics_process(0.0)
+	k._prev_velocity = Vector2(300, 0)  # ...and flies into D
+	d._prev_velocity = Vector2.ZERO
+	var pay0 := level.valets[0].ledger.pay
+	k._on_body_entered(d)
+	d._on_body_entered(k)
+	var cost := ShiftLedger.dent_cost(300.0)
+	assert_true(cost > 0)
+	assert_eq(level.valets[1].ledger.pay, -cost, "the rammer pays")
+	assert_eq(level.valets[0].ledger.pay, pay0, "the driven victim doesn't")
+	_done_host(level)
+
+
 func test_exit_handover_credits_the_driver() -> void:
 	var level := await _host()
 	_skip_countdown(level)

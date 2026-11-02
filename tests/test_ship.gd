@@ -530,3 +530,73 @@ func test_parking_clears_blame() -> void:
 	a.set_driven(false, false)
 	a.queue_free()
 	b.queue_free()
+
+
+## Runs both ships' contact handlers (in either order) and returns the ships that reported a dent.
+func _collide(a: Ship, b: Ship, reverse: bool) -> Array[Ship]:
+	var payers: Array[Ship] = []
+	var record := func(s: Ship, _cost: int) -> void: payers.append(s)
+	a.dented.connect(record)
+	b.dented.connect(record)
+	if reverse:
+		b._on_body_entered(a)
+		a._on_body_entered(b)
+	else:
+		a._on_body_entered(b)
+		b._on_body_entered(a)
+	return payers
+
+
+## An undriven ship k carrying mark k_mark at k_speed meets a ship driven by valet 0 at d_speed.
+## Returns [payers, k's mark after], for one handler order.
+func _knock_into_driven(k_mark: int, k_speed: float, d_speed: float, reverse: bool) -> Array:
+	var k := _marked("light_scout", Vector2(-3000, -7000), k_mark, Vector2(k_speed, 0))
+	var d := _marked("light_scout", Vector2(-2000, -7000), 0, Vector2(d_speed, 0))
+	d.set_driven(true, false)
+	var payers := _collide(k, d, reverse)
+	var who := []
+	for s in payers:
+		who.append("K" if s == k else "D")
+	var mark := k.last_driver
+	d.set_driven(false, false)
+	k.queue_free()
+	d.queue_free()
+	return [who, mark]
+
+
+func test_knocked_ship_into_driven_rival_charges_rammer() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(1, 300.0, 0.0, reverse)
+		assert_eq(r[0], ["K"], "the knocked rammer pays, not the driven victim (reverse=%s)" % reverse)
+		assert_eq(r[1], 1, "it keeps the rammer's mark (reverse=%s)" % reverse)
+
+
+func test_slower_knocked_ship_driven_pays() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(1, 0.0, 300.0, reverse)
+		assert_eq(r[0], ["D"], "a driven ship that does the hitting pays (reverse=%s)" % reverse)
+		assert_eq(r[1], 0, "and marks the struck ship (reverse=%s)" % reverse)
+
+
+func test_same_valet_mark_driven_pays() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(0, 300.0, 0.0, reverse)
+		assert_eq(r[0], ["D"], "a ship marked by the driver's own valet: the driver pays (reverse=%s)" % reverse)
+
+
+func test_unmarked_or_equal_speed_leaves_marks() -> void:
+	for reverse in [false, true]:
+		var x := _marked("light_scout", Vector2(-3000, -9000), -1, Vector2(300, 0))
+		var y := _marked("light_scout", Vector2(-2000, -9000), 0, Vector2(10, 0))
+		var p := _marked("light_scout", Vector2(-3000, -11000), 1, Vector2(100, 0))
+		var q := _marked("light_scout", Vector2(-2000, -11000), 0, Vector2(0, 100))
+		var pairs := [[x, y], [p, q]]
+		for pair in pairs:
+			var a: Ship = pair[1] if reverse else pair[0]
+			var b: Ship = pair[0] if reverse else pair[1]
+			a.blame_from(b)
+			b.blame_from(a)
+		assert_eq([x.last_driver, y.last_driver], [-1, 0], "an unmarked hitter passes nothing on (reverse=%s)" % reverse)
+		assert_eq([p.last_driver, q.last_driver], [1, 0], "equal speeds pass nothing on (reverse=%s)" % reverse)
+		for s in [x, y, p, q]:
+			s.queue_free()

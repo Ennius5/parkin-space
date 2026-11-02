@@ -403,24 +403,33 @@ func _on_body_entered(other: Node) -> void:
 
 
 ## Blame follows the knocker: a driven ship marks an undriven, unparked ship it touches with its
-## valet; between undriven ships the slower (struck) one takes the faster one's mark, if it has one.
+## valet (unless that ship is a rival's knocked ship ramming it); between undriven ships the slower
+## (struck) one takes the faster one's mark, if it has one.
 ## Reads only pre-step state, so both ships' handlers agree whichever runs first.
 func blame_from(other: Ship) -> void:
 	if is_parked or is_driven or other.is_parked:
 		return
 	if other.is_driven:
-		last_driver = other.last_driver  # a driver's mark is its own valet, never changed by blame
+		if not _rams_driven(other):
+			last_driver = other.last_driver  # a driver's mark is its own valet, never changed by blame
 	elif other._mark_before >= 0 and other._prev_velocity.length() > _prev_velocity.length():
 		last_driver = other._mark_before
 
 
+## True when this undriven ship, knocked by another valet, hits the driven ship faster than it moves:
+## the rammer's valet answers for it, not the driver.
+func _rams_driven(driven: Ship) -> bool:
+	return _mark_before >= 0 and _mark_before != driven.last_driver 			and _prev_velocity.length() > driven._prev_velocity.length()
+
+
 ## Exactly one ship pays for a ship-to-ship collision: the driven one (the faster one if both are
-## driven, the rammer), else the one with the lower id.
+## driven, the rammer), unless a rival's knocked ship rams it; else the one with the lower id.
 func _pays_for_collision_with(other: Ship) -> bool:
 	if other.is_parked:
 		return true  # parked ships never report collisions
 	if is_driven != other.is_driven:
-		return is_driven
+		var rams := other._rams_driven(self) if is_driven else _rams_driven(other)
+		return is_driven != rams
 	if is_driven:
 		var mine := _prev_velocity.length()
 		var theirs := other._prev_velocity.length()
