@@ -27,9 +27,10 @@ func _add_difficulty_row() -> void:
 		b.text = "%s
 %d:%02d" % [GameState.DIFFICULTY_NAMES[d], seconds / 60, seconds % 60]
 		b.toggle_mode = true
+		b.theme_type_variation = &"ToggleHexButton"  # the chosen difficulty stays lit cyan
 		b.button_group = group
 		b.button_pressed = d == GameState.difficulty
-		b.custom_minimum_size = Vector2(180, 100)
+		b.custom_minimum_size = Vector2(190, 84)
 		b.add_theme_font_size_override("font_size", 28)
 		b.pressed.connect(_on_difficulty_pressed.bind(d))
 		row.add_child(b)
@@ -47,7 +48,7 @@ func build() -> void:
 		child.queue_free()
 	for i in range(1, GameState.TOTAL_LEVELS + 1):
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(180, 180)  # big enough for a thumb
+		b.custom_minimum_size = Vector2(220, 140)  # big enough for a thumb
 		b.add_theme_font_size_override("font_size", 30)
 		if not GameState.is_unlocked(i):
 			b.text = "Level %d\nLOCKED" % i

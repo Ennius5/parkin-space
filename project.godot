@@ -28,6 +28,10 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[gui]
+
+theme/custom="res://assets/ui/neon_theme.tres"
+
 [input]
 
 thrust_forward={

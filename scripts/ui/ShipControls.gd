@@ -13,6 +13,10 @@ const EDGE_MARGIN := 40.0
 
 func _ready() -> void:
 	$Buttons/Right/Done.pressed.connect(done_pressed.emit)
+	for node in _buttons.find_children("*", "TouchScreenButton", true, false):
+		HexFace.attach(node as TouchScreenButton)
+		for label in node.find_children("*", "Label", false, false):
+			(label as Label).add_theme_color_override("font_color", HexStyle.CYAN)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	set_driving(false)
