@@ -41,7 +41,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Goal:** serve every customer on the level's list before the shift timer ends (park arrivals, return retrieval requests to the exit).
 - **Win:** all customers served with pay above zero → result screen with earnings and stars.
 - **Lose:** pay reaches zero ("You're fired!"), or the shift ends with customers still waiting.
-- **Parked** = the whole ship is inside a valid green space, nearly stopped, for 1 second. The space flashes and the customer pays.
+- **Parked** = while you drive a ship that is wholly inside a valid green space and nearly stopped, the space turns orange; pressing Done then parks it and the customer pays. Ships never park by themselves.
 - **Space sizes:** light, medium and heavy spaces. A ship can park in a space of its own class or larger, so wasting a big space on a small ship may leave a later heavy ship nowhere to go.
 - **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing. Drifting asteroids block the bay too.
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).

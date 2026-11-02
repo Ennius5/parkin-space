@@ -209,20 +209,21 @@ func test_firing_records_loss_without_unlock() -> void:
 	_restore_state()
 
 
-func test_ship_resting_in_space_gets_parked() -> void:
+func test_ship_resting_in_space_parks_on_done() -> void:
 	_setup_state()
 	var level := await _make_level()
 	var ship: Ship = level.get_node("Ships").get_child(0)
 	var space: ParkingSpace = level.get_node("Spaces/A1")
+	level.select_ship(ship)
 	ship.global_position = space.global_position
 	ship.rotation = space.global_rotation
 	ship.linear_velocity = Vector2.ZERO
 	ship.angular_velocity = 0.0
-	for i in 40:
+	for i in 80:
 		await tree.physics_frame
-	assert_eq(level.ledger.served, 0, "not credited before the 1 s hold")
-	for i in 40:
-		await tree.physics_frame
+	assert_eq(level.ledger.served, 0, "resting in a space isn't parking")
+	assert_true(space.ready_for == ship, "the space shows orange")
+	level._on_done_pressed()
 	assert_eq(level.ledger.served, 1)
 	assert_eq(space.occupant, ship)
 	assert_true(ship.is_parked)
@@ -348,8 +349,8 @@ func test_tap_near_two_ships_opens_picker_and_pick_drives() -> void:
 	var setup := await _level_with_two_ships()
 	var level: Level = setup[0]
 	var picker := level.get_node("ShipPicker") as ShipPicker
-	var between := ((setup[1] as Ship).global_position + (setup[2] as Ship).global_position) / 2.0
-	level.handle_lot_tap(level.get_global_transform_with_canvas() * between)  # in the gap, on neither hull
+	var beside := ((setup[1] as Ship).global_position + (setup[2] as Ship).global_position) / 2.0 + Vector2(0, 110)
+	level.handle_lot_tap(level.get_global_transform_with_canvas() * beside)  # near both, on neither hull
 	assert_eq(level.driven_ship, null, "a choice opens the list instead")
 	assert_true(picker.is_open())
 	assert_eq(picker.ships.size(), 2)
@@ -1102,13 +1103,12 @@ func test_orphan_reparks_without_counting() -> void:
 	var orphan := level._spawn_orphan()
 	var space := _space_held_by(level, orphan)
 	level.select_ship(orphan)
-	level.release_ship()
 	_move(orphan, space.global_position)
 	orphan.global_rotation = space.global_rotation
-	orphan.freeze = false
 	orphan.linear_velocity = Vector2.ZERO
-	await _physics_frames(90)
-	assert_true(orphan.is_parked, "an orphan left in a space settles back into it")
+	level._check_parking(0.016)
+	level._on_done_pressed()
+	assert_true(orphan.is_parked, "Done settles an orphan back into a space")
 	assert_eq(level.ledger.served, 0, "but it's never a served customer")
 	level.free()
 	_restore_state()
@@ -1243,9 +1243,15 @@ func test_level04_every_space_parks_a_resting_ship() -> void:
 		ship.rotation = space.global_rotation
 		level.get_node("Ships").add_child(ship)
 		placed[space.label] = ship
-	await _physics_frames(120)
+	await _physics_frames(30)
 	for label: String in placed:
-		assert_true((placed[label] as Ship).is_parked, "a ship left at rest in %s parks" % label)
+		var ship: Ship = placed[label]
+		level._released_at_msec = -100000  # Done just let go of the last one
+		level.select_ship(ship)
+		await _physics_frames(30)  # held by the valet, the pull acts unless the space shields it
+		level._check_parking(0.016)
+		level._on_done_pressed()
+		assert_true(ship.is_parked, "a ship resting in %s can be parked" % label)
 	level.free()
 	_restore_state()
 
@@ -1556,6 +1562,8 @@ func test_requests_never_overlap_retrievals() -> void:
 func test_request_prefers_an_occupied_fitting_space() -> void:
 	_setup_state()
 	var level := await _request_level()
+	for c: Customer in level.customers.values():
+		c.wants_space = ""  # no open requests yet, so nothing is excluded
 	var a1 := _space_a1(level)
 	a1.claim(_first_ship(level))
 	for i in 20:
@@ -1716,5 +1724,73 @@ func test_tap_on_a_ship_picks_it_even_with_neighbours() -> void:
 	level._released_at_msec = -100000
 	level.handle_lot_tap(_screen_pos(ship))
 	assert_true(level.driven_ship == ship, "a tap right on a ship takes it, no list")
+	level.free()
+	_restore_state()
+
+
+# --- Parking by pressing Done ---
+
+## The first ship, driven and at rest centred in A1 (a medium space every Level 1 ship fits).
+func _driven_in_a1(level: Level) -> Ship:
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	var a1 := _space_a1(level)
+	_move(ship, a1.global_position)
+	ship.global_rotation = a1.global_rotation
+	ship.linear_velocity = Vector2.ZERO
+	ship.angular_velocity = 0.0
+	return ship
+
+
+func test_space_turns_orange_when_the_driven_ship_is_valid() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship := _driven_in_a1(level)
+	level._check_parking(0.016)
+	assert_true(_space_a1(level).ready_for == ship, "A1 is orange for the ship in it")
+	_move(ship, OPEN_FLOOR)
+	level._check_parking(0.016)
+	assert_true(_space_a1(level).ready_for == null, "and stops once it leaves")
+	level.free()
+	_restore_state()
+
+
+func test_done_parks_on_an_orange_space() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship := _driven_in_a1(level)
+	level._check_parking(0.016)
+	level._on_done_pressed()
+	assert_true(ship.is_parked)
+	assert_true(level.driven_ship == null)
+	assert_eq(level.ledger.served, 1)
+	level.free()
+	_restore_state()
+
+
+func test_done_elsewhere_just_lets_go() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	_move(ship, OPEN_FLOOR)
+	level._check_parking(0.016)
+	level._on_done_pressed()
+	assert_false(ship.is_parked)
+	assert_true(level.driven_ship == null)
+	assert_eq(level.ledger.served, 0)
+	level.free()
+	_restore_state()
+
+
+func test_ships_never_park_by_themselves() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ship := _driven_in_a1(level)
+	level.release_ship()
+	for i in 4:
+		level._check_parking(0.5)
+	assert_false(ship.is_parked, "only Done parks a ship")
+	assert_true(_space_a1(level).ready_for == null)
 	level.free()
 	_restore_state()

@@ -88,7 +88,7 @@ func _ready() -> void:
 		_orphans_due = orphan_times(_rng, orphan_count, GameState.shift_seconds())
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
-	_controls.done_pressed.connect(release_ship)
+	_controls.done_pressed.connect(_on_done_pressed)
 	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
 	_add_darkness()
@@ -336,7 +336,7 @@ func select_ship(ship: Ship) -> void:
 	_controls.set_driving(true)
 	if not _drive_hint_shown:
 		_drive_hint_shown = true
-		_hud.show_hint("Stop inside a green space", 3.0)
+		_hud.show_hint("Stop in a green space, then press Done when it turns orange", 4.0)
 
 
 ## A parked ship the valet may pick up: an orphan, or any customer ship where the level allows moving.
@@ -383,22 +383,41 @@ func end_level() -> void:
 		get_tree().change_scene_to_file.call_deferred(RESULT_SCENE)
 
 
-func _check_parking(delta: float) -> void:
-	for ship: Ship in _ships.get_children():
+## Lights up (orange) the space the driven ship could park in right now. Nothing parks by itself:
+## the valet presses Done to park there.
+func _check_parking(_delta: float) -> void:
+	var ready: ParkingSpace = null
+	var ship := driven_ship
+	if ship and is_instance_valid(ship):
 		var c := customer_for(ship)
-		if ship.is_parked or (c and c.requested):
-			continue
-		var hit: ParkingSpace = null
-		for space: ParkingSpace in _spaces.get_children():
-			if space.check(ship):
-				hit = space
-				break
-		var tracker: ParkTracker = _trackers.get_or_add(ship, ParkTracker.new())
-		if tracker.update(delta, hit != null):
-			if ship.orphan:
-				_repark_orphan(ship, hit)
-			else:
-				_on_ship_parked(ship, hit)
+		if not (c and c.requested):
+			for space: ParkingSpace in _spaces.get_children():
+				if space.check(ship):
+					ready = space
+					break
+	for space: ParkingSpace in _spaces.get_children():
+		var now: Ship = ship if space == ready else null
+		if space.ready_for != now:
+			space.ready_for = now
+			space.queue_redraw()
+
+
+## Done: park the driven ship in the space lit up for it, or just let go of it.
+func _on_done_pressed() -> void:
+	var ship := driven_ship
+	var space: ParkingSpace = null
+	if ship:
+		for s: ParkingSpace in _spaces.get_children():
+			if s.ready_for == ship and s.check(ship):
+				space = s
+	if space == null:
+		release_ship()
+		return
+	space.ready_for = null
+	if ship.orphan:
+		_repark_orphan(ship, space)
+	else:
+		_on_ship_parked(ship, space)
 
 
 func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:

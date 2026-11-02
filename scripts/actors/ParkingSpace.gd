@@ -9,12 +9,14 @@ const CLASS_LETTERS := {
 }
 const FREE_COLOR := Color(0.3, 1.0, 0.45)
 const TAKEN_COLOR := Color(1, 1, 1, 0.6)
+const READY_COLOR := Color(1.0, 0.6, 0.15)  # the driven ship may park here: press Done
 
 @export var space_class: ShipSpec.ShipClass = ShipSpec.ShipClass.MEDIUM
 @export var label: String = ""
 @export var gold := false  # gold customers only tip when parked in a gold space
 
 var occupant: Ship = null
+var ready_for: Ship = null  # the driven ship that would park here if Done were pressed now
 var pin_color := Color(0, 0, 0, 0)  # a special request marker; transparent = none
 
 var _pulse := 0.0
@@ -78,7 +80,9 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var s := size()
 	var color := TAKEN_COLOR
-	if occupant == null:
+	if ready_for != null:
+		color = READY_COLOR
+	elif occupant == null:
 		color = FREE_COLOR
 		color.a = lerpf(0.4, 1.0, 0.5 + 0.5 * cos(_pulse * TAU))
 	draw_rect(Rect2(-s / 2, s), color, false, 3.0)
