@@ -805,7 +805,9 @@ func test_level03_layout() -> void:
 	for zone in level.get_node("Radiation").get_children():
 		assert_true(zone is RadiationZone)
 	assert_true(level.get_node("Wrecks").get_child_count() >= 3)
-	assert_true(level.get_node("Asteroids").get_child_count() >= 3)
+	assert_true(level.get_node("Asteroids").get_child_count() >= 7)
+	for rock: Asteroid in level.get_node("Asteroids").get_children():
+		assert_true(rock.art_scale >= 1.0, "%s is a big rock" % rock.name)
 	assert_eq(level.level_number, 3)
 	assert_eq(level.goal_text, "Serve 7 customers")
 	assert_eq(level.random_customers, 7)
