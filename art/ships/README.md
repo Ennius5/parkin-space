@@ -72,3 +72,5 @@ godot --headless --path . -s res://tools/build_ships.gd
 For each ship it reports the centre of mass in art pixels, each button's force, and any side effects, such as "Left … also turns right". If something blocks a ship, it prints an ERROR and doesn't write that ship.
 
 To use a ship in a level, add its `.tres` to the level's **Customer Queue** in the Inspector.
+
+Tricky ships can be made rarer: open the `.tres` and lower **Spawn Weight** (1 = normal, 0.25 = about four times rarer). Levels with **Random Customers** above 0 draw their customers by this weight. Rebuilding keeps your value.

@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/light/AsteroidJunker/AsteroidJunker_lights.png" id="1_na760"]
+[ext_resource type="Texture2D" path="res://art/ships/light/AsteroidJunker/AsteroidJunker_paint.png" id="2_gkdvg"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_my3kx"]
+[ext_resource type="Texture2D" path="res://art/ships/light/AsteroidJunker/AsteroidJunker.png" id="4_3f6xy"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_dh6qa"]
+
+[sub_resource type="Resource" id="Resource_na760"]
+script = ExtResource("5_dh6qa")
+position = Vector2(0, 31)
+force = 260.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_gkdvg"]
+script = ExtResource("5_dh6qa")
+position = Vector2(5, -19)
+direction = Vector2(0, 1)
+force = 180.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_my3kx"]
+script = ExtResource("5_dh6qa")
+position = Vector2(-17, 6)
+direction = Vector2(1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_3f6xy"]
+script = ExtResource("5_dh6qa")
+position = Vector2(15, 6)
+direction = Vector2(-1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_dh6qa"]
+script = ExtResource("5_dh6qa")
+position = Vector2(-19, -4)
+direction = Vector2(1, 0)
+force = 37.5
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_vg0pa"]
+script = ExtResource("5_dh6qa")
+position = Vector2(19, 20)
+direction = Vector2(-1, 0)
+force = 37.5
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_uodyd"]
+script = ExtResource("5_dh6qa")
+position = Vector2(19, -4)
+direction = Vector2(-1, 0)
+force = 37.5
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_wtwgw"]
+script = ExtResource("5_dh6qa")
+position = Vector2(-19, 20)
+direction = Vector2(1, 0)
+force = 37.5
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_my3kx")
+display_name = "Asteroid Junker"
+center_of_mass = Vector2(2, 2)
+inertia = 336.7212572373865
+thrusters = Array[ExtResource("5_dh6qa")]([SubResource("Resource_na760"), SubResource("Resource_gkdvg"), SubResource("Resource_my3kx"), SubResource("Resource_3f6xy"), SubResource("Resource_dh6qa"), SubResource("Resource_vg0pa"), SubResource("Resource_uodyd"), SubResource("Resource_wtwgw")])
+hull_polygon = PackedVector2Array(-12, -30, -14, -30, -14, -28, -16, -28, -16, -26, -14, -26, -14, -6, -16, -6, -16, -8, -20, -8, -20, 0, -16, 0, -16, 4, -18, 4, -18, 8, -14, 8, -14, 12, -12, 12, -12, 16, -10, 16, -10, 18, -16, 18, -16, 16, -20, 16, -20, 24, -16, 24, -16, 22, -10, 22, -10, 26, -8, 26, -8, 28, -4, 28, -4, 32, 4, 32, 4, 28, 8, 28, 8, 24, 10, 24, 10, 22, 16, 22, 16, 24, 20, 24, 20, 16, 16, 16, 16, 18, 12, 18, 12, 16, 14, 16, 16, 12, 18, 12, 18, 10, 16, 10, 16, 4, 14, 4, 14, -2, 16, -2, 16, 0, 20, 0, 20, -8, 14, -8, 10, -16, 8, -16, 8, -20, 2, -20, 2, -30, 0, -30, 0, -32, -12, -32)
+texture = ExtResource("4_3f6xy")
+paint_texture = ExtResource("2_gkdvg")
+lights_texture = ExtResource("1_na760")

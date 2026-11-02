@@ -3,6 +3,17 @@ extends TestCase
 const LEVEL01 := preload("res://scenes/levels/Level01.tscn")
 const TEST_SAVE := "user://test_level_save.cfg"
 
+const LEVEL01_POOL := [
+	"res://resources/ships/AsteroidJunker.tres",
+	"res://resources/ships/ManipulatorDrone.tres",
+	"res://resources/ships/Milano.tres",
+	"res://resources/ships/Miner.tres",
+	"res://resources/ships/Nostrom.tres",
+	"res://resources/ships/ReconDrone.tres",
+	"res://resources/ships/RecreationalDrone.tres",
+	"res://resources/ships/medium_shuttle.tres",
+]
+
 var _real_save_path: String
 
 
@@ -26,15 +37,65 @@ func _make_level() -> Level:
 	return level
 
 
+func _queue_paths(queue: Array[ShipSpec]) -> Array:
+	var paths := []
+	for spec in queue:
+		paths.append(spec.resource_path)
+	paths.sort()
+	return paths
+
+
+func _spec(weight: float) -> ShipSpec:
+	var spec := ShipSpec.new()
+	spec.spawn_weight = weight
+	return spec
+
+
+func test_spawn_weight_defaults_to_one() -> void:
+	assert_eq(ShipSpec.new().spawn_weight, 1.0)
+
+
+func test_draw_customers_gives_count_ships_from_the_pool() -> void:
+	var pool: Array[ShipSpec] = [_spec(1.0), _spec(1.0)]
+	var drawn := Level.draw_customers(pool, 4, RandomNumberGenerator.new())
+	assert_eq(drawn.size(), 4)
+	for spec in drawn:
+		assert_true(spec in pool)
+
+
+func test_draw_customers_follows_spawn_weight() -> void:
+	var common := _spec(1.0)
+	var rare := _spec(0.25)
+	var pool: Array[ShipSpec] = [common, rare]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 85
+	var drawn := Level.draw_customers(pool, 1000, rng)
+	var rare_count := drawn.count(rare)
+	assert_true(rare_count > 150 and rare_count < 250, "rare drawn %d of 1000, expected about 200" % rare_count)
+
+
+func test_level01_draws_its_customers_from_the_pool() -> void:
+	_setup_state()
+	var level := await _make_level()
+	assert_eq(level.customer_queue.size(), 4)
+	assert_eq(level.ledger.customers, 4)
+	for spec in level.customer_queue:
+		assert_true(spec.resource_path in LEVEL01_POOL, spec.resource_path)
+	level.free()
+	_restore_state()
+
+
+func test_recon_drone_is_rare() -> void:
+	var recon: ShipSpec = load("res://resources/ships/ReconDrone.tres")
+	assert_eq(recon.spawn_weight, 0.25)
+
+
 func test_level01_exports() -> void:
 	var level: Level = LEVEL01.instantiate()
 	assert_eq(level.level_number, 1)
 	assert_eq(level.goal_text, "Park 4 ships before the shift ends")
-	assert_eq(level.customer_queue.size(), 4)
-	var classes := []
-	for spec in level.customer_queue:
-		classes.append(spec.ship_class)
-	assert_eq(classes, [ShipSpec.ShipClass.LIGHT, ShipSpec.ShipClass.MEDIUM, ShipSpec.ShipClass.LIGHT, ShipSpec.ShipClass.MEDIUM])
+	assert_eq(_queue_paths(level.customer_queue), LEVEL01_POOL)
+	assert_eq(level.random_customers, 4)
 	assert_eq(level.shift_seconds, 180.0)
 	assert_eq(level.base_pay, 100)
 	assert_eq(level.silver_target, 150)

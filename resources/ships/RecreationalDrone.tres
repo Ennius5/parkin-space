@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/light/RecreationalDrone/RecreationalDrone_lights.png" id="1_6wae0"]
+[ext_resource type="Texture2D" path="res://art/ships/light/RecreationalDrone/RecreationalDrone_paint.png" id="2_hkqs4"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_4rc2s"]
+[ext_resource type="Texture2D" path="res://art/ships/light/RecreationalDrone/RecreationalDrone.png" id="4_u10t3"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_jsf8p"]
+
+[sub_resource type="Resource" id="Resource_6wae0"]
+script = ExtResource("5_jsf8p")
+position = Vector2(0, 31)
+force = 260.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_hkqs4"]
+script = ExtResource("5_jsf8p")
+position = Vector2(0, -31)
+direction = Vector2(0, 1)
+force = 180.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_4rc2s"]
+script = ExtResource("5_jsf8p")
+position = Vector2(-19, 0)
+direction = Vector2(1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_u10t3"]
+script = ExtResource("5_jsf8p")
+position = Vector2(19, 0)
+direction = Vector2(-1, 0)
+force = 180.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_jsf8p"]
+script = ExtResource("5_jsf8p")
+position = Vector2(-19, -23)
+direction = Vector2(1, 0)
+force = 19.565217391304348
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_ullu6"]
+script = ExtResource("5_jsf8p")
+position = Vector2(19, 23)
+direction = Vector2(-1, 0)
+force = 19.565217391304348
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_gqp18"]
+script = ExtResource("5_jsf8p")
+position = Vector2(19, -23)
+direction = Vector2(-1, 0)
+force = 19.565217391304348
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_31c6t"]
+script = ExtResource("5_jsf8p")
+position = Vector2(-19, 23)
+direction = Vector2(1, 0)
+force = 19.565217391304348
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_4rc2s")
+display_name = "Recreational Drone"
+center_of_mass = Vector2(0, 8)
+inertia = 445.2347959969202
+thrusters = Array[ExtResource("5_jsf8p")]([SubResource("Resource_6wae0"), SubResource("Resource_hkqs4"), SubResource("Resource_4rc2s"), SubResource("Resource_u10t3"), SubResource("Resource_jsf8p"), SubResource("Resource_ullu6"), SubResource("Resource_gqp18"), SubResource("Resource_31c6t")])
+hull_polygon = PackedVector2Array(-6, -28, -4, -28, -4, -26, -20, -26, -20, -20, -14, -20, -14, -4, -20, -4, -20, 4, -14, 4, -14, 20, -20, 20, -20, 26, -4, 26, -4, 28, -6, 28, -6, 32, 6, 32, 6, 28, 4, 28, 4, 26, 20, 26, 20, 20, 10, 20, 10, 18, 12, 18, 12, 14, 16, 14, 16, 8, 12, 8, 12, 4, 20, 4, 20, -4, 16, -4, 16, -6, 18, -6, 16, -10, 2, -10, 2, -12, 16, -12, 16, -14, 18, -14, 18, -16, 16, -16, 16, -18, 8, -18, 8, -20, 20, -20, 20, -26, 4, -26, 4, -28, 6, -28, 6, -32, -6, -32)
+texture = ExtResource("4_u10t3")
+paint_texture = ExtResource("2_hkqs4")
+lights_texture = ExtResource("1_6wae0")

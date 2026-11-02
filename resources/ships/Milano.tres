@@ -1,0 +1,107 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/medium/Milano/Milano_lights.png" id="1_y1m1r"]
+[ext_resource type="Texture2D" path="res://art/ships/medium/Milano/Milano_paint.png" id="2_3xbpk"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_7g8io"]
+[ext_resource type="Texture2D" path="res://art/ships/medium/Milano/Milano.png" id="4_spdo4"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_g2k75"]
+
+[sub_resource type="Resource" id="Resource_y1m1r"]
+script = ExtResource("5_g2k75")
+position = Vector2(-12, 49)
+force = 130.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_3xbpk"]
+script = ExtResource("5_g2k75")
+position = Vector2(-6, 49)
+force = 130.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_7g8io"]
+script = ExtResource("5_g2k75")
+position = Vector2(0, 49)
+force = 130.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_spdo4"]
+script = ExtResource("5_g2k75")
+position = Vector2(6, 49)
+force = 130.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_g2k75"]
+script = ExtResource("5_g2k75")
+position = Vector2(12, 49)
+force = 130.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_w7wku"]
+script = ExtResource("5_g2k75")
+position = Vector2(-11, -27)
+direction = Vector2(0, 1)
+force = 110.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_sf2g2"]
+script = ExtResource("5_g2k75")
+position = Vector2(11, -27)
+direction = Vector2(0, 1)
+force = 110.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_3q8kx"]
+script = ExtResource("5_g2k75")
+position = Vector2(-29, 26)
+direction = Vector2(1, 0)
+force = 380.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_r1rau"]
+script = ExtResource("5_g2k75")
+position = Vector2(29, 26)
+direction = Vector2(-1, 0)
+force = 380.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_b73sm"]
+script = ExtResource("5_g2k75")
+position = Vector2(-19, -23)
+direction = Vector2(1, 0)
+force = 37.64705882352941
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_h0ije"]
+script = ExtResource("5_g2k75")
+position = Vector2(19, 44)
+direction = Vector2(-1, 0)
+force = 75.29411764705883
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_ppqb8"]
+script = ExtResource("5_g2k75")
+position = Vector2(19, -23)
+direction = Vector2(-1, 0)
+force = 37.64705882352941
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_r3slj"]
+script = ExtResource("5_g2k75")
+position = Vector2(-19, 44)
+direction = Vector2(1, 0)
+force = 75.29411764705883
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_7g8io")
+ship_class = 1
+display_name = "Milano"
+mass = 2.5
+hull_size = Vector2(60, 100)
+center_of_mass = Vector2(0, 26)
+inertia = 2590.257575757578
+thrusters = Array[ExtResource("5_g2k75")]([SubResource("Resource_y1m1r"), SubResource("Resource_3xbpk"), SubResource("Resource_7g8io"), SubResource("Resource_spdo4"), SubResource("Resource_g2k75"), SubResource("Resource_w7wku"), SubResource("Resource_sf2g2"), SubResource("Resource_3q8kx"), SubResource("Resource_r1rau"), SubResource("Resource_b73sm"), SubResource("Resource_h0ije"), SubResource("Resource_ppqb8"), SubResource("Resource_r3slj")])
+hull_polygon = PackedVector2Array(-16, -26, -20, -26, -20, -24, -18, -24, -18, -22, -20, -22, -20, -20, -16, -20, -16, -18, -26, -18, -26, -16, -28, -16, -28, -14, -26, -14, -26, -10, -28, -10, -28, -6, -26, -6, -26, -2, -28, -2, -28, 2, -26, 2, -26, 6, -28, 6, -28, 12, -24, 12, -24, 14, -22, 14, -22, 16, -18, 16, -18, 18, -14, 18, -14, 20, -16, 20, -16, 24, -18, 24, -18, 22, -24, 22, -24, 20, -28, 20, -28, 22, -30, 22, -30, 24, -28, 24, -28, 28, -30, 28, -30, 30, -28, 30, -28, 32, -24, 32, -24, 30, -18, 30, -18, 28, -16, 28, -18, 40, -20, 40, -20, 42, -18, 42, -18, 46, -20, 46, -20, 50, 20, 50, 20, 46, 18, 46, 18, 42, 20, 42, 20, 40, 18, 40, 18, 34, 16, 34, 16, 28, 18, 28, 18, 30, 24, 30, 24, 32, 28, 32, 28, 30, 30, 30, 30, 28, 28, 28, 28, 24, 30, 24, 30, 22, 28, 22, 28, 20, 24, 20, 24, 22, 18, 22, 18, 24, 16, 24, 16, 20, 14, 20, 14, 18, 18, 18, 18, 16, 22, 16, 24, 12, 28, 12, 28, 6, 26, 6, 26, 2, 28, 2, 28, -2, 26, -2, 26, -6, 28, -6, 28, -10, 26, -10, 26, -14, 28, -14, 28, -16, 26, -16, 26, -18, 16, -18, 16, -20, 20, -20, 20, -22, 18, -22, 18, -24, 20, -24, 20, -26, 16, -26, 16, -48, 14, -48, 14, -40, 12, -40, 12, -26, 10, -26, 10, -28, 6, -28, 6, -26, -6, -26, -6, -28, -10, -28, -10, -26, -12, -26, -12, -40, -14, -40, -14, -48, -16, -48)
+texture = ExtResource("4_spdo4")
+paint_texture = ExtResource("2_3xbpk")
+lights_texture = ExtResource("1_y1m1r")

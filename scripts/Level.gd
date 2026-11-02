@@ -17,6 +17,8 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var level_number: int = 1
 @export var goal_text: String = ""
 @export var customer_queue: Array[ShipSpec] = []
+## Above 0: each shift draws this many customers from customer_queue by spawn_weight (repeats allowed).
+@export var random_customers: int = 0
 @export var shift_seconds: float = 180.0
 @export var base_pay: int = 100
 @export var silver_target: int = 150
@@ -44,6 +46,10 @@ var _released_at_msec := -RESELECT_DELAY_MS
 
 
 func _ready() -> void:
+	if random_customers > 0:
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		customer_queue = draw_customers(customer_queue, random_customers, rng)
 	ledger = ShiftLedger.new(base_pay, customer_queue.size(), shift_seconds)
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
@@ -65,6 +71,17 @@ func _physics_process(delta: float) -> void:
 			_arrival_timer = 0.0
 	_check_parking(delta)
 	_refresh()
+
+
+## Draws count ships from pool, each pick weighted by its spawn_weight.
+static func draw_customers(pool: Array[ShipSpec], count: int, rng: RandomNumberGenerator) -> Array[ShipSpec]:
+	var weights := PackedFloat32Array()
+	for spec in pool:
+		weights.append(spec.spawn_weight)
+	var drawn: Array[ShipSpec] = []
+	for i in count:
+		drawn.append(pool[rng.rand_weighted(weights)])
+	return drawn
 
 
 ## Spawns the next customer's ship at the entrance. Returns null when the queue is used up.

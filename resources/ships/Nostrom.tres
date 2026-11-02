@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom_lights.png" id="1_dxw6b"]
+[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom_paint.png" id="2_e6lw2"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_fbymv"]
+[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom.png" id="4_l2vec"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_mpmi4"]
+
+[sub_resource type="Resource" id="Resource_dxw6b"]
+script = ExtResource("5_mpmi4")
+position = Vector2(-10, 49)
+force = 325.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_e6lw2"]
+script = ExtResource("5_mpmi4")
+position = Vector2(10, 49)
+force = 325.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_fbymv"]
+script = ExtResource("5_mpmi4")
+position = Vector2(0, -35)
+direction = Vector2(0, 1)
+force = 220.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_l2vec"]
+script = ExtResource("5_mpmi4")
+position = Vector2(-29, 14)
+direction = Vector2(1, 0)
+force = 380.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_mpmi4"]
+script = ExtResource("5_mpmi4")
+position = Vector2(29, 14)
+direction = Vector2(-1, 0)
+force = 380.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_kp6i7"]
+script = ExtResource("5_mpmi4")
+position = Vector2(-19, -28)
+direction = Vector2(1, 0)
+force = 51.61290322580645
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_0c87c"]
+script = ExtResource("5_mpmi4")
+position = Vector2(29, 34)
+direction = Vector2(-1, 0)
+force = 51.61290322580645
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_u0dab"]
+script = ExtResource("5_mpmi4")
+position = Vector2(29, -28)
+direction = Vector2(-1, 0)
+force = 51.61290322580645
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_ik3l5"]
+script = ExtResource("5_mpmi4")
+position = Vector2(-29, 34)
+direction = Vector2(1, 0)
+force = 51.61290322580645
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_fbymv")
+ship_class = 1
+display_name = "Nostrom"
+spawn_weight = 0.5
+mass = 2.5
+hull_size = Vector2(60, 100)
+center_of_mass = Vector2(0, 2)
+inertia = 2098.291814946617
+thrusters = Array[ExtResource("5_mpmi4")]([SubResource("Resource_dxw6b"), SubResource("Resource_e6lw2"), SubResource("Resource_fbymv"), SubResource("Resource_l2vec"), SubResource("Resource_mpmi4"), SubResource("Resource_kp6i7"), SubResource("Resource_0c87c"), SubResource("Resource_u0dab"), SubResource("Resource_ik3l5")])
+hull_polygon = PackedVector2Array(10, -46, 8, -46, 8, -42, 6, -42, 6, -30, 4, -30, 4, -34, 2, -34, 2, -36, -2, -36, -2, -34, -4, -34, -4, -32, -18, -32, -18, -30, -20, -30, -20, -26, -18, -26, -18, -24, -20, -24, -22, -20, -24, -20, -24, -8, -22, -8, -22, -6, -20, -6, -20, -4, -24, -2, -24, 4, -20, 6, -20, 8, -24, 8, -24, 12, -30, 12, -30, 16, -24, 16, -24, 20, -12, 20, -12, 22, -6, 22, -6, 24, 0, 24, 0, 26, -6, 26, -6, 28, -20, 28, -20, 30, -30, 30, -30, 36, -20, 36, -20, 38, -14, 38, -14, 40, -8, 40, -8, 42, -12, 42, -12, 46, -14, 46, -14, 50, -6, 50, -6, 48, 6, 48, 6, 50, 8, 50, 8, 48, 12, 48, 12, 50, 14, 50, 14, 48, 18, 48, 18, 42, 24, 42, 24, 44, 28, 44, 28, 36, 30, 36, 30, 32, 26, 30, 26, 26, 22, 26, 22, 24, 24, 24, 24, 20, 26, 20, 26, 18, 30, 16, 30, 12, 28, 12, 28, 10, 26, 10, 26, 8, 24, 8, 24, 6, 20, 4, 20, 2, 18, 2, 18, -26, 30, -26, 30, -30, 18, -30, 18, -42, 16, -42, 16, -46, 14, -46, 14, -50, 10, -50)
+texture = ExtResource("4_l2vec")
+paint_texture = ExtResource("2_e6lw2")
+lights_texture = ExtResource("1_dxw6b")

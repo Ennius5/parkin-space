@@ -6,6 +6,7 @@ enum ShipClass { LIGHT, MEDIUM, HEAVY }
 
 @export var ship_class: ShipClass = ShipClass.LIGHT
 @export var display_name: String = ""
+@export var spawn_weight: float = 1.0  # chance in random customer draws; 0.25 = four times rarer
 @export var mass: float = 1.0
 @export var hull_size: Vector2 = Vector2(40, 64)  # width x length in pixels, nose at -Y
 @export var center_of_mass: Vector2 = Vector2.ZERO  # pixels from the hull centre
