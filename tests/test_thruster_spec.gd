@@ -51,7 +51,7 @@ func test_fires_for() -> void:
 
 func test_layout_quirks() -> void:
 	for ship_name in SHIPS:
-		var spec := load("res://resources/ships/%s.tres" % ship_name) as ShipSpec
+		var spec := ship_spec(ship_name)
 		assert_true(spec.thrusters.size() > 0, ship_name)
 		var fwd := _sum(spec, "thrust_forward")
 		assert_true(fwd["force"].y < 0.0, "%s forward pushes nose-first" % ship_name)
@@ -63,9 +63,9 @@ func test_layout_quirks() -> void:
 			assert_almost(strafe_torque, 0.0, 0.01, "scout strafes cleanly")
 		else:
 			assert_true(absf(strafe_torque) > 100.0, "%s strafe twists: %s" % [ship_name, strafe_torque])
-	var shuttle := load("res://resources/ships/medium_shuttle.tres") as ShipSpec
+	var shuttle := ship_spec("medium_shuttle")
 	var back: float = _sum(shuttle, "thrust_back")["force"].length()
 	var forward: float = _sum(shuttle, "thrust_forward")["force"].length()
 	assert_true(back < 0.4 * forward, "shuttle retro is weak: %s vs %s" % [back, forward])
-	var freighter := load("res://resources/ships/heavy_freighter.tres") as ShipSpec
+	var freighter := ship_spec("heavy_freighter")
 	assert_eq(freighter.center_of_mass, Vector2(0, 20))

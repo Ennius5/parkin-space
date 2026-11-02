@@ -6,12 +6,12 @@
 [ext_resource type="Resource" path="res://resources/ships/ManipulatorDrone.tres" id="10_drone"]
 [ext_resource type="Resource" path="res://resources/ships/ReconDrone.tres" id="13_recon"]
 [ext_resource type="Resource" path="res://resources/ships/RecreationalDrone.tres" id="14_rec"]
-[ext_resource type="Resource" path="res://resources/ships/medium_shuttle.tres" id="4_medium"]
 [ext_resource type="Resource" path="res://resources/ships/Milano.tres" id="15_milano"]
 [ext_resource type="Resource" path="res://resources/ships/Miner.tres" id="16_miner"]
 [ext_resource type="Resource" path="res://resources/ships/Nostrom.tres" id="17_nostrom"]
 [ext_resource type="Resource" path="res://resources/ships/AgriShip.tres" id="18_agri"]
-[ext_resource type="Resource" path="res://resources/ships/heavy_freighter.tres" id="19_freighter"]
+[ext_resource type="Resource" path="res://resources/ships/Hammerhead.tres" id="21_hammer"]
+[ext_resource type="Resource" path="res://resources/ships/Researcher.tres" id="22_research"]
 [ext_resource type="PackedScene" path="res://scenes/actors/ParkingSpace.tscn" id="5_space"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="6_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ShipControls.tscn" id="7_ctrl"]
@@ -37,7 +37,7 @@ radius = 160.0
 script = ExtResource("1_level")
 level_number = 2
 goal_text = "Serve 6 customers"
-customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("4_medium"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("19_freighter")])
+customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("21_hammer"), ExtResource("22_research")])
 random_customers = 6
 shift_seconds = 180.0
 base_pay = 100

@@ -7,7 +7,7 @@ const ACTIONS := ["thrust_forward", "thrust_back", "strafe_left", "strafe_right"
 
 func _spawn(spec_name: String, pos := Vector2(200, 400)) -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
-	ship.spec = load("res://resources/ships/%s.tres" % spec_name)
+	ship.spec = ship_spec(spec_name)
 	ship.position = pos
 	tree.root.add_child(ship)
 	return ship
@@ -200,7 +200,7 @@ func test_center_of_mass_from_spec() -> void:
 
 
 func test_off_centre_thruster_spins_ship() -> void:
-	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	var spec := ship_spec("light_scout").duplicate() as ShipSpec
 	var t := ThrusterSpec.new()
 	t.position = Vector2(10, 30)
 	t.direction = Vector2(0, -1)
@@ -313,7 +313,7 @@ func test_freighter_is_slow_to_stop_spinning() -> void:
 
 
 func _triangle_spec() -> ShipSpec:
-	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	var spec := ship_spec("light_scout").duplicate() as ShipSpec
 	spec.hull_polygon = PackedVector2Array([Vector2(0, -32), Vector2(20, 32), Vector2(-20, 32)])
 	return spec
 
@@ -348,7 +348,7 @@ func test_hull_points_use_polygon() -> void:
 
 
 func test_paint_color_tints_paint_layer() -> void:
-	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	var spec := ship_spec("light_scout").duplicate() as ShipSpec
 	spec.paint_texture = PlaceholderTexture2D.new()
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = spec
@@ -389,7 +389,7 @@ func test_swatch_color_matches_what_is_drawn() -> void:
 	placeholder.paint_color = Color.GREEN
 	assert_eq(placeholder.swatch_color(), Ship.CLASS_COLORS[ShipSpec.ShipClass.MEDIUM], "placeholder shows its class colour")
 	placeholder.queue_free()
-	var spec := (load("res://resources/ships/light_scout.tres") as ShipSpec).duplicate() as ShipSpec
+	var spec := ship_spec("light_scout").duplicate() as ShipSpec
 	spec.paint_texture = PlaceholderTexture2D.new()
 	var painted: Ship = SHIP_SCENE.instantiate()
 	painted.spec = spec

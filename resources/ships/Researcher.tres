@@ -1,0 +1,100 @@
+[gd_resource type="Resource" script_class="ShipSpec" format=3]
+
+[ext_resource type="Texture2D" path="res://art/ships/heavy/Researcher/Researcher_lights.png" id="1_2mrt1"]
+[ext_resource type="Texture2D" path="res://art/ships/heavy/Researcher/Researcher_paint.png" id="2_5dncu"]
+[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_ks4a0"]
+[ext_resource type="Texture2D" path="res://art/ships/heavy/Researcher/Researcher.png" id="4_84d0v"]
+[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_6yws3"]
+
+[sub_resource type="Resource" id="Resource_6se0h"]
+script = ExtResource("5_6yws3")
+position = Vector2(-26, 79)
+force = 200.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_22rfl"]
+script = ExtResource("5_6yws3")
+position = Vector2(-18, 79)
+force = 200.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_tg0bt"]
+script = ExtResource("5_6yws3")
+position = Vector2(-10, 79)
+force = 200.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_2yrqn"]
+script = ExtResource("5_6yws3")
+position = Vector2(-2, 79)
+force = 200.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_gbag6"]
+script = ExtResource("5_6yws3")
+position = Vector2(6, 79)
+force = 200.0
+actions = PackedStringArray("thrust_forward")
+
+[sub_resource type="Resource" id="Resource_ihggx"]
+script = ExtResource("5_6yws3")
+position = Vector2(-10, -79)
+direction = Vector2(0, 1)
+force = 400.0
+actions = PackedStringArray("thrust_back")
+
+[sub_resource type="Resource" id="Resource_khnwb"]
+script = ExtResource("5_6yws3")
+position = Vector2(-43, 0)
+direction = Vector2(1, 0)
+force = 650.0
+actions = PackedStringArray("strafe_right")
+
+[sub_resource type="Resource" id="Resource_hfkrs"]
+script = ExtResource("5_6yws3")
+position = Vector2(43, 0)
+direction = Vector2(-1, 0)
+force = 650.0
+actions = PackedStringArray("strafe_left")
+
+[sub_resource type="Resource" id="Resource_tefu5"]
+script = ExtResource("5_6yws3")
+position = Vector2(-43, -16)
+direction = Vector2(1, 0)
+force = 281.25
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_pykmh"]
+script = ExtResource("5_6yws3")
+position = Vector2(43, 16)
+direction = Vector2(-1, 0)
+force = 281.25
+actions = PackedStringArray("rotate_right")
+
+[sub_resource type="Resource" id="Resource_dmi62"]
+script = ExtResource("5_6yws3")
+position = Vector2(43, -16)
+direction = Vector2(-1, 0)
+force = 281.25
+actions = PackedStringArray("rotate_left")
+
+[sub_resource type="Resource" id="Resource_p8iyt"]
+script = ExtResource("5_6yws3")
+position = Vector2(-43, 16)
+direction = Vector2(1, 0)
+force = 281.25
+actions = PackedStringArray("rotate_left")
+
+[resource]
+script = ExtResource("3_ks4a0")
+ship_class = 2
+display_name = "Researcher"
+mass = 6.0
+hull_size = Vector2(88, 160)
+center_of_mass = Vector2(-10, 0)
+inertia = 14974.36500341765
+thrusters = Array[ExtResource("5_6yws3")]([SubResource("Resource_6se0h"), SubResource("Resource_22rfl"), SubResource("Resource_tg0bt"), SubResource("Resource_2yrqn"), SubResource("Resource_gbag6"), SubResource("Resource_ihggx"), SubResource("Resource_khnwb"), SubResource("Resource_hfkrs"), SubResource("Resource_tefu5"), SubResource("Resource_pykmh"), SubResource("Resource_dmi62"), SubResource("Resource_p8iyt")])
+hull_polygon = PackedVector2Array(-36, -78, -38, -78, -38, -76, -40, -76, -40, -54, -38, -54, -38, -52, -36, -52, -38, -48, -42, -48, -42, -46, -40, -46, -40, -20, -44, -20, -44, -12, -40, -12, -40, -6, -44, -6, -44, 6, -40, 6, -40, 12, -44, 12, -44, 20, -40, 20, -40, 52, -38, 52, -38, 54, -36, 54, -36, 56, -32, 58, -32, 60, -28, 60, -28, 52, -26, 52, -26, 68, -42, 68, -42, 70, -30, 70, -30, 80, 10, 80, 10, 72, 12, 72, 12, 70, 42, 70, 42, 68, 40, 68, 40, 66, 42, 66, 42, 50, 40, 50, 40, 48, 38, 48, 40, 44, 42, 44, 42, 28, 40, 28, 40, 26, 38, 26, 38, 24, 40, 24, 42, 20, 44, 20, 44, 12, 42, 12, 42, 6, 44, 6, 44, -20, 42, -20, 42, -30, 44, -30, 44, -44, 40, -46, 40, -48, 18, -48, 16, -44, 14, -44, 14, -50, 2, -50, 2, -52, 42, -52, 42, -68, -2, -68, -2, -72, 32, -72, 32, -70, 34, -70, 34, -72, 36, -72, 36, -70, 38, -70, 38, -72, 40, -72, 40, -70, 42, -70, 42, -78, -6, -78, -6, -80, -14, -80, -14, -50, -22, -50, -22, -52, -18, -54, -18, -76, -22, -78, -22, -80, -36, -80)
+texture = ExtResource("4_84d0v")
+paint_texture = ExtResource("2_5dncu")
+lights_texture = ExtResource("1_2mrt1")

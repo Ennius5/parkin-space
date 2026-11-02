@@ -6,6 +6,14 @@ var tree: SceneTree
 var failures: Array[String] = []
 
 
+## A ship spec by name: the test-only placeholder ships first, then the game's ships.
+func ship_spec(ship_name: String) -> ShipSpec:
+	var fixture := "res://tests/fixtures/ships/%s.tres" % ship_name
+	if ResourceLoader.exists(fixture):
+		return load(fixture)
+	return load("res://resources/ships/%s.tres" % ship_name)
+
+
 func assert_eq(actual: Variant, expected: Variant, msg := "") -> void:
 	if typeof(actual) != typeof(expected) and not (_is_number(actual) and _is_number(expected)):
 		_fail("expected %s (%s), got %s (%s) %s" % [expected, type_string(typeof(expected)), actual, type_string(typeof(actual)), msg])

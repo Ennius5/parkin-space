@@ -10,7 +10,7 @@ const PAINT_COLORS: Array[Color] = [
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
-const ENTRANCE_CLEAR_RADIUS := 120.0
+const ARRIVAL_CLEAR_SECONDS := 1.0  # the arrival bay must stay empty this long before the next ship
 const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
 const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on screen) are candidates
 
@@ -42,6 +42,8 @@ var _released_at_msec := -RESELECT_DELAY_MS
 var _rng := RandomNumberGenerator.new()
 var _retrieval_indexes: Array[int] = []  # queue positions of customers who will want their ship back
 var _return_hint_shown := false
+var _bay: ArrivalBay
+var _bay_clear_for := 0.0
 
 @onready var _spaces: Node2D = $Spaces
 @onready var _ships: Node2D = $Ships
@@ -65,6 +67,7 @@ func _ready() -> void:
 	_controls.done_pressed.connect(release_ship)
 	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
+	_add_arrival_bay()
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
 	_refresh()
@@ -75,9 +78,11 @@ func _physics_process(delta: float) -> void:
 		return
 	ledger.tick(delta)
 	_arrival_timer += delta
-	if _arrival_timer >= arrival_interval and _entrance_clear():
+	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(_ships.get_children()) else 0.0
+	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
 		if spawn_next_customer():
 			_arrival_timer = 0.0
+			_bay_clear_for = 0.0
 	_check_parking(delta)
 	_update_customers(delta)
 	_refresh()
@@ -368,11 +373,16 @@ func _on_ship_dented(ship: Ship, cost: int) -> void:
 	_refresh()
 
 
-func _entrance_clear() -> bool:
-	for ship: Ship in _ships.get_children():
-		if ship.global_position.distance_to(_entrance.global_position) < ENTRANCE_CLEAR_RADIUS:
-			return false
-	return true
+## Drawn on the floor at the entrance, under the ships.
+func _add_arrival_bay() -> void:
+	_bay = ArrivalBay.new()
+	_bay.name = "ArrivalBay"
+	var floor_node := get_node_or_null("Floor")
+	if floor_node:
+		floor_node.add_sibling(_bay)
+	else:
+		add_child(_bay)
+	_bay.global_transform = _entrance.global_transform
 
 
 func _refresh() -> void:

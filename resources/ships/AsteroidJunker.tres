@@ -64,8 +64,8 @@ actions = PackedStringArray("rotate_left")
 [resource]
 script = ExtResource("3_my3kx")
 display_name = "Asteroid Junker"
-center_of_mass = Vector2(2, 2)
-inertia = 336.7212572373865
+center_of_mass = Vector2(0, 6)
+inertia = 346.9842845326719
 thrusters = Array[ExtResource("5_dh6qa")]([SubResource("Resource_na760"), SubResource("Resource_gkdvg"), SubResource("Resource_my3kx"), SubResource("Resource_3f6xy"), SubResource("Resource_dh6qa"), SubResource("Resource_vg0pa"), SubResource("Resource_uodyd"), SubResource("Resource_wtwgw")])
 hull_polygon = PackedVector2Array(-12, -30, -14, -30, -14, -28, -16, -28, -16, -26, -14, -26, -14, -6, -16, -6, -16, -8, -20, -8, -20, 0, -16, 0, -16, 4, -18, 4, -18, 8, -14, 8, -14, 12, -12, 12, -12, 16, -10, 16, -10, 18, -16, 18, -16, 16, -20, 16, -20, 24, -16, 24, -16, 22, -10, 22, -10, 26, -8, 26, -8, 28, -4, 28, -4, 32, 4, 32, 4, 28, 8, 28, 8, 24, 10, 24, 10, 22, 16, 22, 16, 24, 20, 24, 20, 16, 16, 16, 16, 18, 12, 18, 12, 16, 14, 16, 16, 12, 18, 12, 18, 10, 16, 10, 16, 4, 14, 4, 14, -2, 16, -2, 16, 0, 20, 0, 20, -8, 14, -8, 10, -16, 8, -16, 8, -20, 2, -20, 2, -30, 0, -30, 0, -32, -12, -32)
 texture = ExtResource("4_3f6xy")

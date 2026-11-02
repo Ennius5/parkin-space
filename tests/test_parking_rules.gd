@@ -58,7 +58,7 @@ func test_spec_resources_load() -> void:
 		"heavy_freighter": [ShipSpec.ShipClass.HEAVY, Vector2(90, 160)],
 	}
 	for key in expected:
-		var spec := load("res://resources/ships/%s.tres" % key) as ShipSpec
+		var spec := ship_spec(key)
 		assert_true(spec != null, key)
 		if spec:
 			assert_eq(spec.ship_class, expected[key][0], key)

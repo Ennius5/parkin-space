@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cos3xsbyiougk"
-path="res://.godot/imported/sample_scout_paint.png-bc72fb57fd7037b07b3dd2e7e8705915.ctex"
+uid="uid://0sp86jk5s082"
+path="res://.godot/imported/Hammerhead_paint.png-49c3525e87a5cc63633f3fcee0bf7fa7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ships/light/sample_scout/sample_scout_paint.png"
-dest_files=["res://.godot/imported/sample_scout_paint.png-bc72fb57fd7037b07b3dd2e7e8705915.ctex"]
+source_file="res://art/ships/heavy/Hammerhead/Hammerhead_paint.png"
+dest_files=["res://.godot/imported/Hammerhead_paint.png-49c3525e87a5cc63633f3fcee0bf7fa7.ctex"]
 
 [params]
 

@@ -43,6 +43,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Lose:** pay reaches zero ("You're fired!"), or the shift ends with customers still waiting.
 - **Parked** = the whole ship is inside a valid green space, nearly stopped, for 1 second. The space flashes and the customer pays.
 - **Space sizes:** light, medium and heavy spaces. A ship can park in a space of its own class or larger, so wasting a big space on a small ship may leave a later heavy ship nowhere to go.
+- **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing.
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).
 
 ## 5. Level plan

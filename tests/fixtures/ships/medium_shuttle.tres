@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="ShipSpec" format=3]
+[gd_resource type="Resource" script_class="ShipSpec" format=3 uid="uid://bgkkx0hot1yva"]
 
-[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="1_spec"]
-[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="2_hqbhg"]
+[ext_resource type="Script" uid="uid://be0h6ylj18qcb" path="res://scripts/core/ShipSpec.gd" id="1_spec"]
+[ext_resource type="Script" uid="uid://b4ewo2kbt8m4r" path="res://scripts/core/ThrusterSpec.gd" id="2_hqbhg"]
 
 [sub_resource type="Resource" id="Resource_kdl27"]
 script = ExtResource("2_hqbhg")

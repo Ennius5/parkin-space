@@ -6,7 +6,7 @@ const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
 
 func _ship(spec_name: String, paint: Color, pos: Vector2) -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
-	ship.spec = load("res://resources/ships/%s.tres" % spec_name)
+	ship.spec = ship_spec(spec_name)
 	ship.paint_color = paint
 	ship.position = pos
 	ship.freeze = true

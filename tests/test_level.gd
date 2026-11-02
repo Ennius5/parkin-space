@@ -11,7 +11,6 @@ const LEVEL01_POOL := [
 	"res://resources/ships/Nostrom.tres",
 	"res://resources/ships/ReconDrone.tres",
 	"res://resources/ships/RecreationalDrone.tres",
-	"res://resources/ships/medium_shuttle.tres",
 ]
 
 var _real_save_path: String
@@ -568,7 +567,8 @@ func test_level02_layout() -> void:
 	for path in LEVEL01_POOL:
 		assert_true(path in pool, path)
 	assert_true("res://resources/ships/AgriShip.tres" in pool)
-	assert_true("res://resources/ships/heavy_freighter.tres" in pool)
+	assert_true("res://resources/ships/Hammerhead.tres" in pool)
+	assert_true("res://resources/ships/Researcher.tres" in pool)
 	level.free()
 
 
@@ -629,3 +629,46 @@ func test_gold_only_for_ships_that_fit_a_gold_space() -> void:
 	var level1: Level = LEVEL01.instantiate()
 	assert_false(level1.gold_allowed(ShipSpec.ShipClass.LIGHT))
 	level1.free()
+
+
+func test_next_arrival_waits_for_a_clear_bay() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var ships := level.get_node("Ships")
+	var first: Ship = ships.get_child(0)
+	level._arrival_timer = 999.0  # arrival time has long come; only the bay holds the next ship back
+	await _physics_frames(90)
+	assert_eq(ships.get_child_count(), 1, "the first ship still sits in the bay")
+	_move(first, OPEN_FLOOR)
+	await _physics_frames(30)
+	assert_eq(ships.get_child_count(), 1, "the bay has been clear for only half a second")
+	await _physics_frames(40)
+	assert_eq(ships.get_child_count(), 2)
+	level.free()
+	_restore_state()
+
+
+func test_level_has_an_arrival_bay_at_the_entrance() -> void:
+	_setup_state()
+	var level := await _make_level()
+	var bay: ArrivalBay = level.get_node_or_null("ArrivalBay")
+	assert_true(bay != null)
+	if bay:
+		var entrance: Marker2D = level.get_node("Entrance")
+		assert_true(bay.global_position.distance_to(entrance.global_position) < 0.5)
+		assert_true(absf(bay.global_rotation - entrance.global_rotation) < 0.001)
+	level.free()
+	_restore_state()
+
+
+const PLACEHOLDERS := ["light_scout", "medium_shuttle", "heavy_freighter", "sample_scout"]
+
+
+func test_no_placeholder_ships_in_the_game() -> void:
+	for name in PLACEHOLDERS:
+		assert_false(ResourceLoader.exists("res://resources/ships/%s.tres" % name), name)
+	for path in ["res://scenes/levels/Level01.tscn", "res://scenes/levels/Level02.tscn"]:
+		var level: Level = load(path).instantiate()
+		for spec in level.customer_queue:
+			assert_true(spec.resource_path.begins_with("res://resources/ships/"), spec.resource_path)
+		level.free()

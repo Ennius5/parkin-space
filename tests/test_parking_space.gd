@@ -17,7 +17,7 @@ func _space(space_class: ShipSpec.ShipClass, pos := Vector2(300, 300)) -> Parkin
 
 func _ship(spec_name: String, pos := Vector2(300, 300), frozen := true) -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
-	ship.spec = load("res://resources/ships/%s.tres" % spec_name)
+	ship.spec = ship_spec(spec_name)
 	ship.position = pos
 	ship.freeze = frozen
 	tree.root.add_child(ship)
