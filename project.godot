@@ -12,6 +12,7 @@ config_version=5
 
 config/name="Parkin' Space"
 run/main_scene="res://scenes/ui/Title.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 

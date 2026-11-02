@@ -9,6 +9,7 @@ const PAINT_COLORS: Array[Color] = [
 	Color(0.7, 0.4, 0.9), Color(0.95, 0.5, 0.15), Color(0.9, 0.9, 0.92), Color(0.2, 0.75, 0.8),
 ]
 const SHIP_SCENE := preload("res://scenes/actors/Ship.tscn")
+const LEVEL_SELECT := "res://scenes/ui/LevelSelect.tscn"
 const RESULT_SCENE := "res://scenes/ui/Result.tscn"
 const CRASH_COST := 15  # dents this costly crunch instead of clang
 const REQUEST_BONUS := 20  # for parking a special request in the space they asked for
@@ -61,6 +62,8 @@ var _orphan_clock := 0.0
 var _orphan_hint_shown := false
 var _request_indexes: Array[int] = []  # queue positions of customers with a special request
 var _request_hint_shown := false
+var last_pause_action := ""  # "restart" or "quit" when scene changes are off (tests)
+var _pause_menu := PauseMenu.new()
 var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
 
 @onready var _spaces: Node2D = $Spaces
@@ -90,6 +93,12 @@ func _ready() -> void:
 	GameState.current_level = level_number
 	_hud.set_goal(goal_text)
 	_controls.done_pressed.connect(_on_done_pressed)
+	_pause_menu.name = "PauseMenu"
+	add_child(_pause_menu)
+	_hud.pause_pressed.connect(open_pause)
+	_pause_menu.resume_pressed.connect(close_pause)
+	_pause_menu.restart_pressed.connect(_on_pause_restart)
+	_pause_menu.quit_pressed.connect(_on_pause_quit)
 	_picker.picked.connect(_on_picked)
 	_lot_camera.make_current()
 	Sound.play_level_music()
@@ -267,6 +276,9 @@ func spawn_next_customer() -> Ship:
 ## Lot view: a tap picks the one ship near it, or lists them when there's a choice.
 ## A tap while the list is open closes it.
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):  # Escape on desktop, like the back gesture
+		open_pause()
+		return
 	var touch := event as InputEventScreenTouch
 	if touch == null or not touch.pressed:
 		return
@@ -759,3 +771,47 @@ func _update_pin(label: String) -> void:
 			if c.wants_space == label and not c.parked_once:
 				space.set_pin(c.color())
 				break
+
+
+
+# --- Pause ---
+
+func open_pause() -> void:
+	if _ended or _pause_menu.is_open():
+		return
+	get_tree().paused = true
+	_pause_menu.open()
+	Sound.play("open")
+
+
+func close_pause() -> void:
+	if not _pause_menu.is_open():
+		return
+	_pause_menu.close()
+	get_tree().paused = false
+	Sound.play("close")
+
+
+## Android's back gesture opens the pause menu during a shift, and closes it again.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if _pause_menu.is_open():
+			close_pause()
+		else:
+			open_pause()
+
+
+func _on_pause_restart() -> void:
+	_pause_menu.close()
+	get_tree().paused = false
+	last_pause_action = "restart"
+	if change_scene_on_end:
+		get_tree().reload_current_scene()
+
+
+func _on_pause_quit() -> void:
+	_pause_menu.close()
+	get_tree().paused = false
+	last_pause_action = "quit"
+	if change_scene_on_end:
+		get_tree().change_scene_to_file(LEVEL_SELECT)

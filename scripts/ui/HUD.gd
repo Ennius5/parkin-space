@@ -2,6 +2,8 @@ class_name HUD
 extends CanvasLayer
 ## In-level heads-up display: goal, shift timer, pay, customers served and short hints.
 
+signal pause_pressed
+
 var _hint_left := 0.0
 
 @onready var _goal: Label = %Goal
@@ -9,6 +11,21 @@ var _hint_left := 0.0
 @onready var _pay: Label = %Pay
 @onready var _customers: Label = %Customers
 @onready var _hint: Label = %Hint
+
+
+func _ready() -> void:
+	var pause := Button.new()
+	pause.name = "PauseButton"
+	pause.text = "II"
+	pause.add_theme_font_size_override("font_size", 40)
+	pause.anchor_left = 1.0
+	pause.anchor_right = 1.0
+	pause.offset_left = -140.0
+	pause.offset_right = -40.0
+	pause.offset_top = 80.0
+	pause.offset_bottom = 180.0  # 100 x 100, under the timer: thumb-sized
+	pause.pressed.connect(func() -> void: pause_pressed.emit())
+	$Root.add_child(pause)
 
 
 func _process(delta: float) -> void:
