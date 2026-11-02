@@ -131,3 +131,32 @@ func test_tip_shown_after_parking_is_what_gets_paid() -> void:
 	assert_eq(c.tip_shown(), 0)  # parked outside a gold space
 	c.parked_in_gold = true
 	assert_eq(c.tip_shown(), 40)
+
+
+const GOLD_RUSH := {Customer.Tier.GOLD: 60, Customer.Tier.SILVER: 30, Customer.Tier.BRONZE: 10}
+
+
+func _shares(weights: Dictionary, gold_allowed: bool, rolls: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var counts := {Customer.Tier.GOLD: 0, Customer.Tier.SILVER: 0, Customer.Tier.BRONZE: 0}
+	for i in rolls:
+		counts[Customer.roll(rng, true, gold_allowed, weights).tier] += 1
+	for t in counts:
+		counts[t] = float(counts[t]) / rolls
+	return counts
+
+
+func test_custom_tier_weights() -> void:
+	var s := _shares(GOLD_RUSH, true, 2000)
+	assert_true(s[Customer.Tier.GOLD] > 0.55 and s[Customer.Tier.GOLD] < 0.65, str(s))
+	assert_true(s[Customer.Tier.BRONZE] > 0.07 and s[Customer.Tier.BRONZE] < 0.13, str(s))
+
+
+func test_default_tier_weights_unchanged() -> void:
+	var s := _shares({}, true, 2000)
+	assert_true(s[Customer.Tier.GOLD] > 0.16 and s[Customer.Tier.GOLD] < 0.24, str(s))
+
+
+func test_custom_weights_still_respect_gold_fit() -> void:
+	assert_eq(_shares(GOLD_RUSH, false, 200)[Customer.Tier.GOLD], 0.0)

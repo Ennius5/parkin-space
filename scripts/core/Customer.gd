@@ -34,16 +34,18 @@ var parked_in_gold := false
 var parked_once := false
 
 
-static func roll(rng: RandomNumberGenerator, use_tiers: bool, gold_allowed := true) -> Customer:
+## A new customer. weights overrides the tier odds for a level (empty = TIER_WEIGHTS).
+static func roll(rng: RandomNumberGenerator, use_tiers: bool, gold_allowed := true, weights: Dictionary = {}) -> Customer:
 	var c := Customer.new()
 	if use_tiers:
-		var tiers := TIER_WEIGHTS.keys()
+		var odds := TIER_WEIGHTS if weights.is_empty() else weights
+		var tiers := odds.keys()
 		if not gold_allowed:
 			tiers.erase(Tier.GOLD)
-		var weights := PackedFloat32Array()
+		var chances := PackedFloat32Array()
 		for t in tiers:
-			weights.append(TIER_WEIGHTS[t])
-		c.tier = tiers[rng.rand_weighted(weights)]
+			chances.append(odds[t])
+		c.tier = tiers[rng.rand_weighted(chances)]
 		c.bronze_tips = rng.randf() < 0.5
 	return c
 

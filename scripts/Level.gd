@@ -27,6 +27,7 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var silver_target: int = 150
 @export var gold_target: int = 170
 @export var arrival_interval: float = 8.0
+@export var tier_weights: Dictionary = {}  # Customer.Tier -> weight; empty = the usual odds
 @export var use_tiers := false  # bronze/silver/gold customers who tip
 ## How many customers want their ship back at the exit. Needs an ExitPad named Exit.
 @export var retrieval_count: int = 0
@@ -232,7 +233,7 @@ func spawn_next_customer() -> Ship:
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
 	ship.paint_color = PAINT_COLORS.pick_random()
-	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class))
+	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class), tier_weights)
 	c.wants_retrieval = _next_customer in _retrieval_indexes
 	ship.customer = c
 	customers[ship] = c
