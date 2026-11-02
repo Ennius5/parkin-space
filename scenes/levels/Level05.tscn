@@ -164,6 +164,7 @@ radius = 300.0
 [node name="FA2" type="PointLight2D" parent="Floodlights"]
 position = Vector2(650, 1000)
 script = ExtResource("50_flood")
+flicker = true
 radius = 300.0
 
 [node name="FB1" type="PointLight2D" parent="Floodlights"]
@@ -184,6 +185,7 @@ radius = 300.0
 [node name="FG2" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1700, 740)
 script = ExtResource("50_flood")
+flicker = true
 radius = 300.0
 
 [node name="FG3" type="PointLight2D" parent="Floodlights"]

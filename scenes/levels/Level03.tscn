@@ -250,6 +250,7 @@ script = ExtResource("50_flood")
 [node name="FB" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1375, 1180)
 script = ExtResource("50_flood")
+flicker = true
 
 [node name="FC" type="PointLight2D" parent="Floodlights"]
 position = Vector2(1985, 450)
@@ -262,6 +263,7 @@ script = ExtResource("50_flood")
 [node name="FE" type="PointLight2D" parent="Floodlights"]
 position = Vector2(2260, 950)
 script = ExtResource("50_flood")
+flicker = true
 
 [node name="FEntrance" type="PointLight2D" parent="Floodlights"]
 position = Vector2(300, 700)

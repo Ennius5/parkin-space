@@ -123,3 +123,39 @@ func test_ship_lights_glow_in_the_dark() -> void:
 	assert_true(m != null and m.light_mode == CanvasItemMaterial.LIGHT_MODE_UNSHADED, "lights ignore the dark")
 	assert_true(m != null and m.blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "and still glow additively")
 	ship.queue_free()
+
+
+func test_headlight_colour_is_one_of_four() -> void:
+	var seen := {}
+	for i in 24:
+		var ship: Ship = SHIP_SCENE.instantiate()
+		ship.spec = ship_spec("light_scout")
+		ship.freeze = true
+		tree.root.add_child(ship)
+		var c := (ship.get_node("Headlight") as PointLight2D).color
+		assert_true(c in Ship.HEADLIGHT_COLORS, str(c))
+		seen[c] = true
+		ship.free()
+	assert_true(seen.size() > 1, "the colour varies from ship to ship")
+
+
+func test_floodlights_are_green_to_blue_and_vary() -> void:
+	var hues := {}
+	for i in 30:
+		var flood := Floodlight.new()
+		tree.root.add_child(flood)
+		assert_true(flood.color.h >= 0.33 and flood.color.h <= 0.67, "hue %s" % flood.color.h)
+		hues[snappedf(flood.color.h, 0.01)] = true
+		flood.free()
+	assert_true(hues.size() > 3, "a different look each time")
+
+
+func test_every_level_has_two_flickering_floodlights() -> void:
+	for path in LEVELS:
+		var level: Level = load(path).instantiate()
+		var flickering := 0
+		for flood in _floodlights(level):
+			if flood.flicker:
+				flickering += 1
+		assert_eq(flickering, 2, path)
+		level.free()

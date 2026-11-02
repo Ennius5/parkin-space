@@ -11,7 +11,7 @@ extends PointLight2D
 func _ready() -> void:
 	texture = Lighting.round_texture()
 	texture_scale = radius * 2.0 / Lighting.TEXTURE_SIZE
-	color = Color(1.0, 0.95, 0.8)
+	color = Color.from_hsv(randf_range(0.34, 0.66), 0.45, 1.0)  # a new shade of green to blue each shift
 	energy = strength
 
 

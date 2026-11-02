@@ -11,6 +11,7 @@ const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants
 const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
 const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
 const HEADLIGHT_SCALE := 1.6
+const HEADLIGHT_COLORS: Array[Color] = [Color(1.0, 0.9, 0.3), Color(0.4, 1.0, 0.45), Color(1.0, 0.45, 0.8), Color(0.3, 0.95, 1.0)]  # yellow, green, pink, cyan
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
 	ShipSpec.ShipClass.MEDIUM: Color(0.98, 0.85, 0.3),
@@ -87,7 +88,7 @@ func _add_lights() -> void:
 	head.texture = Lighting.cone_texture()
 	head.texture_scale = HEADLIGHT_SCALE
 	head.energy = 1.4
-	head.color = Color(0.85, 0.92, 1.0)
+	head.color = HEADLIGHT_COLORS.pick_random()
 	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE)
 	add_child(head)
 	var glow := PointLight2D.new()
