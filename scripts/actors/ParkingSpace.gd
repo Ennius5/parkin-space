@@ -32,7 +32,6 @@ func _ready() -> void:
 	_pin.position = Vector2(0, -(size().y / 2 + 26))  # just past the space's end, in the lane
 	_pin.draw.connect(_draw_pin)
 	add_child(_pin)
-	_pin.global_rotation = 0.0
 
 
 func size() -> Vector2:
@@ -74,7 +73,9 @@ func touches(ship: Ship) -> bool:
 func _process(delta: float) -> void:
 	if occupant == null:
 		_pulse = fmod(_pulse + delta, 1.0)
-		queue_redraw()
+	queue_redraw()  # the label re-levels as the camera turns
+	_pin.rotation = 0.0
+	_pin.rotation = Upright.angle(_pin)
 
 
 func _draw() -> void:
@@ -90,9 +91,11 @@ func _draw() -> void:
 	var text := "%s %s" % [CLASS_LETTERS[space_class], label]
 	if gold:
 		text += " ★"
-	var font_size := 28
+	var font_size := 22 if space_class == ShipSpec.ShipClass.LIGHT else 28  # light spaces are narrow
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	draw_set_transform(Vector2.ZERO, label_angle())  # level on screen, whatever the space's or camera's turn
 	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, color)
+	draw_set_transform(Vector2.ZERO, 0.0)
 
 
 
@@ -115,3 +118,8 @@ func _draw_pin() -> void:
 	_pin.draw_circle(Vector2(0, -14), 12.0, pin_color)
 	_pin.draw_arc(Vector2(0, -14), 12.0, 0.0, TAU, 20, Color(0, 0, 0, 0.7), 2.0)
 	_pin.draw_string(ThemeDB.fallback_font, Vector2(16, -6), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, pin_color)
+
+
+## The turn that makes this node's text read level on screen.
+func label_angle() -> float:
+	return Upright.angle(self)

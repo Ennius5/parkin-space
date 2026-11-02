@@ -134,8 +134,9 @@ func _process(_delta: float) -> void:
 	_request_glow.queue_redraw()  # the glow pulses, and must vanish once the ship is picked up
 	if _lights.visible:
 		_lights.modulate.a = lights_level()
-	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0))
-	_badge.global_rotation = 0.0
+	_badge.rotation = 0.0
+	_badge.rotation = Upright.angle(_badge)  # level on screen, even as the driving camera turns
+	_badge.global_position = global_position + Vector2(0, -(maxf(spec.hull_size.x, spec.hull_size.y) / 2.0 + 24.0)).rotated(_badge.rotation)
 	_badge.queue_redraw()  # a gold tip counts down
 
 

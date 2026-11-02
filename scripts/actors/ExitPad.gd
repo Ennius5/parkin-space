@@ -21,4 +21,15 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var font_size := 34
 	var text_size := font.get_string_size("EXIT", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	draw_set_transform(Vector2.ZERO, label_angle())
 	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), "EXIT", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, COLOR)
+	draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _process(_delta: float) -> void:
+	queue_redraw()  # the label re-levels as the camera turns
+
+
+## The turn that makes this node's text read level on screen.
+func label_angle() -> float:
+	return Upright.angle(self)

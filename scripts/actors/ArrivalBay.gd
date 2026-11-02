@@ -53,4 +53,22 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var font_size := 22
 	var text_size := font.get_string_size("ARRIVALS", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	draw_string(font, Vector2(-text_size.x / 2, SIZE.y / 2 - 10), "ARRIVALS", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, COLOR)
+	draw_set_transform(_label_anchor(), label_angle())
+	draw_string(font, Vector2(-text_size.x / 2, font_size / 3.0), "ARRIVALS", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, COLOR)
+	draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _process(_delta: float) -> void:
+	queue_redraw()  # the label re-levels as the camera turns
+
+
+## Just above the bay as it appears on screen, whichever way the bay and camera are turned.
+func _label_anchor() -> Vector2:
+	var turn := -label_angle()
+	var half_height := 0.5 * (absf(SIZE.x * sin(turn)) + absf(SIZE.y * cos(turn)))
+	return Vector2(0, -(half_height + 14.0)).rotated(label_angle())
+
+
+## The turn that makes this node's text read level on screen.
+func label_angle() -> float:
+	return Upright.angle(self)
