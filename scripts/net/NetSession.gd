@@ -92,6 +92,11 @@ func is_host() -> bool:
 	return _is_host
 
 
+## The connected rival's peer id (1 on a guest), or 0 before the handshake.
+func rival_id() -> int:
+	return _rival_id
+
+
 ## True while a peer is open (listening, joining or connected).
 func is_active() -> bool:
 	return _peer != null

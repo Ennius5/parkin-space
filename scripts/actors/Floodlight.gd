@@ -7,6 +7,8 @@ extends PointLight2D
 @export var strength := 1.8
 @export var flicker := false
 
+var clock_zero_msec := 0  # flicker time counts from here; a duel sets it at go so both phones agree
+
 
 func _ready() -> void:
 	texture = Lighting.round_texture()
@@ -17,7 +19,12 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if flicker:
-		energy = energy_at(Time.get_ticks_msec() / 1000.0)
+		energy = energy_at((Time.get_ticks_msec() - clock_zero_msec) / 1000.0)
+
+
+## Picks this lamp's shade from rng, so a seeded duel lights both phones alike.
+func recolor(rng: RandomNumberGenerator) -> void:
+	color = Color.from_hsv(rng.randf_range(0.34, 0.66), 0.45, 1.0)
 
 
 ## Brightness at a moment in time. Steady lamps always shine at full strength; flickering ones

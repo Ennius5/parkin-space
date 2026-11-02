@@ -97,7 +97,7 @@ var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out
 
 func _ready() -> void:
 	valets = [Valet.new(0, true)]
-	_rng.randomize()
+	seed_rng()
 	_pool = customer_queue.duplicate()
 	prepare_queue()
 	ledger = new_ledger()
@@ -121,6 +121,11 @@ func _ready() -> void:
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
 	_refresh()
+
+
+## Seeds the shift's random draws. A duel overrides it with the match seed.
+func seed_rng() -> void:
+	_rng.randomize()
 
 
 ## Settles this shift's customers: the random draw, then who wants their ship back and who asks
@@ -239,7 +244,7 @@ func _request(ship: Ship) -> void:
 	var c: Customer = customers[ship]
 	c.requested = true
 	c.request_in = -1.0
-	Sound.play("request")
+	_cue("request")
 	ship.unpark()
 	_trackers.erase(ship)
 	if not _return_hint_shown:
@@ -303,7 +308,7 @@ func spawn_next_customer() -> Ship:
 		return null
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
-	ship.paint_color = PAINT_COLORS.pick_random()
+	_dress_ship(ship)
 	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class), tier_weights)
 	c.wants_retrieval = _next_customer in _retrieval_indexes
 	if _next_customer in _request_indexes:
@@ -324,6 +329,20 @@ func spawn_next_customer() -> Ship:
 	ship.bumped.connect(_on_ship_bumped)
 	Sound.play("arrive")
 	return ship
+
+
+## Picks a new ship's paint before it enters the tree. A duel overrides it to choose the paint
+## and headlight from the seeded rng, so it can tell the guest.
+func _dress_ship(ship: Ship) -> void:
+	ship.paint_index = randi() % PAINT_COLORS.size()
+	ship.paint_color = PAINT_COLORS[ship.paint_index]
+
+
+## Plays a sound cue for the valet it concerns: only for one on this device, or for everyone
+## when valet is null. A duel host also tells the guest about its own cues.
+func _cue(effect: String, valet: Valet = null) -> void:
+	if valet == null or valet.local:
+		Sound.play(effect)
 
 
 ## Lot view: a tap picks the one ship near it, or lists them when there's a choice.
@@ -487,7 +506,7 @@ func _check_parking(_delta: float) -> void:
 	for space: ParkingSpace in _spaces.get_children():
 		var now: Ship = ready.get(space)
 		if now != null and space.ready_for == null:
-			Sound.play("ready")
+			_cue("ready", valet_of(now))
 		if space.ready_for != now:
 			space.ready_for = now
 			space.queue_redraw()
@@ -510,7 +529,7 @@ func press_done(valet: Valet = null) -> void:
 		release_ship(valet)
 		return
 	space.ready_for = null
-	Sound.play("park")
+	_cue("park", valet)
 	if ship.orphan:
 		_repark_orphan(ship, space)
 	else:
@@ -530,7 +549,7 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 		return
 	if c == null:
 		valet.ledger.serve_customer()
-		Sound.play("fee")
+		_cue("fee", valet)
 	else:
 		c.parked_once = true
 		c.parked_in_gold = space.gold
@@ -542,12 +561,12 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 				Sound.play("bonus")
 		if c.wants_retrieval and _exit:
 			valet.ledger.add_fee()  # the tip waits until the ship is handed back
-			Sound.play("fee")
+			_cue("fee", valet)
 			c.request_in = Customer.request_delay(_rng, valet.ledger.time_left)
 		else:
 			_pay_tip(c.tip(), valet)  # before serving: the final serve ends the shift
 			valet.ledger.serve_customer()
-			Sound.play("fee")
+			_cue("fee", valet)
 	_refresh()
 
 
@@ -562,17 +581,19 @@ func _on_ship_bumped(_ship: Ship) -> void:
 func _pay_tip(amount: int, valet: Valet) -> void:
 	valet.ledger.add_tip(amount)
 	if amount > 0:
-		Sound.play("tip")
+		_cue("tip", valet)
 
 
 ## Charges a dent to the ship's customer and to the pay of the valet answering for it, with the given sound.
 func _charge_dent(ship: Ship, cost: int, effect: String) -> void:
-	Sound.play(effect)
+	var valet := valet_of(ship)
+	_cue(effect, valet)
 	var c := customer_for(ship)
 	if c:
 		c.dents += 1
-	valet_of(ship).ledger.add_dent(cost)
-	_hud.show_hint("-₵%d dent!" % cost, 1.0)
+	valet.ledger.add_dent(cost)
+	if valet.local:
+		_hud.show_hint("-₵%d dent!" % cost, 1.0)
 	_refresh()
 
 

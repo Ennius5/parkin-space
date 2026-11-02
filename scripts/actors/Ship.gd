@@ -13,6 +13,8 @@ const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
 const BUMP_SOUND_SPEED := 20.0  # px/s; gentler contacts (resting, nudging) stay silent
 const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
 const HEADLIGHT_SCALE := 1.6
+const RING_WIDTH := 3.0  # the driver ring in a duel
+const RING_GAP := 5.0  # how far the ring sits outside the hull
 const HEADLIGHT_COLORS: Array[Color] = [Color(1.0, 0.9, 0.3), Color(0.4, 1.0, 0.45), Color(1.0, 0.45, 0.8), Color(0.3, 0.95, 1.0)]  # yellow, green, pink, cyan
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
@@ -22,6 +24,13 @@ const CLASS_COLORS := {
 
 @export var spec: ShipSpec
 var paint_color := Color.WHITE  # set before the ship enters the tree
+var paint_index := -1  # which Level.PAINT_COLORS entry paint_color is, set by the level
+var headlight_index := -1  # which HEADLIGHT_COLORS entry to use; below 0 = a random one
+## The driver's colour in a duel, drawn as a ring around the hull; transparent = no ring.
+var ring_color := Color.TRANSPARENT:
+	set(value):
+		ring_color = value
+		_ring.queue_redraw()
 var customer: Customer  # null = no badge
 
 var is_driven: bool = false
@@ -44,6 +53,7 @@ var driven_since_free := false  # taken in hand since it arrived or left its spa
 var _badge := Node2D.new()
 var _request_glow := Node2D.new()
 var _flames := Node2D.new()  # thruster exhaust: it glows, so the dark never shades it
+var _ring := Node2D.new()
 
 
 func _ready() -> void:
@@ -89,6 +99,10 @@ func _ready() -> void:
 	_flames.material = Lighting.unlit()
 	_flames.draw.connect(_draw_flames)
 	add_child(_flames)
+	_ring.name = "Ring"
+	_ring.material = Lighting.unlit()
+	_ring.draw.connect(_draw_ring)
+	add_child(_ring)
 	_add_lights()
 
 
@@ -99,7 +113,7 @@ func _add_lights() -> void:
 	head.texture = Lighting.cone_texture()
 	head.texture_scale = HEADLIGHT_SCALE
 	head.energy = 1.4
-	head.color = HEADLIGHT_COLORS.pick_random()
+	head.color = HEADLIGHT_COLORS[headlight_index] if headlight_index >= 0 else HEADLIGHT_COLORS.pick_random()
 	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE)
 	add_child(head)
 	var glow := PointLight2D.new()
@@ -302,14 +316,32 @@ func _draw_flames() -> void:
 		_draw_flame(spec.thrusters[i])
 
 
+## The hull outline in ship coordinates: the polygon, or the hull rectangle without one.
+func _outline() -> PackedVector2Array:
+	if spec.hull_polygon.size() >= 3:
+		return spec.hull_polygon
+	var h := spec.hull_size / 2
+	return PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+
+
+## A thin ring in the driver's colour just outside the hull, bright even in the dark.
+func _draw_ring() -> void:
+	if ring_color.a == 0.0:
+		return
+	var outline := _outline()
+	var grown := Geometry2D.offset_polygon(outline, RING_GAP, Geometry2D.JOIN_ROUND)
+	if not grown.is_empty():
+		outline = grown[0]
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	_ring.draw_polyline(closed, ring_color, RING_WIDTH, true)
+
+
 ## A translucent pulsing outline around the hull, drawn under the ship's art.
 func _draw_glow() -> void:
 	if not is_glowing():
 		return
-	var outline := spec.hull_polygon
-	if outline.size() < 3:
-		var h := spec.hull_size / 2
-		outline = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+	var outline := _outline()
 	var closed := outline.duplicate()
 	closed.append(outline[0])
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 250.0)
