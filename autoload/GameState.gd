@@ -17,7 +17,8 @@ var best_stars: Dictionary = {}  # level number -> best stars (1..3)
 var current_level: int = 1
 var mode: String = "offline"  # "offline" or "online"
 var last_result: Dictionary = {}  # filled when a level ends
-var sound_on: bool = true
+var music_on: bool = true
+var sfx_on: bool = true  # sound effects
 var difficulty: int = Difficulty.NORMAL  # sets every shift's length
 var cctv_level: int = CCTV_MEDIUM  # index into CctvFilter.STRENGTHS (0 = off)
 var duel_minutes: int = DUEL_MIN  # chosen duel length
@@ -46,7 +47,8 @@ func save_progress() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "unlocked_level", unlocked_level)
 	cfg.set_value("progress", "best_stars", best_stars)
-	cfg.set_value("settings", "sound_on", sound_on)
+	cfg.set_value("settings", "music_on", music_on)
+	cfg.set_value("settings", "sfx_on", sfx_on)
 	cfg.set_value("settings", "difficulty", difficulty)
 	cfg.set_value("settings", "cctv_level", cctv_level)
 	cfg.set_value("settings", "duel_minutes", duel_minutes)
@@ -64,9 +66,13 @@ func load_progress() -> void:
 	var stars: Variant = cfg.get_value("progress", "best_stars", {})
 	if stars is Dictionary:
 		best_stars = stars
-	var sound: Variant = cfg.get_value("settings", "sound_on", true)
-	if sound is bool:
-		sound_on = sound
+	var sound: Variant = cfg.get_value("settings", "sound_on", true)  # saves from before the split
+	var music: Variant = cfg.get_value("settings", "music_on", sound)
+	var sfx: Variant = cfg.get_value("settings", "sfx_on", sound)
+	if music is bool:
+		music_on = music
+	if sfx is bool:
+		sfx_on = sfx
 	var saved_difficulty: Variant = cfg.get_value("settings", "difficulty", Difficulty.NORMAL)
 	if saved_difficulty is int and saved_difficulty in SHIFT_SECONDS:
 		difficulty = saved_difficulty

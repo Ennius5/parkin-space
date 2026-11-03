@@ -55,7 +55,11 @@ func _ready() -> void:
 	title.unique_name_in_owner = true
 	_add_button(box, "Resume", "Resume").pressed.connect(func() -> void: resume_pressed.emit())
 	_add_button(box, "Restart", "Restart").pressed.connect(func() -> void: restart_pressed.emit())
-	_add_button(box, "SoundToggle", "").pressed.connect(_on_sound_pressed)
+	var sound_row := HBoxContainer.new()  # side by side: a seventh row wouldn't fit a 720-px screen
+	sound_row.add_theme_constant_override("separation", 14)
+	box.add_child(sound_row)
+	_add_button(sound_row, "MusicToggle", "").pressed.connect(_on_music_pressed)
+	_add_button(sound_row, "SfxToggle", "").pressed.connect(_on_sfx_pressed)
 	_add_button(box, "CctvToggle", "").pressed.connect(_on_cctv_pressed)
 	_add_button(box, "HowToPlay", "How to Play").pressed.connect(open_guide)
 	_add_button(box, "Quit", QUIT_TEXT).pressed.connect(_on_quit_pressed)
@@ -66,7 +70,7 @@ func _ready() -> void:
 	_panel.visible = false
 
 
-func _add_button(box: VBoxContainer, node_name: String, text: String) -> Button:
+func _add_button(box: BoxContainer, node_name: String, text: String) -> Button:
 	var b := Button.new()
 	b.name = node_name
 	b.text = text
@@ -136,11 +140,17 @@ func is_open() -> bool:
 
 
 func refresh_sound_label() -> void:
-	(get_node("%SoundToggle") as Button).text = "Sound: On" if GameState.sound_on else "Sound: Off"
+	(get_node("%MusicToggle") as Button).text = "Music: On" if GameState.music_on else "Music: Off"
+	(get_node("%SfxToggle") as Button).text = "Sound effects: On" if GameState.sfx_on else "Sound effects: Off"
 
 
-func _on_sound_pressed() -> void:
-	Sound.set_sound_on(not GameState.sound_on)
+func _on_music_pressed() -> void:
+	Sound.set_music_on(not GameState.music_on)
+	refresh_sound_label()
+
+
+func _on_sfx_pressed() -> void:
+	Sound.set_sfx_on(not GameState.sfx_on)
 	refresh_sound_label()
 
 

@@ -107,7 +107,7 @@ static func page_data() -> Array[Dictionary]:
 		]},
 		{"title": "Settings", "rows": [
 			[[&"pause"], "The II button or the back gesture pauses the game."],
-			[[&"sound"], "Sound: On or Off."],
+			[[&"sound"], "Music: On or Off. Sound effects: On or Off."],
 			[[&"cctv"], "CCTV look: %s." % ", ".join(CctvFilter.NAMES)],
 			[[&"clock"], "Difficulty sets the shift length:\n%s." % ", ".join(shift)],
 		]},

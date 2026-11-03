@@ -156,3 +156,12 @@ func test_controls_page_ends_with_the_yellow_tap_tip() -> void:
 	assert_true((last[1] as String).ends_with("Let the momentum do the work!"))
 	assert_eq(last[2], Guide.TIP_COLOR)
 	assert_true(Guide.TIP_COLOR.r > 0.9 and Guide.TIP_COLOR.g > 0.8 and Guide.TIP_COLOR.b < 0.4, "yellow")
+
+
+func test_settings_page_names_music_and_sound_effects() -> void:
+	var settings: Dictionary = Guide.page_data()[Guide.page_data().size() - 1]
+	var texts := ""
+	for row: Array in settings["rows"]:
+		texts += String(row[1]) + "|"
+	assert_true(texts.contains("Music: On or Off"), texts)
+	assert_true(texts.contains("Sound effects: On or Off"), texts)

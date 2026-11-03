@@ -1,6 +1,6 @@
 extends Node
 ## Plays the game's sound: one-shot effects from a small pool, a looping thruster for the driven
-## ship, and music (one menu track, random level tracks). GameState.sound_on mutes everything.
+## ship, and music (one menu track, random level tracks). GameState.music_on and sfx_on mute the Music and SFX buses.
 
 const EFFECTS := {
 	"thruster": ["res://assets/audio/sfx/thrusterFire_000.ogg"],
@@ -157,14 +157,21 @@ static func next_track(tracks: Array[String], previous: String, rng: RandomNumbe
 	return choices[rng.randi_range(0, choices.size() - 1)]
 
 
-func set_sound_on(on: bool) -> void:
-	GameState.sound_on = on
+func set_music_on(on: bool) -> void:
+	GameState.music_on = on
+	GameState.save_progress()
+	apply_mute()
+
+
+func set_sfx_on(on: bool) -> void:
+	GameState.sfx_on = on
 	GameState.save_progress()
 	apply_mute()
 
 
 func apply_mute() -> void:
-	AudioServer.set_bus_mute(0, not GameState.sound_on)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Music"), not GameState.music_on)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("SFX"), not GameState.sfx_on)
 
 
 func _switch_to(path: String, loop: bool) -> void:

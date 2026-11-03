@@ -76,14 +76,29 @@ func test_wrong_types_in_save_fall_back_to_defaults() -> void:
 	gs.free()
 
 
-func test_sound_setting_persists() -> void:
+func test_music_and_sfx_settings_persist_separately() -> void:
 	var gs := _fresh_state()
-	gs.sound_on = false
+	gs.music_on = false
+	gs.sfx_on = true
 	gs.save_progress()
 	gs.free()
 	var reloaded := _new_state()
 	reloaded.load_progress()
-	assert_false(reloaded.sound_on)
+	assert_false(reloaded.music_on)
+	assert_true(reloaded.sfx_on)
+	reloaded.free()
+
+
+func test_old_sound_off_save_turns_both_off() -> void:
+	var gs := _fresh_state()
+	var cfg := ConfigFile.new()
+	cfg.set_value("settings", "sound_on", false)
+	cfg.save(gs.save_path)
+	gs.free()
+	var reloaded := _new_state()
+	reloaded.load_progress()
+	assert_false(reloaded.music_on)
+	assert_false(reloaded.sfx_on)
 	reloaded.free()
 
 
