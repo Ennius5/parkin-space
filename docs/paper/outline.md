@@ -84,7 +84,7 @@ mobile game, level design, physics-based gameplay, multiplayer networking, playt
   | 2 Blossom Lot | Serve 6 customers | Heavy ships, tip tiers, retrievals, EXIT |
   | 3 Wreckage Lot | Serve 7 customers | Wrecks, drifting asteroids, radiation zones |
   | 4 Gravity Well | Serve 7 customers | Black hole pull and fling, orphaned ships |
-  | 5 Gold Lounge | Serve 9 customers | 60% gold customers, special requests, moving parked ships |
+  | 5 Gold Lounge | Serve 9 customers | 60% gold customers, special requests, moving parked ships, pillars, radiation, walled-off exit |
 
 - **Difficulty:** Easy 10:00, Normal 5:00, Hard 2:30 per shift.
 - **Unlocking:** clearing level *n* unlocks *n*+1. Online results don't affect offline unlocking.

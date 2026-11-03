@@ -19,6 +19,7 @@
 [ext_resource type="PackedScene" path="res://scenes/actors/ExitPad.tscn" id="20_exit"]
 
 [ext_resource type="Script" path="res://scripts/actors/Floodlight.gd" id="50_flood"]
+[ext_resource type="Script" path="res://scripts/actors/RadiationZone.gd" id="30_zone"]
 [sub_resource type="RectangleShape2D" id="shape_WallTop"]
 size = Vector2(2480, 40)
 
@@ -30,6 +31,12 @@ size = Vector2(40, 1480)
 
 [sub_resource type="RectangleShape2D" id="shape_WallRight"]
 size = Vector2(40, 1480)
+
+[sub_resource type="RectangleShape2D" id="shape_Pillar"]
+size = Vector2(80, 80)
+
+[sub_resource type="RectangleShape2D" id="shape_ExitWall"]
+size = Vector2(40, 800)
 
 [node name="Level05" type="Node2D"]
 script = ExtResource("1_level")
@@ -76,6 +83,155 @@ position = Vector2(2420, 700)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
 shape = SubResource("shape_WallRight")
+
+[node name="Radiation" type="Node2D" parent="."]
+
+[node name="Z1" type="Node2D" parent="Radiation"]
+position = Vector2(900, 400)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Z2" type="Node2D" parent="Radiation"]
+position = Vector2(900, 1000)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Z3" type="Node2D" parent="Radiation"]
+position = Vector2(1420, 700)
+script = ExtResource("30_zone")
+radius = 100.0
+
+[node name="Pillars" type="Node2D" parent="."]
+
+[node name="P1" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1420, 250)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P1"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P1"]
+shape = SubResource("shape_Pillar")
+
+[node name="P2" type="StaticBody2D" parent="Pillars"]
+position = Vector2(650, 550)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P2"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P2"]
+shape = SubResource("shape_Pillar")
+
+[node name="P3" type="StaticBody2D" parent="Pillars"]
+position = Vector2(650, 850)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P3"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P3"]
+shape = SubResource("shape_Pillar")
+
+[node name="P4" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1150, 575)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P4"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P4"]
+shape = SubResource("shape_Pillar")
+
+[node name="P5" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1150, 825)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P5"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P5"]
+shape = SubResource("shape_Pillar")
+
+[node name="P6" type="StaticBody2D" parent="Pillars"]
+position = Vector2(900, 250)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P6"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P6"]
+shape = SubResource("shape_Pillar")
+
+[node name="P7" type="StaticBody2D" parent="Pillars"]
+position = Vector2(900, 550)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P7"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P7"]
+shape = SubResource("shape_Pillar")
+
+[node name="P8" type="StaticBody2D" parent="Pillars"]
+position = Vector2(900, 850)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P8"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P8"]
+shape = SubResource("shape_Pillar")
+
+[node name="P9" type="StaticBody2D" parent="Pillars"]
+position = Vector2(900, 1150)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P9"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P9"]
+shape = SubResource("shape_Pillar")
+
+[node name="P10" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1420, 550)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P10"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P10"]
+shape = SubResource("shape_Pillar")
+
+[node name="P11" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1420, 850)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P11"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P11"]
+shape = SubResource("shape_Pillar")
+
+[node name="P12" type="StaticBody2D" parent="Pillars"]
+position = Vector2(1420, 1150)
+
+[node name="Look" type="Polygon2D" parent="Pillars/P12"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillars/P12"]
+shape = SubResource("shape_Pillar")
+
+[node name="ExitWall" type="StaticBody2D" parent="."]
+position = Vector2(2020, 700)
+
+[node name="Look" type="Polygon2D" parent="ExitWall"]
+color = Color(0.42, 0.44, 0.52, 1)
+polygon = PackedVector2Array(-20, -400, 20, -400, 20, 400, -20, 400)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitWall"]
+shape = SubResource("shape_ExitWall")
 
 [node name="Spaces" type="Node2D" parent="."]
 
@@ -200,6 +356,26 @@ radius = 375.0
 
 [node name="FExit" type="PointLight2D" parent="Floodlights"]
 position = Vector2(2120, 700)
+script = ExtResource("50_flood")
+radius = 375.0
+
+[node name="FTop" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1160, 200)
+script = ExtResource("50_flood")
+radius = 375.0
+
+[node name="FBottom" type="PointLight2D" parent="Floodlights"]
+position = Vector2(1160, 1200)
+script = ExtResource("50_flood")
+radius = 375.0
+
+[node name="FWallTop" type="PointLight2D" parent="Floodlights"]
+position = Vector2(2020, 250)
+script = ExtResource("50_flood")
+radius = 375.0
+
+[node name="FWallBottom" type="PointLight2D" parent="Floodlights"]
+position = Vector2(2020, 1150)
 script = ExtResource("50_flood")
 radius = 375.0
 
