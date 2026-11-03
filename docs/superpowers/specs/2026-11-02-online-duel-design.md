@@ -71,14 +71,14 @@ something we can test automatically over network cleverness.
 **Transport:**
 - Godot `ENetMultiplayerPeer` on **port 24557**, with up to 1 guest.
 - The host's IP comes from `IP.get_local_addresses()`, filtered to the private IPv4 ranges (192.168/16, 10/8, 172.16/12). The first match is shown.
-- The game version for the handshake is a constant `Net.PROTOCOL_VERSION`.
+- The game version for the handshake is a constant `NetSession.PROTOCOL_VERSION` (read through the `Net` autoload).
 
-**Messages** (RPCs on the duel's `NetSync` node; payloads packed by `NetProtocol`):
+**Messages** (RPCs on the duel's `NetSync` node unless noted; payloads packed by `NetProtocol`):
 
 | Message | Direction | Mode | Content |
 |---|---|---|---|
-| hello | guest→host | reliable | protocol version |
-| match_start | host→guest | reliable | seed, match length in seconds, ship list (id → spec name, tier, customer flags) |
+| hello | guest→host | reliable | protocol version (on `NetSession`: `_hello`, answered by `_welcome` or `_reject`) |
+| match_start | host→guest | reliable | seed, match length in seconds, ship list (id → spec name, tier, customer flags). The host resends it every 0.5 s until the guest's `loaded` arrives, because the guest's lot may still be loading. |
 | loaded / go | both | reliable | the countdown handshake |
 | input | guest→host | unreliable_ordered, 30 Hz | bit flags: thrust actions, brake, stop_rotation |
 | select / done | guest→host | reliable | ship id / — |
@@ -86,13 +86,13 @@ something we can test automatically over network cleverness.
 | ship_added / ship_removed | host→guest | reliable | ships appearing at the bay / leaving at the exit |
 | event | host→guest | reliable | sound or hint for the guest (park, dent, tip, ready…) |
 | match_end | host→guest | reliable | final scores |
-| rematch / leave | both | reliable | — |
+| rematch / leave | both | reliable | — (on `NetSession` as `_x_rematch` / `_x_leave`, because the result screen outlives the duel's `NetSync`) |
 
 **New and changed code:**
-- **`autoload/Net.gd`:**
+- **`scripts/net/NetSession.gd`** (autoload `Net`):
   - functions: `host()`, `join(ip)`, `close()`, `is_host()`, `local_ip()`
   - signals: `connected`, `join_failed(reason)`, `rival_left`
-  - a **3 s silence watchdog**, plus ENet's `peer_disconnected`
+  - a **3 s silence watchdog**, plus ENet's `peer_disconnected`. One frame adds at most 0.25 s to it, and while a phone may be loading the duel lot or the result screen (`NetSession.loading`) it waits 10 s instead
 - **`scripts/net/NetProtocol.gd`:** static, pure functions to pack and unpack each payload. Round-trip tested.
 - **`scripts/net/SnapshotBuffer.gd`:** keeps recent snapshots and returns the state interpolated at "now − 100 ms". It holds the last snapshot when no newer one has arrived.
 - **`ShipPilot`:** `Ship` asks `pilot.is_pressed(action)` instead of calling `Input` directly.
