@@ -18,6 +18,7 @@ const SHIP_DIR := "res://resources/ships/"
 const SHIPS_PER_PAGE := 4
 const SHIP_NAME_SIZE := 26
 const SHIP_FEEL_SIZE := 24
+const TIP_COLOR := Color(1.0, 0.85, 0.3)  # a highlighted tip row: [[], text, TIP_COLOR]
 const CLASS_NAMES := {ShipSpec.ShipClass.LIGHT: "Light", ShipSpec.ShipClass.MEDIUM: "Medium",
 	ShipSpec.ShipClass.HEAVY: "Heavy"}
 const ROW_PAINTS := [5, 1, 2, 4, 0]  # Level.PAINT_COLORS entries, one per row: orange, blue, green, purple, red
@@ -70,22 +71,22 @@ static func page_data() -> Array[Dictionary]:
 		{"title": "Controls", "rows": [
 			[[&"ship"], "Tap a ship to drive it.\nShips drift in zero-g: nothing slows them but you."],
 			[[&"pad_fwd", &"pad_back", &"pad_left", &"pad_right"], "Fwd / Back: thrust.\nLeft / Right: slide sideways."],
-			[[&"pad_rot_l", &"pad_rot_r"], "Rot L / Rot R: turn."],
-			[[&"pad_stop", &"pad_stop_spin"], "STOP: brake.\nStop Spin: stop turning."],
+			[[&"pad_rot_l", &"pad_rot_r", &"pad_stop", &"pad_stop_spin"], "Rot L / Rot R: turn.\nSTOP: brake. Stop Spin: stop turning."],
 			[[&"pad_done"], "Done: park the ship, or let it go."],
+			[[], "It is better to tap the controls rather than holding them.\nWe're not racing ships here, rookie, we're parking them!\nLet the momentum do the work!", TIP_COLOR],
 		]},
 		{"title": "Parking", "rows": [
 			[[&"space_free"], "Park in the green outlined spaces."],
 			[[&"space_sizes"], "The letter is the size: L light, M medium, H heavy.\nA ship fits its own size or bigger."],
 			[[&"space_ready"], "The space turns orange when your ship fits and is still:\nthen press Done."],
-			[[&"dent"], "Hitting things too fast costs pay (dents).\nAt ₵0 pay you're fired."],
+			[[&"dent"], "Hitting things too fast costs pay (dents). At ₵0 you're fired.\nThe red lot edge glows when you get close to a wall."],
 			[[&"stars"], "Your earnings decide your stars."],
 		]},
 		{"title": "Customers", "rows": [
 			[[&"bay"], "New ships arrive in the ARRIVALS bay."],
 			[[&"coin_bronze", &"coin_silver"], "Bronze customers tip ₵%d, silver ₵%d." % [Customer.BRONZE_TIP, Customer.SILVER_TIP]],
 			[[&"coin_gold", &"space_gold"], "Gold tips ₵%d, but only in a ★ gold space." % Customer.GOLD_TIP],
-			[[&"request_glow"], "A glowing outline: the owner wants the ship back."],
+			[[&"request_glow"], "↩ 0:12 on a parked ship: its owner comes back soon.\nA glowing outline: they want it back now."],
 			[[&"exit"], "Drive it onto the EXIT to hand it over."],
 		]},
 	]
@@ -106,7 +107,7 @@ static func page_data() -> Array[Dictionary]:
 		]},
 		{"title": "Settings", "rows": [
 			[[&"pause"], "The II button or the back gesture pauses the game."],
-			[[&"sound"], "Sound: On or Off."],
+			[[&"sound"], "Music: On or Off. Sound effects: On or Off."],
 			[[&"cctv"], "CCTV look: %s." % ", ".join(CctvFilter.NAMES)],
 			[[&"clock"], "Difficulty sets the shift length:\n%s." % ", ".join(shift)],
 		]},
@@ -309,7 +310,7 @@ func _build_page(rows: Array) -> Control:
 	var page_box := VBoxContainer.new()
 	page_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page_box.add_theme_constant_override("separation", 20)
-	if rows.size() > 0 and (rows[0] as Array).size() > 2:
+	if rows.size() > 0 and (rows[0] as Array).size() > 3:
 		return _build_ship_page(rows)
 	var most := 1
 	for row: Array in rows:
@@ -330,6 +331,8 @@ func _build_page(rows: Array) -> Control:
 		var text := Label.new()
 		text.text = row[1]
 		text.add_theme_font_size_override("font_size", BODY_SIZE)
+		if row.size() > 2:
+			text.add_theme_color_override("font_color", row[2])
 		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.size_flags_vertical = Control.SIZE_FILL

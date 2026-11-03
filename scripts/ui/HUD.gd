@@ -11,6 +11,7 @@ var _hint_left := 0.0
 @onready var _pay: Label = %Pay
 @onready var _customers: Label = %Customers
 @onready var _hint: Label = %Hint
+@onready var _status: Label = %Status
 
 
 func _ready() -> void:
@@ -59,6 +60,16 @@ func set_duel_scores(mine: int, rival: int) -> void:
 ## Duel: customers who haven't arrived yet, in place of the served count.
 func set_customers_left(left: int) -> void:
 	_customers.text = "Customers left %d" % left
+
+
+## A lasting line under the hints ("" hides it), e.g. while waiting for customers to return.
+func set_status(text: String) -> void:
+	_status.text = text
+	_status.visible = text != ""
+
+
+func status_text() -> String:
+	return _status.text if _status.visible else ""
 
 
 func show_hint(text: String, seconds: float) -> void:

@@ -3,12 +3,14 @@ extends TestCase
 const TEST_SAVE := "user://test_pause_save.cfg"
 
 var _real_save := ""
-var _real_sound := true
+var _real_music := true
+var _real_sfx := true
 
 
 func _level() -> Level:
 	_real_save = GameState.save_path
-	_real_sound = GameState.sound_on
+	_real_music = GameState.music_on
+	_real_sfx = GameState.sfx_on
 	GameState.save_path = TEST_SAVE
 	var level: Level = load("res://scenes/levels/Level01.tscn").instantiate()
 	level.change_scene_on_end = false
@@ -21,7 +23,8 @@ func _done(level: Level) -> void:
 	tree.paused = false
 	level.free()
 	GameState.save_path = _real_save
-	GameState.sound_on = _real_sound
+	GameState.music_on = _real_music
+	GameState.sfx_on = _real_sfx
 	Sound.apply_mute()
 
 
@@ -63,16 +66,25 @@ func test_pause_freezes_the_shift_clock() -> void:
 	_done(level)
 
 
-func test_sound_toggle_in_pause() -> void:
+func test_music_and_sound_effects_toggle_separately_in_pause() -> void:
 	var level := await _level()
-	GameState.sound_on = true
+	GameState.music_on = true
+	GameState.sfx_on = true
 	level.open_pause()
-	var toggle := _menu(level).get_node("%SoundToggle") as Button
+	var music := _menu(level).get_node("%MusicToggle") as Button
+	var sfx := _menu(level).get_node("%SfxToggle") as Button
 	_menu(level).refresh_sound_label()
-	assert_eq(toggle.text, "Sound: On")
-	toggle.pressed.emit()
-	assert_false(GameState.sound_on)
-	assert_eq(toggle.text, "Sound: Off")
+	assert_eq(music.text, "Music: On")
+	assert_eq(sfx.text, "Sound effects: On")
+	music.pressed.emit()
+	assert_false(GameState.music_on)
+	assert_true(GameState.sfx_on, "effects untouched")
+	assert_eq(music.text, "Music: Off")
+	assert_eq(sfx.text, "Sound effects: On")
+	sfx.pressed.emit()
+	assert_false(GameState.sfx_on)
+	assert_eq(sfx.text, "Sound effects: Off")
+	assert_true(_menu(level).get_node_or_null("%SoundToggle") == null, "the old combined toggle is gone")
 	_done(level)
 
 
@@ -112,7 +124,8 @@ func test_back_gesture_doesnt_quit_the_app() -> void:
 
 func test_online_pause_does_not_pause() -> void:
 	_real_save = GameState.save_path
-	_real_sound = GameState.sound_on
+	_real_music = GameState.music_on
+	_real_sfx = GameState.sfx_on
 	GameState.save_path = TEST_SAVE
 	var level: DuelLevel = load("res://scenes/levels/Duel.tscn").instantiate()
 	level.change_scene_on_end = false

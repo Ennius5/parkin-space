@@ -43,6 +43,10 @@ var _arrivals: DuelArrivals  # host: the two bays' slot list and timers
 @onready var _entrance_r: Marker2D = $EntranceR
 
 
+func _init() -> void:
+	show_return_countdowns = false  # every duel ship leaves 20–30 s after parking; the guest couldn't see the timers
+
+
 func _ready() -> void:
 	if session == null:
 		session = Net

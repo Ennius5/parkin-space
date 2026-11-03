@@ -4,10 +4,13 @@ extends Control
 const MODE_SELECT := "res://scenes/ui/ModeSelect.tscn"
 const CREDITS_TEXT := """Parkin' Space
 
-Ships and all other art: original, by the developer.
+Ships and all other art: original, by ETHAN CAMPOMANES.
 
 ART
 Space Shooter Redux by Kenney (kenney.nl), CC0 1.0
+
+FONT
+Orbitron by The Orbitron Project Authors (Matt McInerney), SIL Open Font License 1.1
 
 SOUND EFFECTS
 Sci-Fi Sounds, Impact Sounds, Interface Sounds and Casino Audio
@@ -21,7 +24,12 @@ squidgy – turkdirty (https://ccmixter.org/files/turkdirty/24695), CC BY-NC 3.0
 just not right – turkdirty (https://ccmixter.org/files/turkdirty/21587), CC BY-NC 3.0
 
 The music is licensed for non-commercial use only.
-CC BY-NC 3.0: https://creativecommons.org/licenses/by-nc/3.0/"""
+CC BY-NC 3.0: https://creativecommons.org/licenses/by-nc/3.0/
+
+MADE for LAB 5 Activity in Special Topics in Software Development
+Central Mindanao University College of Information Sciences and Computing -- Software Development -- BSIT 4C
+November 2026 
+Instructor: Rinante M. Buntod"""
 
 
 func _ready() -> void:

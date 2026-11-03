@@ -378,3 +378,48 @@ func test_lobby_keeps_last_ip_when_field_empty() -> void:
 	session.free()
 	GameState.last_ip = real
 	_restore_state()
+
+
+func test_title_background_is_pulsing_hex_grid() -> void:
+	var screen: Control = load("res://scenes/ui/Title.tscn").instantiate()
+	tree.root.add_child(screen)
+	var mat := (screen.get_node("Background") as CanvasItem).material as ShaderMaterial
+	assert_true(mat != null, "background has a shader")
+	assert_eq(mat.shader.resource_path, "res://scripts/fx/hex_grid.gdshader")
+	var a: Color = mat.get_shader_parameter("color_a")
+	var b: Color = mat.get_shader_parameter("color_b")
+	assert_true(a.b > 0.8 and a.g > 0.8 and a.r < 0.3, "color_a is cyan")
+	assert_true(b.g > 0.8 and b.r < 0.4 and b.b < 0.5, "color_b is green")
+	var dim: float = mat.get_shader_parameter("center_glow")
+	assert_true(dim > 0.0 and dim <= 0.25, "grid behind the title is dimmed")
+	screen.free()
+
+
+func test_title_text_uses_orbitron() -> void:
+	var screen: Control = load("res://scenes/ui/Title.tscn").instantiate()
+	tree.root.add_child(screen)
+	for path in ["%GameName", "%TapHint"]:
+		var font: Font = (screen.get_node(path) as Label).get_theme_font("font")
+		assert_eq(font.resource_path, "res://assets/fonts/Orbitron.ttf", path)
+	screen.free()
+
+
+func test_title_tap_hint_breathes() -> void:
+	var script: GDScript = load("res://scripts/ui/Title.gd")
+	var lo := 1.0
+	var hi := 0.0
+	for i in 40:
+		var a: float = script.hint_alpha(i * 0.1)
+		lo = minf(lo, a)
+		hi = maxf(hi, a)
+	assert_true(lo >= 0.3 and lo < 0.5, "fades down but stays readable")
+	assert_almost(hi, 1.0, 0.05)
+
+
+func test_credits_name_the_orbitron_font() -> void:
+	var screen: Control = load("res://scenes/ui/Credits.tscn").instantiate()
+	tree.root.add_child(screen)
+	var text: String = (screen.get_node("%Text") as Label).text
+	assert_true(text.contains("Orbitron"))
+	assert_true(text.contains("SIL Open Font License"))
+	screen.free()

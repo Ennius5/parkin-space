@@ -52,26 +52,57 @@ func test_menu_music_is_descent_mind_ascent() -> void:
 	assert_eq(Sound.current_track(), Sound.MENU_TRACK)
 
 
-func test_sound_off_mutes_master() -> void:
+func _bus_muted(bus_name: String) -> bool:
+	return AudioServer.is_bus_mute(AudioServer.get_bus_index(bus_name))
+
+
+func test_music_off_mutes_only_the_music_bus() -> void:
 	var real_path := GameState.save_path
-	var real_on := GameState.sound_on
+	var real_music := GameState.music_on
+	var real_sfx := GameState.sfx_on
 	GameState.save_path = TEST_SAVE
-	Sound.set_sound_on(false)
-	assert_true(AudioServer.is_bus_mute(0))
-	assert_false(GameState.sound_on)
-	Sound.set_sound_on(true)
-	assert_false(AudioServer.is_bus_mute(0))
+	Sound.set_sfx_on(true)
+	Sound.set_music_on(false)
+	assert_true(_bus_muted("Music"))
+	assert_false(_bus_muted("SFX"))
+	assert_false(AudioServer.is_bus_mute(0), "master stays on")
+	assert_false(GameState.music_on)
+	Sound.set_music_on(true)
+	assert_false(_bus_muted("Music"))
 	GameState.save_path = real_path
-	GameState.sound_on = real_on
+	GameState.music_on = real_music
+	GameState.sfx_on = real_sfx
+	Sound.apply_mute()
+
+
+func test_sound_effects_off_mutes_only_the_sfx_bus() -> void:
+	var real_path := GameState.save_path
+	var real_music := GameState.music_on
+	var real_sfx := GameState.sfx_on
+	GameState.save_path = TEST_SAVE
+	Sound.set_music_on(true)
+	Sound.set_sfx_on(false)
+	assert_true(_bus_muted("SFX"))
+	assert_false(_bus_muted("Music"))
+	assert_false(GameState.sfx_on)
+	Sound.set_sfx_on(true)
+	assert_false(_bus_muted("SFX"))
+	GameState.save_path = real_path
+	GameState.music_on = real_music
+	GameState.sfx_on = real_sfx
 	Sound.apply_mute()
 
 
 func test_saved_mute_applies_at_start() -> void:
-	var real_on := GameState.sound_on
-	GameState.sound_on = false
+	var real_music := GameState.music_on
+	var real_sfx := GameState.sfx_on
+	GameState.music_on = false
+	GameState.sfx_on = false
 	Sound.apply_mute()
-	assert_true(AudioServer.is_bus_mute(0))
-	GameState.sound_on = real_on
+	assert_true(_bus_muted("Music"))
+	assert_true(_bus_muted("SFX"))
+	GameState.music_on = real_music
+	GameState.sfx_on = real_sfx
 	Sound.apply_mute()
 
 
