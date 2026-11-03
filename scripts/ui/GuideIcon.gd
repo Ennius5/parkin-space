@@ -4,6 +4,7 @@ extends Control
 ## colours and constants so it matches what the player sees on the lot.
 
 const SIZE := Vector2(72, 72)
+const SHIP_ROW_SIZE := Vector2(100, 100)  # a ship-page row: every class fills it
 const SHIP_SPEC := "res://resources/ships/Milano.tres"
 const PAD_LABELS := {
 	&"pad_fwd": "Fwd", &"pad_back": "Back", &"pad_left": "Left", &"pad_right": "Right",
@@ -24,6 +25,14 @@ const KINDS: Array[StringName] = [
 		kind = value
 		queue_redraw()
 
+## The ship the `ship` kind draws, in this paint; null = the Milano in a customer's blue.
+var spec: ShipSpec:
+	set(value):
+		spec = value
+		custom_minimum_size = SHIP_ROW_SIZE if value else SIZE
+		queue_redraw()
+var paint: Color = Level.PAINT_COLORS[1]
+
 var _ship_spec: ShipSpec
 var _ship_outline := PackedVector2Array()
 
@@ -37,7 +46,7 @@ func _draw() -> void:
 	var c := size / 2.0
 	match kind:
 		&"ship":
-			_ship(c, 68.0)
+			_ship(c, _row_ship_length() if spec else 68.0)
 		&"space_free":
 			_space(Rect2(c - Vector2(24, 32), Vector2(48, 64)), ParkingSpace.FREE_COLOR, "M")
 		&"space_sizes":
@@ -144,31 +153,43 @@ func _draw() -> void:
 ## The ship as on the lot (hull, paint, lights), scaled so its longest side is `length`.
 ## An orphan (tinted) has no paint or lights, as in the game.
 func _ship(center: Vector2, length: float, tint := Color.WHITE) -> void:
-	var spec := ship_spec()
-	if spec == null or spec.texture == null:
+	var ship := ship_spec()
+	if ship == null or ship.texture == null:
 		draw_rect(Rect2(center - Vector2(length * 0.3, length * 0.5), Vector2(length * 0.6, length)), tint)
 		return
-	var tex := spec.texture
+	var tex := ship.texture
 	var s := length / maxf(tex.get_width(), tex.get_height())
 	var rect := Rect2(center - tex.get_size() * s / 2.0, tex.get_size() * s)
 	draw_texture_rect(tex, rect, false, tint)
 	if tint != Color.WHITE:
 		return
-	if spec.paint_texture:
-		draw_texture_rect(spec.paint_texture, rect, false, Level.PAINT_COLORS[1])  # a customer's blue
-	if spec.lights_texture:
-		draw_texture_rect(spec.lights_texture, rect, false)
+	if ship.paint_texture:
+		draw_texture_rect(ship.paint_texture, rect, false, paint)
+	if ship.lights_texture:
+		draw_texture_rect(ship.lights_texture, rect, false)
+
+
+## The longest side of a ship-row ship: the biggest quarter-step scale that fits (light 3x, medium 2x,
+## heavy 1.25x), so pixels stay as even as they can.
+func _row_ship_length() -> float:
+	var tex := spec.texture
+	if tex == null:
+		return SHIP_ROW_SIZE.y
+	var longest := maxf(tex.get_width(), tex.get_height())
+	return longest * maxf(0.25, floorf(SHIP_ROW_SIZE.y / longest * 4.0) / 4.0)
 
 
 func ship_spec() -> ShipSpec:
+	if spec:
+		return spec
 	if _ship_spec == null:
 		_ship_spec = load(SHIP_SPEC) as ShipSpec
 	return _ship_spec
 
 
 func ship_texture() -> Texture2D:
-	var spec := ship_spec()
-	return spec.texture if spec else null
+	var ship := ship_spec()
+	return ship.texture if ship else null
 
 
 ## A ship whose owner wants it back: its outline glows in Ship.GLOW_COLOR, as on the lot.

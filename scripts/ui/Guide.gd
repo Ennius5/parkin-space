@@ -1,6 +1,7 @@
 class_name Guide
 extends Control
-## How to Play: six pages, one topic each, every row a small GuideIcon and a line or two of text.
+## How to Play: one topic per page, every row a small GuideIcon and a line or two of text.
+## Three pages (Light, Medium, Heavy ships) list the roster found in resources/ships at runtime.
 ## As a screen (Guide.tscn, from Mode Select) Back returns to Mode Select. As an overlay
 ## (as_overlay, from the pause menu) Back and Escape emit `closed` and the pause menu frees it.
 ## No gameplay runs here; numbers in the copy are read from the game's constants.
@@ -13,6 +14,26 @@ const TITLE_SIZE := 44
 const BODY_SIZE := 26
 const ICON_GAP := 8
 const DIM_DOT := Color(0.35, 0.55, 0.6, 0.45)
+const SHIP_DIR := "res://resources/ships/"
+const SHIPS_PER_PAGE := 4
+const SHIP_NAME_SIZE := 26
+const SHIP_FEEL_SIZE := 24
+const CLASS_NAMES := {ShipSpec.ShipClass.LIGHT: "Light", ShipSpec.ShipClass.MEDIUM: "Medium",
+	ShipSpec.ShipClass.HEAVY: "Heavy"}
+const ROW_PAINTS := [5, 1, 2, 4, 0]  # Level.PAINT_COLORS entries, one per row: orange, blue, green, purple, red
+## One line on how each ship handles, keyed by resource name. Ships not listed get a generated line.
+const FEEL := {
+	"AsteroidJunker": "Scrappy little hauler: the snappiest turner on the lot.",
+	"ManipulatorDrone": "Nimble workhorse with grabby arms: spins on a dime.",
+	"ReconDrone": "Rare and nose-heavy: lazy to turn, easy to overshoot.",
+	"RecreationalDrone": "Light, quick and forgiving: a Sunday cruiser.",
+	"Milano": "The all-rounder, with a tail-heavy swing.",
+	"Miner": "Lopsided ore hauler: the slowest medium to turn.",
+	"Nostrom": "Rare, well balanced, and the sharpest-turning medium.",
+	"AgriShip": "Tail-heavy giant on 19 thrusters: the slowest turner of all.",
+	"Hammerhead": "Nose-heavy bruiser: start your turns early.",
+	"Researcher": "Big, but nimble for a heavy: it leans a little to the left.",
+}
 
 var as_overlay := false  # set before adding to the tree
 var change_scenes := true  # tests turn this off
@@ -45,7 +66,7 @@ static func page_data() -> Array[Dictionary]:
 	for d: int in GameState.SHIFT_SECONDS:
 		var s := int(GameState.SHIFT_SECONDS[d])
 		shift.append("%s %d:%02d" % [GameState.DIFFICULTY_NAMES[d], s / 60, s % 60])
-	return [
+	var pages: Array[Dictionary] = [
 		{"title": "Controls", "rows": [
 			[[&"ship"], "Tap a ship to drive it.\nShips drift in zero-g: nothing slows them but you."],
 			[[&"pad_fwd", &"pad_back", &"pad_left", &"pad_right"], "Fwd / Back: thrust.\nLeft / Right: slide sideways."],
@@ -67,6 +88,9 @@ static func page_data() -> Array[Dictionary]:
 			[[&"request_glow"], "A glowing outline: the owner wants the ship back."],
 			[[&"exit"], "Drive it onto the EXIT to hand it over."],
 		]},
+	]
+	pages.append_array(ship_pages())
+	pages.append_array([
 		{"title": "Hazards", "rows": [
 			[[&"radiation", &"asteroid"], "Radiation zones dent ships inside them.\nAsteroids drift around the lot."],
 			[[&"black_hole"], "The black hole pulls the ship you're driving,\nand its core flings ships away."],
@@ -86,7 +110,67 @@ static func page_data() -> Array[Dictionary]:
 			[[&"cctv"], "CCTV look: %s." % ", ".join(CctvFilter.NAMES)],
 			[[&"clock"], "Difficulty sets the shift length:\n%s." % ", ".join(shift)],
 		]},
-	]
+	])
+	return pages
+
+
+## One page per ship class (more if a class outgrows a page), each row a ship:
+## [[&"ship"], name, feel line, spec, resource name, paint colour]. Pages also carry "ships".
+static func ship_pages() -> Array[Dictionary]:
+	var by_class := ship_roster()
+	var pages: Array[Dictionary] = []
+	for ship_class: int in [ShipSpec.ShipClass.LIGHT, ShipSpec.ShipClass.MEDIUM, ShipSpec.ShipClass.HEAVY]:
+		var names: Array = by_class.get(ship_class, [])
+		var title := "%s ships" % CLASS_NAMES[ship_class]
+		for start in range(0, names.size(), SHIPS_PER_PAGE):
+			var page_number := start / SHIPS_PER_PAGE + 1
+			var rows := []
+			var ships: Array[String] = []
+			for i in range(start, mini(start + SHIPS_PER_PAGE, names.size())):
+				var ship_name: String = names[i]
+				var spec := load(SHIP_DIR + ship_name + ".tres") as ShipSpec
+				var paint: Color = Level.PAINT_COLORS[ROW_PAINTS[(i - start) % ROW_PAINTS.size()]]
+				rows.append([[&"ship"], split_camel(ship_name), feel_line(ship_name, spec), spec, ship_name, paint])
+				ships.append(ship_name)
+			pages.append({"title": title if page_number == 1 else "%s (%d)" % [title, page_number],
+				"rows": rows, "ships": ships})
+	return pages
+
+
+## Resource names of every ship in resources/ships, grouped by ShipSpec.ship_class and sorted.
+static func ship_roster() -> Dictionary:
+	var names: Array[String] = []
+	for file in ResourceLoader.list_directory(SHIP_DIR):
+		if file.ends_with(".tres") or file.ends_with(".res"):
+			names.append(file.get_basename())
+	names.sort()
+	var by_class := {}
+	for ship_name in names:
+		var spec := load(SHIP_DIR + ship_name + ".tres") as ShipSpec
+		if spec:
+			if not by_class.has(spec.ship_class):
+				by_class[spec.ship_class] = []
+			by_class[spec.ship_class].append(ship_name)
+	return by_class
+
+
+## "ManipulatorDrone" -> "Manipulator Drone".
+static func split_camel(text: String) -> String:
+	var out := ""
+	for i in text.length():
+		var ch := text[i]
+		var prev := text[i - 1] if i > 0 else " "
+		if ch != ch.to_lower() and prev != " " and prev == prev.to_lower():
+			out += " "
+		out += ch
+	return out
+
+
+## How a ship handles, from FEEL, or "Light ship · 8 thrusters" for a ship not written up yet.
+static func feel_line(ship_name: String, spec: ShipSpec) -> String:
+	if FEEL.has(ship_name):
+		return FEEL[ship_name]
+	return "%s ship · %d thrusters" % [CLASS_NAMES.get(spec.ship_class, "A"), spec.thrusters.size()]
 
 
 func page_count() -> int:
@@ -102,6 +186,13 @@ func page_titles() -> Array[String]:
 
 func get_page(i: int) -> Control:
 	return _pages[i]
+
+
+## Resource names of the ships listed on page i (empty for non-ship pages).
+func page_ships(i: int) -> Array[String]:
+	var ships: Array[String] = []
+	ships.assign(_data[i].get("ships", []))
+	return ships
 
 
 ## A page's title and all of its text, for tests.
@@ -218,6 +309,8 @@ func _build_page(rows: Array) -> Control:
 	var page_box := VBoxContainer.new()
 	page_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page_box.add_theme_constant_override("separation", 20)
+	if rows.size() > 0 and (rows[0] as Array).size() > 2:
+		return _build_ship_page(rows)
 	var most := 1
 	for row: Array in rows:
 		most = maxi(most, (row[0] as Array).size())
@@ -241,6 +334,37 @@ func _build_page(rows: Array) -> Control:
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.size_flags_vertical = Control.SIZE_FILL
 		line.add_child(text)
+	return page_box
+
+
+## Rows of ships: the painted sprite, its name in cyan and its feel line underneath.
+func _build_ship_page(rows: Array) -> Control:
+	var page_box := VBoxContainer.new()
+	page_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page_box.add_theme_constant_override("separation", 14)
+	for row: Array in rows:
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 28)
+		page_box.add_child(line)
+		var icon := GuideIcon.new()
+		icon.spec = row[3]
+		icon.paint = row[5]
+		icon.kind = &"ship"
+		line.add_child(icon)
+		var words := VBoxContainer.new()
+		words.alignment = BoxContainer.ALIGNMENT_CENTER
+		words.add_theme_constant_override("separation", 0)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(words)
+		var ship_name := Label.new()
+		ship_name.text = row[1]
+		ship_name.add_theme_font_size_override("font_size", SHIP_NAME_SIZE)
+		ship_name.add_theme_color_override("font_color", HexStyle.CYAN)
+		words.add_child(ship_name)
+		var feel := Label.new()
+		feel.text = row[2]
+		feel.add_theme_font_size_override("font_size", SHIP_FEEL_SIZE)
+		words.add_child(feel)
 	return page_box
 
 
