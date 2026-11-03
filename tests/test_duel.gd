@@ -804,3 +804,40 @@ func test_guest_mirror_does_not_simulate_black_hole() -> void:
 		await tree.physics_frame
 	assert_eq(ship.global_position, spot, "the mirror stays exactly where the snapshot puts it")
 	_done_host(level)
+
+## A mirror ship from the host's ship list, already placed by a snapshot.
+func _mirror_ship(level: DuelLevel, id: int, parked: bool) -> Ship:
+	level.mirror.add_ships([{"id": id, "spec_path": "res://resources/ships/Milano.tres", "paint": 1,
+			"headlight": 0, "tier": 2, "wants_retrieval": true, "bay": 0}], false)
+	var ship := level.mirror.ship_by_id(id)
+	level.mirror._show_parked(ship, parked)
+	return ship
+
+
+func _tap_on(level: DuelLevel, ship: Ship) -> void:
+	level.handle_lot_tap(level.get_canvas_transform() * ship.global_position)
+
+
+func test_guest_tap_on_parked_ship_asks_the_host() -> void:
+	var level := await _guest()
+	var ship := _mirror_ship(level, 5, true)
+	assert_true(ship.is_parked)
+	_tap_on(level, ship)
+	assert_eq(_sent(level, "select"), [[5]], "a parked customer ship can be asked for")
+	_done_host(level)
+
+
+func test_guest_tap_on_moving_ship_asks_the_host() -> void:
+	var level := await _guest()
+	var ship := _mirror_ship(level, 6, false)
+	_tap_on(level, ship)
+	assert_eq(_sent(level, "select"), [[6]])
+	_done_host(level)
+
+
+func test_guest_done_asks_the_host() -> void:
+	var level := await _guest()
+	level.press_done()
+	assert_eq(_sent(level, "done"), [[]])
+	_done_host(level)
+

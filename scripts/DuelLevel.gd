@@ -293,6 +293,14 @@ func _return(ship: Ship) -> void:
 		sync.send(&"ship_removed", [id])
 
 
+## The guest's level has no customers of its own (the host keeps them), so any parked ship the
+## mirror shows may be asked for; the host still decides.
+func _can_move_parked(ship: Ship) -> bool:
+	if role == Role.GUEST:
+		return mirror != null and mirror.has_ship(ship)
+	return super._can_move_parked(ship)
+
+
 ## Rings the ship in its driver's colour. A guest's pick becomes a request to the host.
 func select_ship(ship: Ship, valet: Valet = null) -> void:
 	if role == Role.GUEST:

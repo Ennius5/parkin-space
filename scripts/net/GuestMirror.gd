@@ -45,6 +45,11 @@ func ship_by_id(id: int) -> Ship:
 	return ship if is_instance_valid(ship) else null
 
 
+## True for a ship this mirror shows.
+func has_ship(ship: Ship) -> bool:
+	return _ids.has(ship)
+
+
 # --- Messages from the host ---
 
 ## The host's seed, match length and the ships already in the lot. Answers with `loaded`.
