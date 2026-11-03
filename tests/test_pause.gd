@@ -150,3 +150,112 @@ func test_pause_title_says_whether_the_match_runs_on() -> void:
 	menu.set_online(false)
 	assert_eq(title.text, "Paused")
 	menu.free()
+
+
+# --- How to Play from the pause menu ---
+
+func _cancel() -> InputEventAction:
+	var ev := InputEventAction.new()
+	ev.action = &"ui_cancel"
+	ev.pressed = true
+	return ev
+
+
+func test_pause_menu_has_how_to_play_between_cctv_and_quit() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	var button := menu.get_node_or_null("%HowToPlay") as Button
+	assert_true(button != null)
+	if button:
+		assert_eq(button.text, "How to Play")
+		assert_eq(button.get_index(), menu.get_node("%CctvToggle").get_index() + 1)
+		assert_eq(button.get_index() + 1, menu.get_node("%Quit").get_index())
+	menu.free()
+
+
+func test_pause_menu_fits_a_720px_screen() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	menu.open()
+	await tree.process_frame
+	var box := menu.get_node("%Title").get_parent() as Control
+	var h := box.get_combined_minimum_size().y
+	assert_true(h <= 720.0 - 24.0, "menu height %s" % h)
+	var resume := menu.get_node("%Resume") as Button
+	assert_true(resume.size.y >= 72.0, "thumb-sized buttons")
+	menu.free()
+
+
+func test_how_to_play_opens_the_guide_over_the_paused_level() -> void:
+	var level := await _level()
+	level.open_pause()
+	var menu := _menu(level)
+	(menu.get_node("%HowToPlay") as Button).pressed.emit()
+	assert_true(menu.is_guide_open())
+	var guide := menu.find_child("Guide", true, false) as Guide
+	assert_true(guide != null and guide.as_overlay, "the guide is an overlay")
+	if guide:
+		assert_eq(guide.process_mode, Node.PROCESS_MODE_ALWAYS)
+		var layer := guide.get_parent() as CanvasLayer
+		assert_true(layer != null and layer.layer > menu.layer, "drawn above the pause menu")
+		assert_false((guide.get_node("%RunningNote") as Label).visible, "offline the level is paused")
+	assert_true(tree.paused, "the level stays paused while reading")
+	assert_true(menu.is_open())
+	(guide.get_node("%Back") as Button).pressed.emit()
+	assert_false(menu.is_guide_open(), "Back closes the guide")
+	assert_true(menu.is_open(), "the pause menu stays open")
+	assert_true(tree.paused)
+	assert_eq(level.last_pause_action, "")
+	_done(level)
+
+
+func test_cancel_closes_the_guide_before_the_pause_menu() -> void:
+	var level := await _level()
+	level.open_pause()
+	var menu := _menu(level)
+	(menu.get_node("%HowToPlay") as Button).pressed.emit()
+	tree.root.push_input(_cancel())
+	assert_false(menu.is_guide_open(), "Escape closes the guide")
+	assert_true(menu.is_open(), "the pause menu stays open")
+	assert_true(tree.paused)
+	tree.root.push_input(_cancel())
+	assert_false(menu.is_open(), "a second Escape resumes")
+	assert_false(tree.paused)
+	_done(level)
+
+
+func test_back_gesture_closes_the_guide_before_the_pause_menu() -> void:
+	var level := await _level()
+	level.open_pause()
+	var menu := _menu(level)
+	(menu.get_node("%HowToPlay") as Button).pressed.emit()
+	level._notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_false(menu.is_guide_open())
+	assert_true(menu.is_open())
+	assert_true(tree.paused)
+	_done(level)
+
+
+func test_resume_drops_the_guide() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	menu.open()
+	(menu.get_node("%HowToPlay") as Button).pressed.emit()
+	menu.close()
+	assert_false(menu.is_guide_open())
+	menu.free()
+
+
+func test_online_guide_says_the_match_runs_on() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	menu.set_online(true)
+	menu.open()
+	(menu.get_node("%HowToPlay") as Button).pressed.emit()
+	var guide := menu.find_child("Guide", true, false) as Guide
+	assert_true(guide != null)
+	if guide:
+		var note := guide.get_node("%RunningNote") as Label
+		assert_true(note.visible)
+		assert_eq(note.text, "Match still running")
+	menu.free()

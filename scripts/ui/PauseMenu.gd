@@ -1,6 +1,7 @@
 class_name PauseMenu
 extends CanvasLayer
-## Pause screen over a level: Resume, Restart, Sound on/off, CCTV strength, Quit. Runs while the tree is paused.
+## Pause screen over a level: Resume, Restart, Sound on/off, CCTV strength, How to Play, Quit. Runs while the tree is paused.
+## How to Play opens the Guide as an overlay above the menu; Back, Escape or the back gesture close it first.
 ## Online (set_online) the match keeps running: Restart is hidden and Quit becomes "Leave match",
 ## which asks "Leave the match?" before quit_pressed.
 
@@ -14,11 +15,13 @@ const LEAVE_TEXT := "Leave match"
 const CONFIRM_TEXT := "Leave the match?"
 const TITLE_TEXT := "Paused"
 const ONLINE_TITLE_TEXT := "Match still running"  # online nothing stops: the rival plays on
+const GUIDE_LAYER_ABOVE := 10  # the guide overlay's CanvasLayer sits this far above the menu
 
 var _panel := Control.new()
 var _buttons: VBoxContainer  # the menu itself, hidden while the confirm shows
 var _confirm: VBoxContainer
 var _online := false
+var _guide_layer: CanvasLayer  # the How to Play overlay while it's open
 
 
 func _init() -> void:
@@ -54,6 +57,7 @@ func _ready() -> void:
 	_add_button(box, "Restart", "Restart").pressed.connect(func() -> void: restart_pressed.emit())
 	_add_button(box, "SoundToggle", "").pressed.connect(_on_sound_pressed)
 	_add_button(box, "CctvToggle", "").pressed.connect(_on_cctv_pressed)
+	_add_button(box, "HowToPlay", "How to Play").pressed.connect(open_guide)
 	_add_button(box, "Quit", QUIT_TEXT).pressed.connect(_on_quit_pressed)
 	_build_confirm(stack)
 	Sound.wire_clicks(self)
@@ -66,7 +70,7 @@ func _add_button(box: VBoxContainer, node_name: String, text: String) -> Button:
 	var b := Button.new()
 	b.name = node_name
 	b.text = text
-	b.custom_minimum_size = Vector2(420, 84)  # thumb-sized, five fit on a phone screen
+	b.custom_minimum_size = Vector2(420, 84)  # thumb-sized; six and the title fit a 720-px-tall screen
 	b.add_theme_font_size_override("font_size", 32)
 	box.add_child(b)
 	b.owner = self
@@ -123,6 +127,7 @@ func open() -> void:
 
 
 func close() -> void:
+	close_guide()
 	_panel.visible = false
 
 
@@ -151,8 +156,41 @@ func _on_cctv_pressed() -> void:
 	cctv_changed.emit(GameState.cctv_level)
 
 
-## Escape on desktop closes the menu, like the back gesture.
+# --- How to Play ---
+
+## The guide over the menu. Offline the level stays paused; online it notes the match runs on.
+func open_guide() -> void:
+	if is_guide_open():
+		return
+	_guide_layer = CanvasLayer.new()
+	_guide_layer.name = "GuideLayer"
+	_guide_layer.layer = layer + GUIDE_LAYER_ABOVE
+	_guide_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_guide_layer)
+	var guide := Guide.new()
+	guide.name = "Guide"
+	guide.as_overlay = true
+	guide.process_mode = Node.PROCESS_MODE_ALWAYS
+	guide.closed.connect(close_guide)
+	_guide_layer.add_child(guide)
+	guide.set_running_note(_online)
+
+
+## Closes the guide if it is open; true if it was.
+func close_guide() -> bool:
+	if not is_guide_open():
+		return false
+	_guide_layer.queue_free()
+	_guide_layer = null
+	return true
+
+
+func is_guide_open() -> bool:
+	return _guide_layer != null
+
+
+## Escape on desktop closes the menu, like the back gesture (the guide, when open, takes it first).
 func _unhandled_input(event: InputEvent) -> void:
-	if is_open() and event.is_action_pressed("ui_cancel"):
+	if is_open() and not is_guide_open() and event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		resume_pressed.emit()
