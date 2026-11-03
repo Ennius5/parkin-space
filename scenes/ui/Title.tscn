@@ -8,6 +8,7 @@
 shader = ExtResource("2_hex")
 shader_parameter/color_a = Color(0.1, 0.95, 1, 1)
 shader_parameter/color_b = Color(0.2, 1, 0.35, 1)
+shader_parameter/center_glow = 0.15
 
 [node name="Title" type="Control" unique_id=1209421860]
 layout_mode = 3

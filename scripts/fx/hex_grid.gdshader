@@ -8,6 +8,7 @@ uniform vec4 base_color : source_color = vec4(0.02, 0.03, 0.06, 1.0);
 uniform float cell_px = 60.0;      // tile width in pixels
 uniform float pulse_speed = 2.1;   // radians per second (~3 s per pulse)
 uniform float wave_scale = 6.0;    // how many wave rings fit across the screen
+uniform float center_glow = 0.15;  // glow left in the middle, so the title reads clearly
 
 varying vec2 local_px;
 
@@ -48,6 +49,7 @@ void fragment() {
 
 	float light = (0.25 + 0.75 * pulse) * (line * 0.85 + glow * 0.3);
 	float fill = 0.04 + 0.05 * pulse;               // faint tint inside each tile
-	float vignette = 1.0 - 0.45 * length(UV - 0.5);
+	// Dim in the middle, full glow towards the edges.
+	float vignette = mix(center_glow, 1.0, smoothstep(0.1, 0.75, length((UV - 0.5) * vec2(1.6, 1.0))));
 	COLOR = vec4(base_color.rgb + neon * (light + fill) * vignette, 1.0);
 }

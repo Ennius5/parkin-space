@@ -390,6 +390,8 @@ func test_title_background_is_pulsing_hex_grid() -> void:
 	var b: Color = mat.get_shader_parameter("color_b")
 	assert_true(a.b > 0.8 and a.g > 0.8 and a.r < 0.3, "color_a is cyan")
 	assert_true(b.g > 0.8 and b.r < 0.4 and b.b < 0.5, "color_b is green")
+	var dim: float = mat.get_shader_parameter("center_glow")
+	assert_true(dim > 0.0 and dim <= 0.25, "grid behind the title is dimmed")
 	screen.free()
 
 
