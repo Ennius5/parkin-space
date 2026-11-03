@@ -52,6 +52,14 @@ static func roll(rng: RandomNumberGenerator, use_tiers: bool, gold_allowed := tr
 	return c
 
 
+## "↩ 0:12" until the customer comes back for the ship; "" when no return is scheduled or it was already asked for.
+func return_countdown() -> String:
+	if request_in < 0.0 or requested:
+		return ""
+	var secs := ceili(request_in)
+	return "↩ %d:%02d" % [secs / 60, secs % 60]
+
+
 func tip() -> int:
 	if tier == Tier.GOLD and not parked_in_gold:
 		return 0

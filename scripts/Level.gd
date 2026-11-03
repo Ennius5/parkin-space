@@ -48,6 +48,7 @@ var ledger: ShiftLedger:
 	set(value):
 		valets[0].ledger = value
 var customers: Dictionary = {}  # Ship -> Customer
+var show_return_countdowns := true  # parked leavers count down to their return, and the HUD says when it's just waiting
 ## The ship valet 0 is driving.
 var driven_ship: Ship:
 	get:
@@ -71,6 +72,7 @@ var _retrieval_indexes: Array[int] = []  # queue positions of customers who will
 var _return_hint_shown := false
 var _bay: ArrivalBay
 var _bay_clear_for := 0.0
+var _lot_edge: LotEdge
 var _radiation_time: Dictionary = {}  # Ship -> seconds inside radiation since its last dent
 var _radiation_hint_shown := false
 var _pool: Array[ShipSpec] = []  # every ship this level can draw, kept for orphans
@@ -121,9 +123,46 @@ func _ready() -> void:
 	_add_darkness()
 	_add_cctv()
 	_add_arrival_bay()
+	_add_lot_edge()
 	spawn_next_customer()
 	_hud.show_hint("Tap a ship to drive it", 4.0)
 	_refresh()
+
+
+## The red outline inside the lot walls that warns the driven ship off them.
+func _add_lot_edge() -> void:
+	var walls := get_node_or_null("Walls") as Node2D
+	if walls == null:
+		return
+	_lot_edge = LotEdge.new()
+	_lot_edge.name = "LotEdge"
+	_lot_edge.rect = LotEdge.inner_rect(walls)
+	add_child(_lot_edge)
+
+
+## The HUD line while every ship is parked but a customer will be back: "" otherwise.
+static func waiting_text(idle: bool, next_in: float) -> String:
+	if not idle or next_in < 0.0:
+		return ""
+	var secs := ceili(next_in)
+	return "Waiting for customers to return – next in %d:%02d" % [secs / 60, secs % 60]
+
+
+## True when no ship on the lot needs the valet: everything is parked.
+func _nothing_to_do() -> bool:
+	for ship: Ship in _ships.get_children():
+		if not ship.is_parked and not ship.is_queued_for_deletion():
+			return false
+	return true
+
+
+## Seconds until the soonest scheduled retrieval request (-1 = none).
+func _next_return_in() -> float:
+	var soonest := -1.0
+	for c: Customer in customers.values():
+		if c.request_in >= 0.0 and not c.requested and (soonest < 0.0 or c.request_in < soonest):
+			soonest = c.request_in
+	return soonest
 
 
 ## Seeds the shift's random draws. A duel overrides it with the match seed.
@@ -166,6 +205,11 @@ func _driven_by_anyone(ship: Ship) -> bool:
 		if v.ship == ship:
 			return true
 	return false
+
+
+func _process(_delta: float) -> void:
+	if _lot_edge:
+		_lot_edge.track(valets[0].ship if not valets.is_empty() else null)
 
 
 func _physics_process(delta: float) -> void:
@@ -339,6 +383,7 @@ func spawn_next_customer() -> Ship:
 ## Puts a new customer's ship into the lot at an entrance marker, facing the way it points.
 func _place_arrival(ship: Ship, c: Customer, entrance: Node2D) -> void:
 	ship.customer = c
+	ship.show_return_timer = show_return_countdowns
 	customers[ship] = c
 	ship.global_position = entrance.global_position
 	ship.rotation = entrance.global_rotation
@@ -647,6 +692,8 @@ func _refresh() -> void:
 	_hud.set_time(ledger.time_left)
 	_hud.set_pay(ledger.pay, ledger.earned)
 	_hud.set_customers(ledger.served, ledger.customers)
+	if show_return_countdowns:
+		_hud.set_status(waiting_text(_nothing_to_do(), _next_return_in()))
 	if ledger.outcome != ShiftLedger.Outcome.PLAYING:
 		end_level()
 

@@ -45,6 +45,7 @@ A top-down zero-gravity valet game where the player parks and retrieves spaceshi
 - **Space sizes:** light, medium and heavy spaces. A ship can park in a space of its own class or larger, so wasting a big space on a small ship may leave a later heavy ship nowhere to go.
 - **Arrivals:** customers arrive in a marked ARRIVALS bay at the entrance, sized for a heavy ship. The next customer only arrives once no part of any ship has been in the bay for 1 second, so move each arrival out to keep the queue flowing. Drifting asteroids block the bay too.
 - **Dents:** light bumps are free. Impacts above a safe speed dent the ship and cost pay (more for harder hits).
+- **Lot edge:** a red outline runs just inside the lot walls (no labels). It is faint at rest and glows bright red when the ship you're driving comes within 80 px of a wall, as a warning before the hit.
 
 **Lighting:** every lot is pitch black, like space, including everything beyond its walls. Floodlights light pools of the lot (each level places its own; every parking space sits under one; Level 1's are extra strong; two in every level flicker; each shift, every floodlight takes a random shade between green and blue). Each ship carries a headlight beam (randomly yellow, green, pink or cyan) and a soft glow. Markings the player must always read (parking spaces, radiation zones, the arrival bay, the exit, tier coins, ↩ and the wanted-back glow) ignore the dark and stay fully bright. Walls, the island, wrecks and asteroids show only when lit.
 
@@ -74,6 +75,7 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 **Retrieval (from Level 2):**
 - **Who:** 2 of the shift's customers want their ship back, 20–40 s after it parks. A request always leaves at least 30 s of the shift to finish it.
 - **What you do:** the ship shows ↩ and a pulsing translucent glow around its outline until you pick it up, and can be driven again. Drive it onto the EXIT pad to hand it over.
+- **Waiting for a return:** until the request comes, the parked ship shows a countdown under its badge ("↩ 0:12"). When every ship on the lot is parked and a return is still coming, the HUD shows "Waiting for customers to return – next in 0:12" in yellow, so players know the shift isn't stuck. (Not in the online duel, where every ship leaves 20–30 s after parking.)
 - **Payment:** the fee is paid at parking. The tip, and the customer counting as served, come at the hand-over.
 - **Served:** a customer is served when parked (if they stay) or returned (if they leave). The shift is won when everyone is served.
 

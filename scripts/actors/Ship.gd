@@ -33,6 +33,7 @@ var ring_color := Color.TRANSPARENT:
 		ring_color = value
 		_ring.queue_redraw()
 var customer: Customer  # null = no badge
+var show_return_timer := false  # set by the level: a parked leaver shows "↩ 0:12" under its badge
 
 var is_driven: bool = false
 var pilot: ShipPilot = LocalPilot.new()  # where the buttons come from; a NetPilot for a rival simulated over the network
@@ -276,7 +277,8 @@ func _draw_badge() -> void:
 		_draw_orphan_badge()
 		return
 	var wants := customer != null and customer.wants_space != "" and not customer.parked_once
-	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested and not wants):
+	var countdown := customer.return_countdown() if customer != null and show_return_timer else ""
+	if customer == null or (customer.tier == Customer.Tier.NONE and not customer.requested and not wants and countdown == ""):
 		return
 	var font := ThemeDB.fallback_font
 	if customer.tier != Customer.Tier.NONE:
@@ -286,6 +288,8 @@ func _draw_badge() -> void:
 			_badge.draw_string(font, Vector2(-22, 38), "₵%d" % customer.tip_shown(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
 	if wants:
 		_badge.draw_string(font, Vector2(-30, 62), "→ %s" % customer.wants_space, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, customer.color())
+	if countdown != "":
+		_badge.draw_string(font, Vector2(-30, 62), countdown, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color.WHITE)
 	if customer.requested:
 		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 150.0)
 		_badge.draw_string(font, Vector2(-48, 10), "↩", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color(1, 1, 1, pulse))
