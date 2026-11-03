@@ -257,7 +257,9 @@ func _on_server_disconnected() -> void:
 func _hello(version: int) -> void:
 	if not _is_host or _connected:
 		return
-	var sender := _api.get_remote_sender_id()
+	var sender := _sender()
+	if sender == 0:
+		return
 	if version != PROTOCOL_VERSION:
 		_reject.rpc_id(sender)
 		_peer.get_peer(sender).peer_disconnect_later()  # after the reject is delivered
@@ -297,7 +299,7 @@ func leave() -> void:
 
 @rpc("any_peer", "reliable")
 func _x_rematch() -> void:
-	if not _connected or _api.get_remote_sender_id() != _rival_id:
+	if not _connected or _sender() != _rival_id:
 		return
 	heard()
 	rival_wants_rematch = true
@@ -306,8 +308,13 @@ func _x_rematch() -> void:
 
 @rpc("any_peer", "reliable")
 func _x_leave() -> void:
-	if _connected and _api.get_remote_sender_id() == _rival_id:
+	if _connected and _sender() == _rival_id:
 		_lose_rival.call_deferred()
+
+
+## The peer that sent the RPC being handled, or 0 once the connection is gone (a late RPC).
+func _sender() -> int:
+	return _api.get_remote_sender_id() if _api != null else 0
 
 
 @rpc("any_peer", "unreliable")

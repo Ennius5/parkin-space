@@ -4,6 +4,10 @@ extends RefCounted
 
 const FLAG_PARKED := 4
 const FLAG_GLOWING := 8
+const MAX_SHIPS := 512  # a guest ignores a snapshot or ship list claiming more ships than this
+const SNAPSHOT_HEADER := 4 + 4 + 4 + 4 + 1  # tick, time_left, two scores, lit count
+const SNAPSHOT_SHIP := 2 + 4 + 4 + 4 + 1 + 2  # id, x, y, rot, flags, firing
+const SHIP_ENTRY_MIN := 2 + 4 + 5  # id, string length, five bytes (the name may be empty)
 
 
 ## Packs a snapshot dictionary (tick, time_left, scores, lit, ships) into bytes.
@@ -37,20 +41,29 @@ static func pack_snapshot(s: Dictionary) -> PackedByteArray:
 	return p.data_array
 
 
-## Unpacks bytes made by pack_snapshot.
+## Unpacks bytes made by pack_snapshot. {} when the bytes are short or claim more than
+## MAX_SHIPS ships (a bad packet must not make the guest loop or allocate without bound).
 static func unpack_snapshot(b: PackedByteArray) -> Dictionary:
+	if b.size() < SNAPSHOT_HEADER:
+		return {}
 	var p := StreamPeerBuffer.new()
 	p.data_array = b
 	var s := {}
 	s.tick = p.get_u32()
 	s.time_left = p.get_float()
 	s.scores = PackedInt32Array([p.get_32(), p.get_32()])
+	var lit_count := p.get_u8()  # u8: never more than 255 spaces
+	if p.get_available_bytes() < lit_count + 2:
+		return {}
 	var lit := PackedInt32Array()
-	for i in p.get_u8():
+	for i in lit_count:
 		lit.append(p.get_8())
 	s.lit = lit
+	var count := p.get_u16()
+	if count > MAX_SHIPS or p.get_available_bytes() < count * SNAPSHOT_SHIP:
+		return {}
 	var ships: Array = []
-	for i in p.get_u16():
+	for i in count:
 		var ship := {}
 		ship.id = p.get_u16()
 		var x := p.get_float()
@@ -82,15 +95,26 @@ static func pack_ship_list(ships: Array) -> PackedByteArray:
 	return p.data_array
 
 
-## Unpacks bytes made by pack_ship_list.
+## Unpacks bytes made by pack_ship_list. [] when the bytes are short or claim more than
+## MAX_SHIPS ships.
 static func unpack_ship_list(b: PackedByteArray) -> Array:
+	if b.size() < 2:
+		return []
 	var p := StreamPeerBuffer.new()
 	p.data_array = b
+	var count := p.get_u16()
+	if count > MAX_SHIPS or p.get_available_bytes() < count * SHIP_ENTRY_MIN:
+		return []
 	var out: Array = []
-	for i in p.get_u16():
+	for i in count:
+		if p.get_available_bytes() < SHIP_ENTRY_MIN:
+			return []
 		var e := {}
 		e.id = p.get_u16()
-		e.spec_path = p.get_utf8_string()
+		var name_size := p.get_u32()
+		if p.get_available_bytes() < name_size + 5:
+			return []
+		e.spec_path = p.get_utf8_string(name_size)
 		e.paint = p.get_u8()
 		e.headlight = p.get_u8()
 		e.tier = p.get_u8()

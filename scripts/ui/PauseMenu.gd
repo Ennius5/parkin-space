@@ -12,6 +12,8 @@ signal cctv_changed(level: int)
 const QUIT_TEXT := "Quit to Level Select"
 const LEAVE_TEXT := "Leave match"
 const CONFIRM_TEXT := "Leave the match?"
+const TITLE_TEXT := "Paused"
+const ONLINE_TITLE_TEXT := "Match still running"  # online nothing stops: the rival plays on
 
 var _panel := Control.new()
 var _buttons: VBoxContainer  # the menu itself, hidden while the confirm shows
@@ -41,10 +43,13 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 14)
 	stack.add_child(box)
 	var title := Label.new()
-	title.text = "Paused"
+	title.name = "Title"
+	title.text = TITLE_TEXT
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 48)
 	box.add_child(title)
+	title.owner = self
+	title.unique_name_in_owner = true
 	_add_button(box, "Resume", "Resume").pressed.connect(func() -> void: resume_pressed.emit())
 	_add_button(box, "Restart", "Restart").pressed.connect(func() -> void: restart_pressed.emit())
 	_add_button(box, "SoundToggle", "").pressed.connect(_on_sound_pressed)
@@ -93,6 +98,7 @@ func _build_confirm(stack: VBoxContainer) -> void:
 ## Online: the match can't be paused, restarted or quit without a word.
 func set_online(on: bool) -> void:
 	_online = on
+	(get_node("%Title") as Label).text = ONLINE_TITLE_TEXT if on else TITLE_TEXT
 	(get_node("%Restart") as Button).visible = not on
 	(get_node("%Quit") as Button).text = LEAVE_TEXT if on else QUIT_TEXT
 

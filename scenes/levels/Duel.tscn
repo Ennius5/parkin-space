@@ -36,7 +36,6 @@ size = Vector2(40, 1480)
 script = ExtResource("1_level")
 goal_text = "Out-earn your rival"
 customer_queue = Array[ExtResource("2_spec")]([ExtResource("12_junker"), ExtResource("10_drone"), ExtResource("13_recon"), ExtResource("14_rec"), ExtResource("15_milano"), ExtResource("16_miner"), ExtResource("17_nostrom"), ExtResource("18_agri"), ExtResource("21_hammer"), ExtResource("22_research")])
-arrival_interval = 6.0
 use_tiers = true
 
 [node name="Floor" type="Polygon2D" parent="."]

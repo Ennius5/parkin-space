@@ -16,7 +16,7 @@ var guest_bits := 0  # host: the guest's newest buttons, as NetPilot bits
 
 ## Sends a match message to the rival, or records it when there's no live session.
 func send(method: StringName, args: Array) -> void:
-	if session != null and session.is_active():
+	if session != null and session.is_active() and is_inside_tree():
 		var peer := session.rival_id()
 		if peer != 0 and peer in multiplayer.get_peers():  # not one that dropped a moment ago
 			callv(&"rpc_id", [peer, method] + args)
@@ -27,10 +27,14 @@ func send(method: StringName, args: Array) -> void:
 
 
 ## True when the RPC being handled came from the connected rival; that also feeds the watchdog.
+## False for a late RPC once this node, its multiplayer API or the session's peer is gone.
 func _from_rival() -> bool:
-	if session == null or not session.is_active():
+	if session == null or not session.is_active() or not is_inside_tree():
 		return false
-	var sender := multiplayer.get_remote_sender_id()
+	var api := multiplayer
+	if api == null or api.multiplayer_peer == null:
+		return false
+	var sender := api.get_remote_sender_id()
 	if sender == 0 or sender != session.rival_id():
 		return false
 	session.heard()
@@ -102,7 +106,9 @@ func go() -> void:
 @rpc("authority", "call_remote", "unreliable_ordered")
 func snapshot(bytes: PackedByteArray) -> void:
 	if _from_rival() and _is_guest():
-		level.mirror.on_snapshot(NetProtocol.unpack_snapshot(bytes))
+		var s := NetProtocol.unpack_snapshot(bytes)
+		if not s.is_empty():  # empty = a malformed snapshot
+			level.mirror.on_snapshot(s)
 
 
 @rpc("authority", "call_remote", "reliable")

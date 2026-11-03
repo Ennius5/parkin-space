@@ -41,7 +41,7 @@ func setup(duel: DuelLevel, ships: Node2D, spaces: Node2D, hud: HUD, controls: S
 
 ## The mirror ship with this network id, or null.
 func ship_by_id(id: int) -> Ship:
-	var ship: Ship = _mirrors.get(id)
+	var ship: Variant = _mirrors.get(id)  # untyped: it may hold a freed ship
 	return ship if is_instance_valid(ship) else null
 
 
@@ -72,7 +72,8 @@ func on_go() -> void:
 
 
 func on_snapshot(s: Dictionary) -> void:
-	_buffer.push(s, _now())
+	if not s.is_empty():
+		_buffer.push(s, _now())
 
 
 ## Builds mirror ships from ship list entries. arriving = they just came in at the bay.
@@ -91,11 +92,16 @@ func add_ships(entries: Array, arriving := true) -> void:
 	_hud.set_customers_left(maxi(0, _ships_total - _ships_added))
 
 
+## The host handed this ship back: it leaves the lot, and any open list of ships it's in.
 func remove_ship(id: int) -> void:
-	var ship := ship_by_id(id)
+	var held: Variant = _mirrors.get(id)
 	_mirrors.erase(id)
-	if ship == null:
+	if not is_instance_valid(held):
+		_ids.erase(held)  # a ship freed some other way: drop its keys anyway
+		_claimed.erase(held)
 		return
+	var ship: Ship = held
+	level.close_picker_listing(ship)
 	if level.driven_ship == ship:
 		_follow(null)
 	_unclaim(ship)

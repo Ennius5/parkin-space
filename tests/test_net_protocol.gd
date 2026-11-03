@@ -90,3 +90,28 @@ func test_buffer_drops_old() -> void:
 	for i in 15:
 		b.push(_snap(float(i), i), 1.0 + i * 0.05)
 	assert_true(b.size() <= 10)
+
+
+func test_oversized_ship_list_is_ignored() -> void:
+	var p := StreamPeerBuffer.new()
+	p.put_u16(60000)  # far more ships than any lot holds, and no data behind the count
+	assert_eq(NetProtocol.unpack_ship_list(p.data_array), [])
+	var short := NetProtocol.pack_ship_list([{"id": 1, "spec_path": "res://resources/ships/Milano.tres",
+			"paint": 0, "headlight": 0, "tier": 0, "wants_retrieval": false}])
+	short.resize(short.size() - 3)  # cut mid-entry
+	short.encode_u16(0, 1)
+	assert_eq(NetProtocol.unpack_ship_list(short), [], "a cut-off list is dropped")
+
+
+func test_oversized_snapshot_is_ignored() -> void:
+	var b := NetProtocol.pack_snapshot(_snap(10.0))
+	var p := StreamPeerBuffer.new()
+	p.data_array = b
+	p.seek(4 + 4 + 8)
+	var lit := p.get_u8()
+	b.encode_u16(4 + 4 + 8 + 1 + lit, NetProtocol.MAX_SHIPS + 1)
+	assert_eq(NetProtocol.unpack_snapshot(b), {}, "too many ships: ignored")
+	var cut := NetProtocol.pack_snapshot(_snap(10.0))
+	cut.resize(cut.size() - 5)
+	assert_eq(NetProtocol.unpack_snapshot(cut), {}, "a cut-off snapshot is dropped")
+	assert_eq(NetProtocol.unpack_snapshot(PackedByteArray()), {})

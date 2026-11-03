@@ -254,7 +254,10 @@ func _request(ship: Ship) -> void:
 	c.requested = true
 	c.request_in = -1.0
 	_cue("request")
+	var driven := _driven_by_anyone(ship)
 	ship.unpark()
+	if driven:
+		ship.driven_since_free = true  # in someone's hands: the black hole keeps pulling it
 	_trackers.erase(ship)
 	if not _return_hint_shown:
 		_return_hint_shown = true
@@ -270,10 +273,10 @@ func _return(ship: Ship) -> void:
 	var space := _space_of(ship)
 	if space:
 		space.release()
-	if _picker.is_open():
-		_picker.close()
+	close_picker_listing(ship)
 	customers.erase(ship)
 	_trackers.erase(ship)
+	_flung_at.erase(ship)
 	_ships.remove_child(ship)
 	ship.queue_free()
 	_pay_tip(c.tip(), valet)  # before serving: the final serve ends the shift
@@ -416,6 +419,12 @@ func _distance_to_hull(ship: Ship, world: Vector2) -> float:
 		var closest := Geometry2D.get_closest_point_to_segment(world, outline[i], outline[(i + 1) % outline.size()])
 		best = minf(best, world.distance_to(closest))
 	return best
+
+
+## Closes the ship list if it offers this ship (which is about to leave the lot).
+func close_picker_listing(ship: Ship) -> void:
+	if _picker.is_open() and _picker.lists(ship):
+		_picker.close()
 
 
 func _on_picked(ship: Ship) -> void:
@@ -701,7 +710,9 @@ func _apply_pull() -> void:
 
 func _sheltered(ship: Ship) -> bool:
 	for space: ParkingSpace in _spaces.get_children():
-		if (space.occupant == null or space.occupant == ship) 				and ParkingRules.fits_class(ship.spec.ship_class, space.space_class) 				and ParkingRules.points_inside(ship.hull_points(), space.global_transform, space.size()):
+		if (space.occupant == null or space.occupant == ship) \
+				and ParkingRules.fits_class(ship.spec.ship_class, space.space_class) \
+				and ParkingRules.points_inside(ship.hull_points(), space.global_transform, space.size()):
 			return true
 	return false
 
@@ -830,6 +841,9 @@ func _eject_orphan(ship: Ship) -> void:
 ## A ship or asteroid whose centre reaches the hole's core is flung out the far side, spinning.
 func _fling_from_core() -> void:
 	var now := Time.get_ticks_msec()
+	for body: Variant in _flung_at.keys():
+		if not is_instance_valid(body):
+			_flung_at.erase(body)  # a ship that left the lot
 	var bodies: Array[RigidBody2D] = []
 	for ship: Ship in _ships.get_children():
 		if not ship.is_parked:

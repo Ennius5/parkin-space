@@ -164,12 +164,3 @@ func test_bad_duel_minutes_fall_back() -> void:
 	assert_eq(gs.duel_minutes, 3)
 	assert_eq(gs.last_ip, "")
 	gs.free()
-
-
-func test_duel_counts() -> void:
-	var gs := _new_state()
-	assert_eq(gs.duel_customers(3), 35)
-	assert_eq(gs.duel_customers(20), 205)
-	assert_eq(gs.duel_retrievals(3), 4)
-	assert_eq(gs.duel_retrievals(20), 27)
-	gs.free()

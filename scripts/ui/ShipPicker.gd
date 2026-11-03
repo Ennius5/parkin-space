@@ -55,7 +55,7 @@ func open(near: Array[Ship], screen_pos: Vector2) -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.custom_minimum_size = Vector2(ROW_WIDTH, ROW_HEIGHT)
 		button.add_theme_font_size_override("font_size", FONT_SIZE)
-		button.pressed.connect(func() -> void: picked.emit(ship))
+		button.pressed.connect(_on_row_pressed.bind(i))
 		button.button_down.connect(func() -> void: _set_highlight(i))
 		button.mouse_entered.connect(func() -> void: _set_highlight(i))
 		row.add_child(swatch)
@@ -93,6 +93,20 @@ func close() -> void:
 
 func is_open() -> bool:
 	return _panel.visible
+
+
+## True when the open list offers this ship.
+func lists(ship: Ship) -> bool:
+	return ship in ships
+
+
+## A row's ship, unless it left the lot (freed) while the list was open: then the list closes.
+func _on_row_pressed(index: int) -> void:
+	var ship: Variant = ships[index] if index < ships.size() else null
+	if is_instance_valid(ship):
+		picked.emit(ship)
+	else:
+		close()
 
 
 func rows() -> Array[Button]:

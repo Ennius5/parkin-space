@@ -106,3 +106,22 @@ func test_picker_row_shows_tier_coin() -> void:
 	picker.queue_free()
 	a.queue_free()
 	b.queue_free()
+
+
+func test_row_of_freed_ship_closes_without_picking() -> void:
+	var picker: ShipPicker = PICKER_SCENE.instantiate()
+	tree.root.add_child(picker)
+	var a := _ship("light_scout", Color.RED, Vector2(300, 300))
+	var b := _ship("light_scout", Color.GREEN, Vector2(360, 300))
+	var ships: Array[Ship] = [a, b]
+	var got: Array = []
+	picker.picked.connect(func(s: Ship) -> void: got.append(s))
+	picker.open(ships, Vector2(320, 300))
+	assert_true(picker.lists(a))
+	var row := picker.rows()[0]
+	a.free()
+	row.pressed.emit()
+	assert_eq(got.size(), 0, "a freed ship is never picked")
+	assert_false(picker.is_open(), "its list closes")
+	picker.queue_free()
+	b.queue_free()

@@ -102,13 +102,3 @@ func shift_seconds() -> float:
 
 func difficulty_name() -> String:
 	return DIFFICULTY_NAMES[difficulty]
-
-
-## Customers in a duel of this length (one every ~6 s, plus a head start).
-static func duel_customers(minutes: int) -> int:
-	return ceili(minutes * 60 / 6.0) + 5
-
-
-## Retrievals in a duel of this length.
-static func duel_retrievals(minutes: int) -> int:
-	return roundi(minutes * 4 / 3.0)

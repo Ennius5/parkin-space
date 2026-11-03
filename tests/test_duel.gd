@@ -795,15 +795,20 @@ func test_guest_mirror_does_not_simulate_black_hole() -> void:
 	var right := level.get_node("EntranceR") as Node2D
 	assert_true(ship.global_position.distance_to(right.global_position) < 0.5, "it arrives at bay R")
 	var hole := level.get_node("BlackHole") as Node2D
-	var spot := hole.global_position + Vector2(-90, 20)
+	var spot := hole.global_position + Vector2(BlackHole.FLING_RADIUS * 0.5, 0.0)  # inside the core
 	ship.driven_since_free = true
 	mirror.on_snapshot({"tick": 1, "time_left": 100.0, "scores": PackedInt32Array([0, 0]),
 			"lit": PackedInt32Array(), "ships": [{"id": 3, "pos": spot, "rot": 0.25, "driver": 0,
 			"parked": false, "glowing": false, "firing": 0}]})
+	assert_false(level.is_physics_processing(), "the guest lot runs no shift physics")
+	assert_false(ship.is_physics_processing(), "nor do its mirror ships")
 	for i in 30:
 		await tree.physics_frame
 	assert_eq(ship.global_position, spot, "the mirror stays exactly where the snapshot puts it")
+	assert_false(level._flung_at.has(ship), "the core never flung it")
+	assert_eq(ship.linear_velocity, Vector2.ZERO)
 	_done_host(level)
+
 
 ## A mirror ship from the host's ship list, already placed by a snapshot.
 func _mirror_ship(level: DuelLevel, id: int, parked: bool) -> Ship:
@@ -841,6 +846,93 @@ func test_guest_done_asks_the_host() -> void:
 	assert_eq(_sent(level, "done"), [[]])
 	_done_host(level)
 
+
+func test_guest_remove_ship_of_freed_ship_drops_its_keys() -> void:
+	var level := await _guest()
+	var ship := _mirror_ship(level, 7, false)
+	ship.get_parent().remove_child(ship)
+	ship.free()
+	level.mirror.remove_ship(7)
+	assert_eq(level.mirror._mirrors.size(), 0)
+	assert_eq(level.mirror._ids.size(), 0, "no stale key for the freed ship")
+	_done_host(level)
+
+
+func test_guest_picker_closes_only_for_its_ships() -> void:
+	var level := await _guest()
+	var listed := _mirror_ship(level, 8, false)
+	_mirror_ship(level, 9, false)
+	var picker := level.get_node("ShipPicker") as ShipPicker
+	picker.open([listed] as Array[Ship], Vector2(400, 300))
+	level.mirror.remove_ship(9)
+	assert_true(picker.is_open(), "another ship leaving keeps the list")
+	level.mirror.remove_ship(8)
+	assert_false(picker.is_open(), "a listed ship leaving closes it")
+	_done_host(level)
+
+
+func test_host_picker_closes_only_for_its_ships() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ships := level.get_node("Ships").get_children()
+	assert_true(ships.size() >= 2, "a ship from each bay")
+	var listed: Ship = ships[0]
+	var other: Ship = ships[1]
+	var picker := level.get_node("ShipPicker") as ShipPicker
+	picker.open([listed] as Array[Ship], Vector2(400, 300))
+	level._return(other)
+	assert_true(picker.is_open(), "the rival's ship leaving keeps the list")
+	level._return(listed)
+	assert_false(picker.is_open(), "a listed ship leaving closes it")
+	_done_host(level)
+
+
+func test_request_on_driven_ship_keeps_the_pull() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ship := _first_ship(level)
+	level.select_ship(ship)
+	assert_true(ship.driven_since_free)
+	level._request(ship)
+	assert_true(ship.driven_since_free, "the hole keeps pulling a ship someone drives")
+	assert_true(level.customer_for(ship).requested)
+	_done_host(level)
+
+
+func test_request_on_parked_ship_unparks_it() -> void:
+	var level := await _host()
+	_skip_countdown(level)
+	var ship := _first_ship(level)
+	_sync(level)._on_select(level.ship_id(ship))
+	assert_true(_park_spot(level, ship) != null)
+	level._check_parking(0.016)
+	_sync(level)._on_done()
+	assert_true(ship.is_parked)
+	level._request(ship)
+	assert_false(ship.is_parked)
+	assert_false(ship.driven_since_free, "a parked ship waits to be picked up again")
+	_done_host(level)
+
+
+func test_flung_at_forgets_freed_ships() -> void:
+	var level := await _host()
+	var gone := Node2D.new()
+	level._flung_at[gone] = 0
+	gone.free()
+	level._fling_from_core()
+	assert_eq(level._flung_at.size(), 0, "freed ships are pruned")
+	_done_host(level)
+
+
+func test_net_pilot_actions_follow_drive_actions() -> void:
+	var expected: Array[StringName] = []
+	for a in Ship.DRIVE_ACTIONS:
+		expected.append(StringName(a))
+	expected.append(&"brake")
+	expected.append(&"stop_rotation")
+	assert_eq(NetPilot.ACTIONS, expected)
+
+
 func test_scene_loads_use_the_long_silence_limit() -> void:
 	var level := await _lobby_duel(true, 24615)
 	var session := level.session
@@ -860,3 +952,23 @@ func test_guest_go_ends_the_load_grace() -> void:
 	assert_false(level.session.loading)
 	_done_host(level)
 
+
+func test_net_sync_ignores_rpc_without_multiplayer() -> void:
+	var root := Node.new()
+	root.name = "SyncRoot"
+	tree.root.add_child(root)
+	tree.set_multiplayer(SceneMultiplayer.new(), root.get_path())
+	var session := NetSession.new()
+	session.port = 24608
+	root.add_child(session)
+	assert_eq(session.host(), OK)
+	var sync := NetSync.new()  # outside the tree: its multiplayer is null, like a node being freed
+	sync.session = session
+	sync.input(5)
+	assert_eq(sync.guest_bits, 0, "ignored")
+	session.close()
+	sync.input(6)  # and with the session closed
+	assert_eq(sync.guest_bits, 0)
+	sync.free()
+	tree.set_multiplayer(null, root.get_path())
+	root.free()

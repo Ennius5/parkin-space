@@ -138,3 +138,15 @@ func test_online_pause_does_not_pause() -> void:
 	var session := level.session
 	_done(level)
 	session.free()
+
+
+func test_pause_title_says_whether_the_match_runs_on() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	var title := menu.get_node("%Title") as Label
+	assert_eq(title.text, "Paused")
+	menu.set_online(true)
+	assert_eq(title.text, "Match still running", "online the match doesn't stop")
+	menu.set_online(false)
+	assert_eq(title.text, "Paused")
+	menu.free()
