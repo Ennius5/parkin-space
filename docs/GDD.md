@@ -92,14 +92,22 @@ Ship quirks (saucer, junker) first appear in Levels 3–5.
 Solo campaign: the 5 levels above, fully playable in airplane mode.
 
 ## 8. Online mode
-- **Type:** 1-vs-1 competitive, real-time, same Wi-Fi (Godot High-level Multiplayer, `ENetMultiplayerPeer`). One phone hosts and shows its IP; the other joins.
-- **Match:** both players valet in the same lot with a shared customer queue during a 3-minute shift. Highest earnings wins. Blocking and bumping the rival is allowed.
-- **Authority:** the host runs all physics, scoring and customer assignment. The guest sends only its button presses; the host sends back ship positions, rotations, scores and timer.
-- **Rules:** a ship being driven is locked to its driver. Each player pays for dents to the ship they are driving.
-- **Errors:** 5-second join timeout → "Cannot reach host. Check that you are on the same Wi-Fi." If either player leaves → message and return to Mode Select.
+- **Type:** 1-vs-1 competitive, real-time, same Wi-Fi (Godot High-level Multiplayer, `ENetMultiplayerPeer`). Mode Select → Online opens the Lobby: one phone taps Host and shows its Wi-Fi IP (the Lobby prefers the Wi-Fi address over virtual adapters) ("Hosting on <IP> — waiting for a rival…"); the other types that IP (remembered for next time) and taps Join.
+- **Match length:** the host picks 3–20 minutes in 1-minute steps with the − 3:00 + stepper above Host (saved as the next default, 3:00 on first run). The guest is told the host's choice when it connects.
+- **Match:** both phones load the symmetric duel lot, the host waits for the guest to load, then both count down 3-2-1. Host = cyan, guest = magenta; a driven ship is ringed in its driver's colour. Highest earnings when the clock runs out wins. Blocking and bumping the rival is allowed. Tiers & tips, darkness and floodlights as offline; no special requests or orphans.
+- **Arrival bays:** two shared ARRIVALS bays at the top. Slot N has the same class and tier in both bays (models may differ), seeded so both deliver the same sequence. Each bay delivers a new ship every 10 s; a bay camped by a ship catches up once cleared. Each bay has ceil(minutes×6)+3 slots.
+- **Black hole:** a black hole sits just below the bays (Level 4 rules, no asteroids).
+- **Parked ships:** parked ships can be picked up and moved (Level 5 rule); only the first park pays.
+- **Departure:** every ship leaves 20–30 s after its first park. The parker gets the fee; whoever drives it onto the EXIT gets the tier tip.
+- **Blame:** taking the controls of a ship, or knocking an undriven one, marks it as yours. The mark passes along a knock chain and clears when the ship is parked. Driven vs driven: the faster ship pays (brake checks work; reversing into someone faster than you costs you). A knocked ship that hits a rival's driven ship while moving faster than it charges the rammer.
+- **Authority:** the host runs all physics, scoring and customer assignment. The guest sends only its button presses and ship/Done requests; the host sends back ship positions, rotations, scores, events and the timer.
+- **Rules:** a ship being driven is locked to its driver. Dents are charged by the blame rules above, not simply to the driver.
+- **Pause:** online the menu doesn't stop the match; Restart is hidden and Quit becomes "Leave match", which asks "Leave the match?" (Yes / No).
+- **Result:** "You win" / "You lose" / "Draw" with both scores. Rematch: when both players have tapped it ("Waiting for rival…" until then), the same pair reloads the lot with the same length and a new seed. Leave goes to Mode Select. Online results never touch offline unlocks or stars.
+- **Errors:** 5-second join timeout → "Cannot reach host. Check that you are on the same Wi-Fi."; a different game version (protocol version 3) → "Your rival has a different version of the game." If either player leaves or the link drops (3 s of silence), the other phone shows "Your rival left the match" on Mode Select — from the lot, the countdown or the result screen.
 
 ## 9. Screens list
-Title → Main Menu (Play, Settings, Credits) → Mode Select (Offline / Online) → Level Select (lock icons) → Game (HUD: goal, shift timer, pay, customers left; lot view and driving view) → Pause (Resume, Restart, Sound on/off, CCTV Off/Light/Medium/Heavy, Quit) → Result (earnings, stars, Retry / Next / Menu). Online: Lobby (Host, IP field, Join, status) → Online Match → Online Result → Mode Select. Every screen has Back; Android back gesture also goes back.
+Title → Main Menu (Play, Settings, Credits) → Mode Select (Offline / Online) → Level Select (lock icons) → Game (HUD: goal, shift timer, pay, customers left; lot view and driving view) → Pause (Resume, Restart, Sound on/off, CCTV Off/Light/Medium/Heavy, Quit) → Result (earnings, stars, Retry / Next / Menu). Online: Mode Select → Lobby (− 3:00 + match length above Host, IP field, Join, status) → Duel lot (3-2-1 countdown; Pause has Sound, CCTV and Leave match) → Online Result (You win / You lose / Draw, Rematch, Leave) → Rematch reloads the duel lot, Leave → Mode Select. Every screen has Back; Android back gesture also goes back.
 
 ## 10. Art and sound style; asset sources and licenses
 - **Art:** bright, cartoony 2D top-down. Ships hand-drawn by the developer in Krita/LibreSprite (original). Asteroids, wrecks and lot props from Kenney space packs (CC0) or original. Parking spaces as pulsing green outlines, sized and labeled L / M / H.

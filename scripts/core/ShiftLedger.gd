@@ -15,6 +15,7 @@ var served: int = 0
 var customers: int
 var time_left: float
 var outcome: Outcome = Outcome.PLAYING
+var endless := false  # duel mode: pay may go negative, no FIRED or WON; only the clock ends it
 
 
 func _init(base_pay: int, customer_count: int, shift_seconds: float) -> void:
@@ -23,8 +24,18 @@ func _init(base_pay: int, customer_count: int, shift_seconds: float) -> void:
 	time_left = shift_seconds
 
 
+## A duel ledger: starts at 0, dents can push it negative, only the timer ends it.
+static func duel(seconds: float) -> ShiftLedger:
+	var l := ShiftLedger.new(0, 0, seconds)
+	l.endless = true
+	return l
+
+
 func add_dent(cost: int) -> void:
 	if outcome != Outcome.PLAYING:
+		return
+	if endless:
+		pay -= cost
 		return
 	pay = maxi(pay - cost, 0)
 	if pay == 0:
@@ -58,6 +69,8 @@ func serve_customer(fee: int = PARK_FEE) -> void:
 		return
 	served += 1
 	earned += fee
+	if endless:
+		return
 	if served >= customers:
 		outcome = Outcome.WON
 

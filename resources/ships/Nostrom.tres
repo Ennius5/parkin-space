@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="ShipSpec" format=3]
+[gd_resource type="Resource" script_class="ShipSpec" format=3 uid="uid://djuxhlirap8sp"]
 
-[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom_lights.png" id="1_dxw6b"]
-[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom_paint.png" id="2_e6lw2"]
-[ext_resource type="Script" path="res://scripts/core/ShipSpec.gd" id="3_fbymv"]
-[ext_resource type="Texture2D" path="res://art/ships/medium/Nostrom/Nostrom.png" id="4_l2vec"]
-[ext_resource type="Script" path="res://scripts/core/ThrusterSpec.gd" id="5_mpmi4"]
+[ext_resource type="Texture2D" uid="uid://ds2cnvqv3eomb" path="res://art/ships/medium/Nostrom/Nostrom_lights.png" id="1_dxw6b"]
+[ext_resource type="Texture2D" uid="uid://b8o521xvconqu" path="res://art/ships/medium/Nostrom/Nostrom_paint.png" id="2_e6lw2"]
+[ext_resource type="Script" uid="uid://be0h6ylj18qcb" path="res://scripts/core/ShipSpec.gd" id="3_fbymv"]
+[ext_resource type="Texture2D" uid="uid://shunwbk68wkq" path="res://art/ships/medium/Nostrom/Nostrom.png" id="4_l2vec"]
+[ext_resource type="Script" uid="uid://b4ewo2kbt8m4r" path="res://scripts/core/ThrusterSpec.gd" id="5_mpmi4"]
 
 [sub_resource type="Resource" id="Resource_dxw6b"]
 script = ExtResource("5_mpmi4")

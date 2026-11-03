@@ -11,8 +11,11 @@ const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
 const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
 const BUMP_SOUND_SPEED := 20.0  # px/s; gentler contacts (resting, nudging) stay silent
-const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
-const HEADLIGHT_SCALE := 1.6
+const GLOW_SCALE := 1.8  # the soft light around a ship, relative to its longest side
+const HEADLIGHT_SCALE := 1.9
+const HEADLIGHT_SETBACK := 20.0
+const RING_WIDTH := 3.0  # the driver ring in a duel
+const RING_GAP := 5.0  # how far the ring sits outside the hull
 const HEADLIGHT_COLORS: Array[Color] = [Color(1.0, 0.9, 0.3), Color(0.4, 1.0, 0.45), Color(1.0, 0.45, 0.8), Color(0.3, 0.95, 1.0)]  # yellow, green, pink, cyan
 const CLASS_COLORS := {
 	ShipSpec.ShipClass.LIGHT: Color(0.35, 0.85, 0.95),
@@ -22,13 +25,24 @@ const CLASS_COLORS := {
 
 @export var spec: ShipSpec
 var paint_color := Color.WHITE  # set before the ship enters the tree
+var paint_index := -1  # which Level.PAINT_COLORS entry paint_color is, set by the level
+var headlight_index := -1  # which HEADLIGHT_COLORS entry to use; below 0 = a random one
+## The driver's colour in a duel, drawn as a ring around the hull; transparent = no ring.
+var ring_color := Color.TRANSPARENT:
+	set(value):
+		ring_color = value
+		_ring.queue_redraw()
 var customer: Customer  # null = no badge
 
 var is_driven: bool = false
+var pilot: ShipPilot = LocalPilot.new()  # where the buttons come from; a NetPilot for a rival simulated over the network
+var last_driver := -1  # valet id of the last driver, set by the Level
+var _local_drive := true  # driven from this device: it takes the camera and the thruster sound
 var is_parked: bool = false
 var firing := PackedInt32Array()  # indices into spec.thrusters that fired this physics frame
 
 var _prev_velocity := Vector2.ZERO
+var _mark_before := -1  # last_driver at the start of this physics step, before any blame
 
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _paint: Sprite2D = $Paint
@@ -41,6 +55,7 @@ var driven_since_free := false  # taken in hand since it arrived or left its spa
 var _badge := Node2D.new()
 var _request_glow := Node2D.new()
 var _flames := Node2D.new()  # thruster exhaust: it glows, so the dark never shades it
+var _ring := Node2D.new()
 
 
 func _ready() -> void:
@@ -86,6 +101,10 @@ func _ready() -> void:
 	_flames.material = Lighting.unlit()
 	_flames.draw.connect(_draw_flames)
 	add_child(_flames)
+	_ring.name = "Ring"
+	_ring.material = Lighting.unlit()
+	_ring.draw.connect(_draw_ring)
+	add_child(_ring)
 	_add_lights()
 
 
@@ -95,9 +114,9 @@ func _add_lights() -> void:
 	head.name = "Headlight"
 	head.texture = Lighting.cone_texture()
 	head.texture_scale = HEADLIGHT_SCALE
-	head.energy = 1.4
-	head.color = HEADLIGHT_COLORS.pick_random()
-	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE)
+	head.energy = 1.9
+	head.color = HEADLIGHT_COLORS[headlight_index] if headlight_index >= 0 else HEADLIGHT_COLORS.pick_random()
+	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE + HEADLIGHT_SETBACK)
 	add_child(head)
 	var glow := PointLight2D.new()
 	glow.name = "Glow"
@@ -162,13 +181,14 @@ func lights_level() -> float:
 
 func _physics_process(_delta: float) -> void:
 	_prev_velocity = linear_velocity
+	_mark_before = last_driver
 	var was_firing := firing
 	firing = PackedInt32Array()
 	if is_driven:
 		_fire_thrusters()
 	if firing != was_firing:
 		_flames.queue_redraw()
-	if is_driven:
+	if is_driven and _local_drive:
 		if firing.is_empty():
 			Sound.stop_thruster()
 		else:
@@ -178,10 +198,10 @@ func _physics_process(_delta: float) -> void:
 func _fire_thrusters() -> void:
 	var held := PackedStringArray()
 	for action in DRIVE_ACTIONS:
-		if Input.is_action_pressed(action):
+		if pilot.is_pressed(action):
 			held.append(action)
-	var braking := Input.is_action_pressed("brake") and linear_velocity.length() > 0.5
-	var stopping_spin := Input.is_action_pressed("stop_rotation") and absf(angular_velocity) > 0.01
+	var braking := pilot.is_pressed("brake") and linear_velocity.length() > 0.5
+	var stopping_spin := pilot.is_pressed("stop_rotation") and absf(angular_velocity) > 0.01
 	var against_drift := _local_against_drift()
 	var spin_sign := -signf(angular_velocity)
 	for i in spec.thrusters.size():
@@ -200,13 +220,13 @@ func _fire_thrusters() -> void:
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if not is_driven:
 		return
-	if Input.is_action_pressed("brake") and state.linear_velocity.length() > 0.0:
+	if pilot.is_pressed("brake") and state.linear_velocity.length() > 0.0:
 		var against := global_transform.basis_xform_inv(-state.linear_velocity).normalized()
 		var brake_force := 0.0
 		for t in spec.thrusters:
 			brake_force += t.push_along(against)
 		state.linear_velocity = state.linear_velocity.move_toward(Vector2.ZERO, brake_force / mass * state.step)
-	if Input.is_action_pressed("stop_rotation") and state.angular_velocity != 0.0:
+	if pilot.is_pressed("stop_rotation") and state.angular_velocity != 0.0:
 		var spin_sign := -signf(state.angular_velocity)
 		var spin_torque := 0.0
 		for t in spec.thrusters:
@@ -220,13 +240,16 @@ func _local_against_drift() -> Vector2:
 	return global_transform.basis_xform_inv(-linear_velocity).normalized()
 
 
-func set_driven(on: bool) -> void:
+## A local drive takes the drive camera and plays the thruster sound; a remote one (the rival) does neither.
+func set_driven(on: bool, local := true) -> void:
 	is_driven = on
-	if not on:
+	_local_drive = local
+	if not on and local:
 		Sound.stop_thruster()
 	if on:
 		driven_since_free = true
-		_drive_camera.make_current()
+		if local:
+			_drive_camera.make_current()
 		if customer and customer.requested:
 			customer.request_seen = true
 
@@ -234,6 +257,7 @@ func set_driven(on: bool) -> void:
 func set_parked() -> void:
 	is_parked = true
 	is_driven = false
+	last_driver = -1  # a parked ship answers to nobody
 	set_deferred("freeze", true)
 	modulate = Color(1, 1, 1, 0.7)
 
@@ -291,19 +315,44 @@ func _draw() -> void:
 		_draw_placeholder_hull()
 
 
+## Shows flames for the given thrusters without firing them (a duel guest's mirror ship).
+func show_firing(indices: PackedInt32Array) -> void:
+	if indices != firing:
+		firing = indices
+		_flames.queue_redraw()
+
+
 func _draw_flames() -> void:
 	for i in firing:
 		_draw_flame(spec.thrusters[i])
+
+
+## The hull outline in ship coordinates: the polygon, or the hull rectangle without one.
+func _outline() -> PackedVector2Array:
+	if spec.hull_polygon.size() >= 3:
+		return spec.hull_polygon
+	var h := spec.hull_size / 2
+	return PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+
+
+## A thin ring in the driver's colour just outside the hull, bright even in the dark.
+func _draw_ring() -> void:
+	if ring_color.a == 0.0:
+		return
+	var outline := _outline()
+	var grown := Geometry2D.offset_polygon(outline, RING_GAP, Geometry2D.JOIN_ROUND)
+	if not grown.is_empty():
+		outline = grown[0]
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	_ring.draw_polyline(closed, ring_color, RING_WIDTH, true)
 
 
 ## A translucent pulsing outline around the hull, drawn under the ship's art.
 func _draw_glow() -> void:
 	if not is_glowing():
 		return
-	var outline := spec.hull_polygon
-	if outline.size() < 3:
-		var h := spec.hull_size / 2
-		outline = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+	var outline := _outline()
 	var closed := outline.duplicate()
 	closed.append(outline[0])
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 250.0)
@@ -334,6 +383,8 @@ func _draw_placeholder_hull() -> void:
 
 
 func _on_body_entered(other: Node) -> void:
+	if other is Ship:
+		blame_from(other as Ship)
 	if is_parked:
 		return
 	var other_velocity := Vector2.ZERO
@@ -352,15 +403,42 @@ func _on_body_entered(other: Node) -> void:
 		bumped.emit(self)
 
 
-## Exactly one ship pays for a ship-to-ship collision: the driven one, else the one with the lower id.
+## Blame follows the knocker: a driven ship marks an undriven, unparked ship it touches with its
+## valet (unless that ship is a rival's knocked ship ramming it); between undriven ships the slower
+## (struck) one takes the faster one's mark, if it has one.
+## Reads only pre-step state, so both ships' handlers agree whichever runs first.
+func blame_from(other: Ship) -> void:
+	if is_parked or is_driven or other.is_parked:
+		return
+	if other.is_driven:
+		if not _rams_driven(other):
+			last_driver = other.last_driver  # a driver's mark is its own valet, never changed by blame
+	elif other._mark_before >= 0 and other._prev_velocity.length() > _prev_velocity.length():
+		last_driver = other._mark_before
+
+
+## True when this undriven ship, knocked by another valet, hits the driven ship faster than it moves:
+## the rammer's valet answers for it, not the driver.
+func _rams_driven(driven: Ship) -> bool:
+	return _mark_before >= 0 and _mark_before != driven.last_driver 			and _prev_velocity.length() > driven._prev_velocity.length()
+
+
+## Exactly one ship pays for a ship-to-ship collision: the driven one (the faster one if both are
+## driven, the rammer), unless a rival's knocked ship rams it; else the one with the lower id.
 func _pays_for_collision_with(other: Ship) -> bool:
 	if other.is_parked:
 		return true  # parked ships never report collisions
 	if is_driven != other.is_driven:
-		return is_driven
+		var rams := other._rams_driven(self) if is_driven else _rams_driven(other)
+		return is_driven != rams
+	if is_driven:
+		var mine := _prev_velocity.length()
+		var theirs := other._prev_velocity.length()
+		if not is_equal_approx(mine, theirs):
+			return mine > theirs
 	return get_instance_id() < other.get_instance_id()
 
 
 func _exit_tree() -> void:
-	if is_driven:
+	if is_driven and _local_drive:
 		Sound.stop_thruster()

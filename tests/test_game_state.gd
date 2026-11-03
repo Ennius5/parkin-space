@@ -137,3 +137,30 @@ func test_bad_cctv_value_falls_back_to_medium() -> void:
 	gs.load_progress()
 	assert_eq(gs.cctv_level, 2)
 	gs.free()
+
+
+func test_duel_settings_saved() -> void:
+	var gs := _fresh_state()
+	assert_eq(gs.duel_minutes, 3, "3 minutes by default")
+	assert_eq(gs.last_ip, "")
+	gs.duel_minutes = 10
+	gs.last_ip = "192.168.1.5"
+	gs.save_progress()
+	gs.free()
+	var reloaded := _new_state()
+	reloaded.load_progress()
+	assert_eq(reloaded.duel_minutes, 10)
+	assert_eq(reloaded.last_ip, "192.168.1.5")
+	reloaded.free()
+
+
+func test_bad_duel_minutes_fall_back() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("settings", "duel_minutes", 25)
+	cfg.set_value("settings", "last_ip", 7)
+	cfg.save(TEST_PATH)
+	var gs := _new_state()
+	gs.load_progress()
+	assert_eq(gs.duel_minutes, 3)
+	assert_eq(gs.last_ip, "")
+	gs.free()

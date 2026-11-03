@@ -108,3 +108,45 @@ func test_restart_and_quit_actions() -> void:
 
 func test_back_gesture_doesnt_quit_the_app() -> void:
 	assert_false(ProjectSettings.get_setting("application/config/quit_on_go_back", true))
+
+
+func test_online_pause_does_not_pause() -> void:
+	_real_save = GameState.save_path
+	_real_sound = GameState.sound_on
+	GameState.save_path = TEST_SAVE
+	var level: DuelLevel = load("res://scenes/levels/Duel.tscn").instantiate()
+	level.change_scene_on_end = false
+	level.role = DuelLevel.Role.HOST
+	level.session = NetSession.new()  # never connects
+	tree.root.add_child(level)
+	await tree.process_frame
+	level.open_pause()
+	assert_false(tree.paused, "the match keeps running")
+	assert_true(_menu(level).is_open())
+	assert_false((_menu(level).get_node("%Restart") as Button).visible, "no Restart online")
+	var quit := _menu(level).get_node("%Quit") as Button
+	assert_eq(quit.text, "Leave match")
+	quit.pressed.emit()
+	assert_true(_menu(level).get_node("%Confirm").visible, "asks first")
+	assert_eq((_menu(level).get_node("%ConfirmText") as Label).text, "Leave the match?")
+	(_menu(level).get_node("%No") as Button).pressed.emit()
+	assert_false(_menu(level).get_node("%Confirm").visible)
+	assert_eq(level.last_pause_action, "", "No keeps playing")
+	quit.pressed.emit()
+	(_menu(level).get_node("%Yes") as Button).pressed.emit()
+	assert_eq(level.last_pause_action, "leave")
+	var session := level.session
+	_done(level)
+	session.free()
+
+
+func test_pause_title_says_whether_the_match_runs_on() -> void:
+	var menu := PauseMenu.new()
+	tree.root.add_child(menu)
+	var title := menu.get_node("%Title") as Label
+	assert_eq(title.text, "Paused")
+	menu.set_online(true)
+	assert_eq(title.text, "Match still running", "online the match doesn't stop")
+	menu.set_online(false)
+	assert_eq(title.text, "Paused")
+	menu.free()

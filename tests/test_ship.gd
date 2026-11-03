@@ -424,3 +424,179 @@ func test_badge_stays_upright_at_the_lower_left() -> void:
 	assert_true(badge.global_position.y > ship.global_position.y, "below the ship")
 	assert_true(badge.global_position.x < ship.global_position.x, "and to its left")
 	ship.queue_free()
+
+
+func test_faster_driven_ship_pays() -> void:
+	var fast := _spawn("light_scout")
+	var slow := _spawn("light_scout", Vector2(600, 400))
+	fast.is_driven = true
+	slow.is_driven = true
+	fast._prev_velocity = Vector2(300, 0)
+	slow._prev_velocity = Vector2(50, 0)
+	assert_true(fast._pays_for_collision_with(slow))
+	assert_false(slow._pays_for_collision_with(fast))
+	slow._prev_velocity = Vector2(300, 0)  # tie: lower instance id pays
+	var low_first := fast.get_instance_id() < slow.get_instance_id()
+	assert_eq(fast._pays_for_collision_with(slow), low_first)
+	assert_eq(slow._pays_for_collision_with(fast), not low_first)
+	fast.is_driven = false
+	slow.is_driven = false
+	fast.queue_free()
+	slow.queue_free()
+
+
+func test_net_pilot_drives_ship() -> void:
+	var ship := _spawn("light_scout")
+	var pilot := NetPilot.new()
+	pilot.bits = 1 << NetPilot.ACTIONS.find(StringName(Ship.DRIVE_ACTIONS[0]))
+	ship.pilot = pilot
+	ship.set_driven(true, false)
+	await _frames(10)
+	assert_true(ship.linear_velocity.length() > 0.0, "net bits thrust the ship")
+	ship.queue_free()
+
+
+func test_remote_drive_keeps_camera() -> void:
+	var cam := Camera2D.new()
+	tree.root.add_child(cam)
+	cam.make_current()
+	var ship := _spawn("light_scout")
+	ship.set_driven(true, false)
+	assert_true(cam.is_current(), "remote drive leaves the camera alone")
+	ship.set_driven(false, false)
+	ship.queue_free()
+	cam.queue_free()
+
+
+func test_bits_round_trip() -> void:
+	assert_true(NetPilot.ACTIONS.size() <= 16)
+	var pilot := NetPilot.new()
+	pilot.bits = 1 << NetPilot.ACTIONS.find(&"brake")
+	assert_true(pilot.is_pressed(&"brake"))
+	for a in NetPilot.ACTIONS:
+		if a != &"brake":
+			assert_false(pilot.is_pressed(a), str(a))
+
+
+## Gives a ship a mark and a velocity, then takes the start-of-step snapshot a physics frame would.
+func _marked(spec_name: String, pos: Vector2, mark: int, velocity: Vector2) -> Ship:
+	var ship := _spawn(spec_name, pos)
+	ship.last_driver = mark
+	ship.linear_velocity = velocity
+	ship._physics_process(0.0)
+	return ship
+
+
+func test_driven_ship_marks_struck_ship() -> void:
+	var a := _spawn("light_scout", Vector2(-3000, -3000))
+	var b := _spawn("light_scout", Vector2(-2000, -3000))
+	a.set_driven(true, false)
+	a.last_driver = 1
+	b.blame_from(a)
+	assert_eq(b.last_driver, 1, "the struck ship carries the driver's mark")
+	a.blame_from(b)
+	assert_eq(a.last_driver, 1, "a driven ship keeps its own mark")
+	a.set_driven(false, false)
+	a.queue_free()
+	b.queue_free()
+
+
+func test_blame_chain_order_independent() -> void:
+	for reverse in [false, true]:
+		var x := _marked("light_scout", Vector2(-3000, -5000), 1, Vector2(300, 0))
+		var y := _marked("light_scout", Vector2(-2000, -5000), 0, Vector2(10, 0))
+		if reverse:
+			y.blame_from(x)
+			x.blame_from(y)
+		else:
+			x.blame_from(y)
+			y.blame_from(x)
+		assert_eq(y.last_driver, 1, "the struck ship takes the hitter's mark (reverse=%s)" % reverse)
+		assert_eq(x.last_driver, 1, "the hitter keeps its mark (reverse=%s)" % reverse)
+		x.queue_free()
+		y.queue_free()
+
+
+func test_parking_clears_blame() -> void:
+	var a := _spawn("light_scout", Vector2(-3000, -3000))
+	var b := _spawn("light_scout", Vector2(-2000, -3000))
+	b.last_driver = 0
+	b.set_parked()
+	assert_eq(b.last_driver, -1, "parking clears the mark")
+	a.set_driven(true, false)
+	a.last_driver = 1
+	b.blame_from(a)
+	assert_eq(b.last_driver, -1, "a parked ship never takes a mark")
+	a.set_driven(false, false)
+	a.queue_free()
+	b.queue_free()
+
+
+## Runs both ships' contact handlers (in either order) and returns the ships that reported a dent.
+func _collide(a: Ship, b: Ship, reverse: bool) -> Array[Ship]:
+	var payers: Array[Ship] = []
+	var record := func(s: Ship, _cost: int) -> void: payers.append(s)
+	a.dented.connect(record)
+	b.dented.connect(record)
+	if reverse:
+		b._on_body_entered(a)
+		a._on_body_entered(b)
+	else:
+		a._on_body_entered(b)
+		b._on_body_entered(a)
+	return payers
+
+
+## An undriven ship k carrying mark k_mark at k_speed meets a ship driven by valet 0 at d_speed.
+## Returns [payers, k's mark after], for one handler order.
+func _knock_into_driven(k_mark: int, k_speed: float, d_speed: float, reverse: bool) -> Array:
+	var k := _marked("light_scout", Vector2(-3000, -7000), k_mark, Vector2(k_speed, 0))
+	var d := _marked("light_scout", Vector2(-2000, -7000), 0, Vector2(d_speed, 0))
+	d.set_driven(true, false)
+	var payers := _collide(k, d, reverse)
+	var who := []
+	for s in payers:
+		who.append("K" if s == k else "D")
+	var mark := k.last_driver
+	d.set_driven(false, false)
+	k.queue_free()
+	d.queue_free()
+	return [who, mark]
+
+
+func test_knocked_ship_into_driven_rival_charges_rammer() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(1, 300.0, 0.0, reverse)
+		assert_eq(r[0], ["K"], "the knocked rammer pays, not the driven victim (reverse=%s)" % reverse)
+		assert_eq(r[1], 1, "it keeps the rammer's mark (reverse=%s)" % reverse)
+
+
+func test_slower_knocked_ship_driven_pays() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(1, 0.0, 300.0, reverse)
+		assert_eq(r[0], ["D"], "a driven ship that does the hitting pays (reverse=%s)" % reverse)
+		assert_eq(r[1], 0, "and marks the struck ship (reverse=%s)" % reverse)
+
+
+func test_same_valet_mark_driven_pays() -> void:
+	for reverse in [false, true]:
+		var r := _knock_into_driven(0, 300.0, 0.0, reverse)
+		assert_eq(r[0], ["D"], "a ship marked by the driver's own valet: the driver pays (reverse=%s)" % reverse)
+
+
+func test_unmarked_or_equal_speed_leaves_marks() -> void:
+	for reverse in [false, true]:
+		var x := _marked("light_scout", Vector2(-3000, -9000), -1, Vector2(300, 0))
+		var y := _marked("light_scout", Vector2(-2000, -9000), 0, Vector2(10, 0))
+		var p := _marked("light_scout", Vector2(-3000, -11000), 1, Vector2(100, 0))
+		var q := _marked("light_scout", Vector2(-2000, -11000), 0, Vector2(0, 100))
+		var pairs := [[x, y], [p, q]]
+		for pair in pairs:
+			var a: Ship = pair[1] if reverse else pair[0]
+			var b: Ship = pair[0] if reverse else pair[1]
+			a.blame_from(b)
+			b.blame_from(a)
+		assert_eq([x.last_driver, y.last_driver], [-1, 0], "an unmarked hitter passes nothing on (reverse=%s)" % reverse)
+		assert_eq([p.last_driver, q.last_driver], [1, 0], "equal speeds pass nothing on (reverse=%s)" % reverse)
+		for s in [x, y, p, q]:
+			s.queue_free()

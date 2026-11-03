@@ -4,6 +4,8 @@ extends Node
 
 const TOTAL_LEVELS := 5
 const CCTV_MEDIUM := 2
+const DUEL_MIN := 3  # shortest duel, in minutes
+const DUEL_MAX := 20  # longest duel, in minutes
 
 enum Difficulty { EASY, NORMAL, HARD }
 const SHIFT_SECONDS := {Difficulty.EASY: 600.0, Difficulty.NORMAL: 300.0, Difficulty.HARD: 150.0}
@@ -18,6 +20,11 @@ var last_result: Dictionary = {}  # filled when a level ends
 var sound_on: bool = true
 var difficulty: int = Difficulty.NORMAL  # sets every shift's length
 var cctv_level: int = CCTV_MEDIUM  # index into CctvFilter.STRENGTHS (0 = off)
+var duel_minutes: int = DUEL_MIN  # chosen duel length
+var last_ip: String = ""  # last address typed on the join screen
+var duel_role := ""  # "host" or "guest" when the lobby opened the duel, else "" (not saved)
+var duel_result: Dictionary = {}  # {mine, rival} from the last online match (not saved)
+var notice := ""  # one-time message for Mode Select, e.g. a rival leaving (not saved)
 
 
 func _ready() -> void:
@@ -42,6 +49,8 @@ func save_progress() -> void:
 	cfg.set_value("settings", "sound_on", sound_on)
 	cfg.set_value("settings", "difficulty", difficulty)
 	cfg.set_value("settings", "cctv_level", cctv_level)
+	cfg.set_value("settings", "duel_minutes", duel_minutes)
+	cfg.set_value("settings", "last_ip", last_ip)
 	cfg.save(save_path)
 
 
@@ -64,6 +73,12 @@ func load_progress() -> void:
 	var saved_cctv: Variant = cfg.get_value("settings", "cctv_level", CCTV_MEDIUM)
 	if saved_cctv is int and saved_cctv >= 0 and saved_cctv < CctvFilter.STRENGTHS.size():
 		cctv_level = saved_cctv
+	var saved_minutes: Variant = cfg.get_value("settings", "duel_minutes", DUEL_MIN)
+	if saved_minutes is int and saved_minutes >= DUEL_MIN and saved_minutes <= DUEL_MAX:
+		duel_minutes = saved_minutes
+	var saved_ip: Variant = cfg.get_value("settings", "last_ip", "")
+	if saved_ip is String:
+		last_ip = saved_ip
 
 
 func reset_progress() -> void:  # call from a hidden debug button while testing

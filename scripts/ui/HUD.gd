@@ -51,6 +51,16 @@ func set_customers(served: int, total: int) -> void:
 	_customers.text = "Served %d / %d" % [served, total]
 
 
+## Duel score line in place of the pay line.
+func set_duel_scores(mine: int, rival: int) -> void:
+	_pay.text = "You ₵%d · Rival ₵%d" % [mine, rival]
+
+
+## Duel: customers who haven't arrived yet, in place of the served count.
+func set_customers_left(left: int) -> void:
+	_customers.text = "Customers left %d" % left
+
+
 func show_hint(text: String, seconds: float) -> void:
 	_hint.text = text
 	_hint.visible = true

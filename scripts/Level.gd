@@ -20,6 +20,8 @@ const RADIATION_DENT_COST := 5
 const RADIATION_INTERVAL := 2.0  # seconds inside radiation per dent
 const RESELECT_DELAY_MS := 300  # the touch that presses Done must not also select a ship
 const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on screen) are candidates
+const HINT_DRIVE := "Stop in a green space, then press Done when it turns orange"
+const HINT_RETURN := "A customer wants their ship – return it to the EXIT"
 
 @export var level_number: int = 1
 @export var goal_text: String = ""
@@ -38,9 +40,20 @@ const PICK_RADIUS_SCREEN := 100.0  # thumb-sized: ships this close to a tap (on 
 @export var request_count := 0  # customers who ask for one named space
 @export var orphan_count := 0  # abandoned ships that appear partway through the shift
 
-var ledger: ShiftLedger
+var valets: Array[Valet] = []  # everyone driving in this lot; valets[0] plays on this device
+## Valet 0's pay and timer.
+var ledger: ShiftLedger:
+	get:
+		return valets[0].ledger
+	set(value):
+		valets[0].ledger = value
 var customers: Dictionary = {}  # Ship -> Customer
-var driven_ship: Ship = null
+## The ship valet 0 is driving.
+var driven_ship: Ship:
+	get:
+		return valets[0].ship
+	set(value):
+		valets[0].ship = value
 var change_scene_on_end := true  # tests turn this off
 
 var _next_customer := 0
@@ -48,7 +61,11 @@ var _arrival_timer := 0.0
 var _trackers: Dictionary = {}  # Ship -> ParkTracker
 var _ended := false
 var _drive_hint_shown := false
-var _released_at_msec := -RESELECT_DELAY_MS
+var _released_at_msec: int:  # when valet 0 last let go of a ship
+	get:
+		return valets[0].released_at_msec
+	set(value):
+		valets[0].released_at_msec = value
 var _rng := RandomNumberGenerator.new()
 var _retrieval_indexes: Array[int] = []  # queue positions of customers who will want their ship back
 var _return_hint_shown := false
@@ -63,6 +80,7 @@ var _orphan_hint_shown := false
 var _request_indexes: Array[int] = []  # queue positions of customers with a special request
 var _request_hint_shown := false
 var last_pause_action := ""  # "restart" or "quit" when scene changes are off (tests)
+var pauses_tree := true  # false online: the pause menu opens but the match keeps running
 var _pause_menu := PauseMenu.new()
 var _cctv: CctvFilter
 var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out of a black hole
@@ -81,14 +99,11 @@ var _flung_at: Dictionary = {}  # ship or asteroid -> msec it was last flung out
 
 
 func _ready() -> void:
-	_rng.randomize()
+	valets = [Valet.new(0, true)]
+	seed_rng()
 	_pool = customer_queue.duplicate()
-	if random_customers > 0:
-		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
-	if _exit:
-		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
-	_request_indexes = _pick_requests(customer_queue.size(), request_count)
-	ledger = ShiftLedger.new(base_pay, customer_queue.size(), GameState.shift_seconds())
+	prepare_queue()
+	ledger = new_ledger()
 	if orphan_count > 0:
 		_orphans_due = orphan_times(_rng, orphan_count, GameState.shift_seconds())
 	GameState.current_level = level_number
@@ -111,19 +126,57 @@ func _ready() -> void:
 	_refresh()
 
 
+## Seeds the shift's random draws. A duel overrides it with the match seed.
+func seed_rng() -> void:
+	_rng.randomize()
+
+
+## Settles this shift's customers: the random draw, then who wants their ship back and who asks
+## for a space. A duel overrides it to draw without the lot's space classes.
+func prepare_queue() -> void:
+	if random_customers > 0:
+		customer_queue = draw_customers(customer_queue, random_customers, _rng, _space_classes())
+	if _exit:
+		_retrieval_indexes = _pick_retrievals(customer_queue.size(), retrieval_count)
+	_request_indexes = _pick_requests(customer_queue.size(), request_count)
+
+
+## Valet 0's ledger for this shift. A duel overrides it with a duel ledger.
+func new_ledger() -> ShiftLedger:
+	return ShiftLedger.new(base_pay, customer_queue.size(), GameState.shift_seconds())
+
+
+## The valet who answers for a ship: whoever drives it, else its last driver, else valet 0.
+func valet_of(ship: Ship) -> Valet:
+	for v in valets:
+		if v.ship == ship:
+			return v
+	for v in valets:
+		if v.id == ship.last_driver:
+			return v
+	return valets[0]
+
+
+func _valet_or_first(valet: Valet) -> Valet:
+	return valet if valet else valets[0]
+
+
+func _driven_by_anyone(ship: Ship) -> bool:
+	for v in valets:
+		if v.ship == ship:
+			return true
+	return false
+
+
 func _physics_process(delta: float) -> void:
 	if _ended:
 		return
-	ledger.tick(delta)
-	_arrival_timer += delta
+	for v in valets:
+		v.ledger.tick(delta)
 	var in_the_way: Array[Node] = _ships.get_children()
 	if _asteroids:
 		in_the_way.append_array(_asteroids.get_children())
-	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(in_the_way) else 0.0
-	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
-		if spawn_next_customer():
-			_arrival_timer = 0.0
-			_bay_clear_for = 0.0
+	_update_arrivals(delta, in_the_way)
 	if _radiation:
 		_update_radiation(delta)
 	if _black_hole:
@@ -133,6 +186,17 @@ func _physics_process(delta: float) -> void:
 	_update_customers(delta)
 	_update_orphans(delta)
 	_refresh()
+
+
+## The next customer arrives once the interval has passed and the bay has stayed clear of
+## in_the_way (ships and asteroids) for ARRIVAL_CLEAR_SECONDS. A duel overrides it with two bays.
+func _update_arrivals(delta: float, in_the_way: Array[Node]) -> void:
+	_arrival_timer += delta
+	_bay_clear_for = _bay_clear_for + delta if _bay.is_clear(in_the_way) else 0.0
+	if _arrival_timer >= arrival_interval and _bay_clear_for >= ARRIVAL_CLEAR_SECONDS:
+		if spawn_next_customer():
+			_arrival_timer = 0.0
+			_bay_clear_for = 0.0
 
 
 ## A customer can only be gold if the lot has a gold space their ship fits.
@@ -189,30 +253,34 @@ func _request(ship: Ship) -> void:
 	var c: Customer = customers[ship]
 	c.requested = true
 	c.request_in = -1.0
-	Sound.play("request")
+	_cue("request")
+	var driven := _driven_by_anyone(ship)
 	ship.unpark()
+	if driven:
+		ship.driven_since_free = true  # in someone's hands: the black hole keeps pulling it
 	_trackers.erase(ship)
 	if not _return_hint_shown:
 		_return_hint_shown = true
-		_hud.show_hint("A customer wants their ship – return it to the EXIT", 4.0)
+		_hud.show_hint(HINT_RETURN, 4.0)
 
 
 ## Hands a requested ship back to its customer: it leaves the lot and the customer is served.
 func _return(ship: Ship) -> void:
 	var c: Customer = customers[ship]
-	if ship == driven_ship:
-		release_ship()
+	var valet := valet_of(ship)
+	if ship == valet.ship:
+		release_ship(valet)
 	var space := _space_of(ship)
 	if space:
 		space.release()
-	if _picker.is_open():
-		_picker.close()
+	close_picker_listing(ship)
 	customers.erase(ship)
 	_trackers.erase(ship)
+	_flung_at.erase(ship)
 	_ships.remove_child(ship)
 	ship.queue_free()
-	_pay_tip(c.tip())  # before serving: the final serve ends the shift
-	ledger.serve_customer(0)
+	_pay_tip(c.tip(), valet)  # before serving: the final serve ends the shift
+	valet.ledger.serve_customer(0)
 
 
 ## Draws count ships from pool, each pick weighted by its spawn_weight. With space_classes,
@@ -252,7 +320,7 @@ func spawn_next_customer() -> Ship:
 		return null
 	var ship: Ship = SHIP_SCENE.instantiate()
 	ship.spec = customer_queue[_next_customer]
-	ship.paint_color = PAINT_COLORS.pick_random()
+	_dress_ship(ship)
 	var c := Customer.roll(_rng, use_tiers, gold_allowed(ship.spec.ship_class), tier_weights)
 	c.wants_retrieval = _next_customer in _retrieval_indexes
 	if _next_customer in _request_indexes:
@@ -263,16 +331,35 @@ func spawn_next_customer() -> Ship:
 			if not _request_hint_shown:
 				_request_hint_shown = true
 				_hud.show_hint("Special request: park them in their space", 4.0)
+	_next_customer += 1
+	_place_arrival(ship, c, _entrance)
+	return ship
+
+
+## Puts a new customer's ship into the lot at an entrance marker, facing the way it points.
+func _place_arrival(ship: Ship, c: Customer, entrance: Node2D) -> void:
 	ship.customer = c
 	customers[ship] = c
-	ship.global_position = _entrance.global_position
-	ship.rotation = _entrance.global_rotation
-	_next_customer += 1
+	ship.global_position = entrance.global_position
+	ship.rotation = entrance.global_rotation
 	_ships.add_child(ship)
 	ship.dented.connect(_on_ship_dented)
 	ship.bumped.connect(_on_ship_bumped)
 	Sound.play("arrive")
-	return ship
+
+
+## Picks a new ship's paint before it enters the tree. A duel overrides it to choose the paint
+## and headlight from the seeded rng, so it can tell the guest.
+func _dress_ship(ship: Ship) -> void:
+	ship.paint_index = randi() % PAINT_COLORS.size()
+	ship.paint_color = PAINT_COLORS[ship.paint_index]
+
+
+## Plays a sound cue for the valet it concerns: only for one on this device, or for everyone
+## when valet is null. A duel host also tells the guest about its own cues.
+func _cue(effect: String, valet: Valet = null) -> void:
+	if valet == null or valet.local:
+		Sound.play(effect)
 
 
 ## Lot view: a tap picks the one ship near it, or lists them when there's a choice.
@@ -334,6 +421,12 @@ func _distance_to_hull(ship: Ship, world: Vector2) -> float:
 	return best
 
 
+## Closes the ship list if it offers this ship (which is about to leave the lot).
+func close_picker_listing(ship: Ship) -> void:
+	if _picker.is_open() and _picker.lists(ship):
+		_picker.close()
+
+
 func _on_picked(ship: Ship) -> void:
 	_picker.close()
 	select_ship(ship)
@@ -341,21 +434,30 @@ func _on_picked(ship: Ship) -> void:
 
 ## Takes control of a ship. Ignored while already driving (press Done first)
 ## and for a moment after Done, so the same touch doesn't grab a ship under the button.
-func select_ship(ship: Ship) -> void:
-	if _ended or (ship.is_parked and not _can_move_parked(ship)) or driven_ship != null:
+## A ship another valet is driving can't be taken. valet null means valet 0.
+func select_ship(ship: Ship, valet: Valet = null) -> void:
+	valet = _valet_or_first(valet)
+	if _ended or (ship.is_parked and not _can_move_parked(ship)) or valet.ship != null:
 		return
-	if Time.get_ticks_msec() - _released_at_msec < RESELECT_DELAY_MS:
+	if _driven_by_anyone(ship):
+		return
+	if Time.get_ticks_msec() - valet.released_at_msec < RESELECT_DELAY_MS:
 		return
 	if ship.is_parked:  # an orphan, or a parked ship moved to make room
 		ship.unpark()
 		_trackers.erase(ship)
-	_picker.close()
-	driven_ship = ship
-	ship.set_driven(true)
+	if valet.local:
+		_picker.close()
+	valet.ship = ship
+	ship.pilot = valet.pilot
+	ship.last_driver = valet.id
+	ship.set_driven(true, valet.local)
+	if not valet.local:
+		return
 	_controls.set_driving(true)
 	if not _drive_hint_shown:
 		_drive_hint_shown = true
-		_hud.show_hint("Stop in a green space, then press Done when it turns orange", 4.0)
+		_hud.show_hint(HINT_DRIVE, 4.0)
 
 
 ## A parked ship the valet may pick up: an orphan, or any customer ship where the level allows moving.
@@ -363,11 +465,15 @@ func _can_move_parked(ship: Ship) -> bool:
 	return ship.orphan != null or (allow_moving_parked and customer_for(ship) != null)
 
 
-func release_ship() -> void:
-	if driven_ship:
-		driven_ship.set_driven(false)
-		_released_at_msec = Time.get_ticks_msec()
-	driven_ship = null
+## Lets go of the valet's ship, if any. valet null means valet 0.
+func release_ship(valet: Valet = null) -> void:
+	valet = _valet_or_first(valet)
+	if valet.ship:
+		valet.ship.set_driven(false, valet.local)
+		valet.released_at_msec = Time.get_ticks_msec()
+	valet.ship = null
+	if not valet.local:
+		return
 	_lot_camera.make_current()
 	_controls.set_driving(false)
 
@@ -376,7 +482,8 @@ func end_level() -> void:
 	if _ended:
 		return
 	_ended = true
-	release_ship()
+	for v in valets:
+		release_ship(v)
 	Sound.stop_thruster()
 	Sound.play("win" if ledger.outcome == ShiftLedger.Outcome.WON else "lose")
 	var won := ledger.outcome == ShiftLedger.Outcome.WON
@@ -404,58 +511,73 @@ func end_level() -> void:
 		get_tree().change_scene_to_file.call_deferred(RESULT_SCENE)
 
 
-## Lights up (orange) the space the driven ship could park in right now. Nothing parks by itself:
+## Lights up (orange) the space each valet's ship could park in right now. Nothing parks by itself:
 ## the valet presses Done to park there.
 func _check_parking(_delta: float) -> void:
-	var ready: ParkingSpace = null
-	var ship := driven_ship
-	if ship and is_instance_valid(ship):
+	var ready := {}  # ParkingSpace -> the ship it lights up for
+	for v in valets:
+		var ship := v.ship
+		if ship == null or not is_instance_valid(ship):
+			continue
 		var c := customer_for(ship)
-		if not (c and c.requested):
-			for space: ParkingSpace in _spaces.get_children():
-				if space.check(ship):
-					ready = space
-					break
+		if c and c.requested:
+			continue
+		for space: ParkingSpace in _spaces.get_children():
+			if not ready.has(space) and space.check(ship):
+				ready[space] = ship
+				break
 	for space: ParkingSpace in _spaces.get_children():
-		var now: Ship = ship if space == ready else null
+		var now: Ship = ready.get(space)
 		if now != null and space.ready_for == null:
-			Sound.play("ready")
+			_cue("ready", valet_of(now))
 		if space.ready_for != now:
 			space.ready_for = now
 			space.queue_redraw()
 
 
-## Done: park the driven ship in the space lit up for it, or just let go of it.
 func _on_done_pressed() -> void:
-	var ship := driven_ship
+	press_done()
+
+
+## Done: park the valet's ship in the space lit up for it, or just let go of it. valet null means valet 0.
+func press_done(valet: Valet = null) -> void:
+	valet = _valet_or_first(valet)
+	var ship := valet.ship
 	var space: ParkingSpace = null
 	if ship:
 		for s: ParkingSpace in _spaces.get_children():
 			if s.ready_for == ship and s.check(ship):
 				space = s
 	if space == null:
-		release_ship()
+		release_ship(valet)
 		return
 	space.ready_for = null
-	Sound.play("park")
+	_cue("park", valet)
 	if ship.orphan:
 		_repark_orphan(ship, space)
 	else:
 		_on_ship_parked(ship, space)
 
 
+## Seconds from a first park until the customer asks for the ship back.
+func retrieval_delay() -> float:
+	return Customer.request_delay(_rng, ledger.time_left)
+
+
+## Credits the valet who drove the ship in.
 func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 	space.claim(ship)
-	if ship == driven_ship:
-		release_ship()
+	var valet := valet_of(ship)
+	if ship == valet.ship:
+		release_ship(valet)
 	ship.set_parked()
 	var c := customer_for(ship)
 	if c and c.parked_once:  # a ship moved to make room: already paid for and counted
 		_refresh()
 		return
 	if c == null:
-		ledger.serve_customer()
-		Sound.play("fee")
+		valet.ledger.serve_customer()
+		_cue("fee", valet)
 	else:
 		c.parked_once = true
 		c.parked_in_gold = space.gold
@@ -463,16 +585,16 @@ func _on_ship_parked(ship: Ship, space: ParkingSpace) -> void:
 			c.got_wanted_space = space.label == c.wants_space
 			_update_pin(c.wants_space)
 			if c.got_wanted_space:
-				ledger.add_bonus(REQUEST_BONUS)
+				valet.ledger.add_bonus(REQUEST_BONUS)
 				Sound.play("bonus")
 		if c.wants_retrieval and _exit:
-			ledger.add_fee()  # the tip waits until the ship is handed back
-			Sound.play("fee")
-			c.request_in = Customer.request_delay(_rng, ledger.time_left)
+			valet.ledger.add_fee()  # the tip waits until the ship is handed back
+			_cue("fee", valet)
+			c.request_in = retrieval_delay()
 		else:
-			_pay_tip(c.tip())  # before serving: the final serve ends the shift
-			ledger.serve_customer()
-			Sound.play("fee")
+			_pay_tip(c.tip(), valet)  # before serving: the final serve ends the shift
+			valet.ledger.serve_customer()
+			_cue("fee", valet)
 	_refresh()
 
 
@@ -484,33 +606,41 @@ func _on_ship_bumped(_ship: Ship) -> void:
 	Sound.play("bump")
 
 
-func _pay_tip(amount: int) -> void:
-	ledger.add_tip(amount)
+func _pay_tip(amount: int, valet: Valet) -> void:
+	valet.ledger.add_tip(amount)
 	if amount > 0:
-		Sound.play("tip")
+		_cue("tip", valet)
 
 
-## Charges a dent to the ship's customer and the pay, with the given sound.
+## Charges a dent to the ship's customer and to the pay of the valet answering for it, with the given sound.
 func _charge_dent(ship: Ship, cost: int, effect: String) -> void:
-	Sound.play(effect)
+	var valet := valet_of(ship)
+	_cue(effect, valet)
 	var c := customer_for(ship)
 	if c:
 		c.dents += 1
-	ledger.add_dent(cost)
-	_hud.show_hint("-₵%d dent!" % cost, 1.0)
+	valet.ledger.add_dent(cost)
+	if valet.local:
+		_hud.show_hint("-₵%d dent!" % cost, 1.0)
 	_refresh()
 
 
 ## Drawn on the floor at the entrance, under the ships.
 func _add_arrival_bay() -> void:
-	_bay = ArrivalBay.new()
-	_bay.name = "ArrivalBay"
+	_bay = _make_arrival_bay(_entrance, "ArrivalBay")
+
+
+## An ArrivalBay marking drawn just above the floor at an entrance marker.
+func _make_arrival_bay(entrance: Node2D, bay_name: String) -> ArrivalBay:
+	var bay := ArrivalBay.new()
+	bay.name = bay_name
 	var floor_node := get_node_or_null("Floor")
 	if floor_node:
-		floor_node.add_sibling(_bay)
+		floor_node.add_sibling(bay)
 	else:
-		add_child(_bay)
-	_bay.global_transform = _entrance.global_transform
+		add_child(bay)
+	bay.global_transform = entrance.global_transform
+	return bay
 
 
 func _refresh() -> void:
@@ -580,7 +710,9 @@ func _apply_pull() -> void:
 
 func _sheltered(ship: Ship) -> bool:
 	for space: ParkingSpace in _spaces.get_children():
-		if (space.occupant == null or space.occupant == ship) 				and ParkingRules.fits_class(ship.spec.ship_class, space.space_class) 				and ParkingRules.points_inside(ship.hull_points(), space.global_transform, space.size()):
+		if (space.occupant == null or space.occupant == ship) \
+				and ParkingRules.fits_class(ship.spec.ship_class, space.space_class) \
+				and ParkingRules.points_inside(ship.hull_points(), space.global_transform, space.size()):
 			return true
 	return false
 
@@ -676,16 +808,18 @@ func _spawn_orphan() -> Ship:
 ## An orphan left at rest in a space settles back into it: parked again, but nobody pays or is served.
 func _repark_orphan(ship: Ship, space: ParkingSpace) -> void:
 	space.claim(ship)
-	if ship == driven_ship:
-		release_ship()
+	var valet := valet_of(ship)
+	if ship == valet.ship:
+		release_ship(valet)
 	ship.set_parked()
 	_trackers.erase(ship)
 
 
 ## An orphan leaves through the exit: a bonus once its timer has run out, a fine before that.
 func _eject_orphan(ship: Ship) -> void:
-	if ship == driven_ship:
-		release_ship()
+	var valet := valet_of(ship)
+	if ship == valet.ship:
+		release_ship(valet)
 	if _picker.is_open():
 		_picker.close()
 	var space := _space_of(ship)
@@ -695,11 +829,11 @@ func _eject_orphan(ship: Ship) -> void:
 	_ships.remove_child(ship)
 	ship.queue_free()
 	if ship.orphan.ready_to_eject():
-		ledger.add_bonus(Orphan.BONUS)
+		valet.ledger.add_bonus(Orphan.BONUS)
 		Sound.play("bonus")
 	else:
 		Sound.play("warning")
-		ledger.add_dent(Orphan.EARLY_COST)
+		valet.ledger.add_dent(Orphan.EARLY_COST)
 		_hud.show_hint("-₵%d ejected too early" % Orphan.EARLY_COST, 1.5)
 
 
@@ -707,6 +841,9 @@ func _eject_orphan(ship: Ship) -> void:
 ## A ship or asteroid whose centre reaches the hole's core is flung out the far side, spinning.
 func _fling_from_core() -> void:
 	var now := Time.get_ticks_msec()
+	for body: Variant in _flung_at.keys():
+		if not is_instance_valid(body):
+			_flung_at.erase(body)  # a ship that left the lot
 	var bodies: Array[RigidBody2D] = []
 	for ship: Ship in _ships.get_children():
 		if not ship.is_parked:
@@ -792,7 +929,7 @@ func _update_pin(label: String) -> void:
 func open_pause() -> void:
 	if _ended or _pause_menu.is_open():
 		return
-	get_tree().paused = true
+	get_tree().paused = pauses_tree
 	_pause_menu.open()
 	Sound.play("open")
 
