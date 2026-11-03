@@ -65,6 +65,7 @@ func on_match_start(match_seed: int, seconds: float, ships: Array) -> void:
 
 ## The countdown starts on both phones; lamps flicker from now.
 func on_go() -> void:
+	level.session.loading = false  # both lots are up: the normal silence limit applies again
 	level.start_lights_clock()
 	_countdown_left = DuelLevel.COUNTDOWN
 	_hud.show_hint("3", 1.0)

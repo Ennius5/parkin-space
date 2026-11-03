@@ -841,3 +841,22 @@ func test_guest_done_asks_the_host() -> void:
 	assert_eq(_sent(level, "done"), [[]])
 	_done_host(level)
 
+func test_scene_loads_use_the_long_silence_limit() -> void:
+	var level := await _lobby_duel(true, 24615)
+	var session := level.session
+	session.loading = true  # as if the handshake just finished and this lot was loading
+	level.on_guest_loaded()
+	assert_false(session.loading, "the guest's loaded ends the load grace on the host")
+	_skip_countdown(level)
+	level.end_level()
+	assert_true(session.loading, "the result screen and any rematch reload get the grace again")
+	_done_lobby(level)
+
+
+func test_guest_go_ends_the_load_grace() -> void:
+	var level := await _guest()
+	level.session.loading = true
+	level.mirror.on_go()
+	assert_false(level.session.loading)
+	_done_host(level)
+

@@ -3,6 +3,7 @@ extends TestCase
 const LOOP_PORT := 24600
 const DEAD_PORT := 24699  # nothing listens here
 const FRAMES := 120
+const SILENCE_FRAME := 5.0  # seconds in one frame, past SILENCE_LIMIT
 
 
 ## A root node with its own SceneMultiplayer and a NetSession child at <root>/Session.
@@ -147,6 +148,73 @@ func test_rematch_and_leave_reach_the_rival() -> void:
 	assert_true(gone, "the host got rival_left")
 	assert_false(host.rival_wants_rematch, "cleared on close")
 	_cleanup([host, guest] as Array[NetSession])
+
+
+## A host and a guest on this port, connected (asserted).
+func _pair(port: int) -> Array[NetSession]:
+	var host := _side("H", port)
+	var guest := _side("G", port)
+	host.host()
+	guest.join("127.0.0.1")
+	var ok: bool = await _wait(func() -> bool: return host.rival_id() != 0 and guest.rival_id() != 0)
+	assert_true(ok, "connected first")
+	return [host, guest] as Array[NetSession]
+
+
+func test_connecting_starts_the_load_grace() -> void:
+	var pair := await _pair(LOOP_PORT + 3)
+	assert_true(pair[0].loading and pair[1].loading, "both phones load the duel lot next")
+	_cleanup(pair)
+
+
+func test_one_long_frame_does_not_trip_the_watchdog() -> void:
+	var pair := await _pair(LOOP_PORT + 4)
+	var host := pair[0]
+	var he := _watch(host)
+	host.loading = false
+	host._process(SILENCE_FRAME)  # a scene load that blocked the main thread
+	assert_false(he.left, "one long frame counts as a short one")
+	assert_true(host.is_active())
+	_cleanup(pair)
+
+
+func test_silence_past_the_limit_drops_the_rival() -> void:
+	var pair := await _pair(LOOP_PORT + 5)
+	var host := pair[0]
+	var he := _watch(host)
+	host.loading = false
+	host.silence_limit = 0.5
+	pair[1].set_process(false)  # the guest stops its keep-alive
+	var left: bool = await _wait_seconds(func() -> bool: return he.left, 3.0)
+	assert_true(left, "silence past the limit drops the rival")
+	_cleanup(pair)
+
+
+func test_keepalive_holds_an_idle_link() -> void:
+	var pair := await _pair(LOOP_PORT + 6)
+	var he := _watch(pair[0])
+	var ge := _watch(pair[1])
+	for s in pair:
+		s.loading = false
+		s.silence_limit = 1.0
+	await _wait_seconds(func() -> bool: return he.left or ge.left, 2.5)
+	assert_false(he.left or ge.left, "pings kept the quiet link alive past the limit")
+	_cleanup(pair)
+
+
+func test_loading_uses_the_long_limit() -> void:
+	var pair := await _pair(LOOP_PORT + 7)
+	var host := pair[0]
+	var he := _watch(host)
+	host.silence_limit = 0.3
+	host.loading = true
+	pair[1].set_process(false)
+	await _wait_seconds(func() -> bool: return he.left, 1.0)
+	assert_false(he.left, "a slow load on the other phone is waited for")
+	host.loading = false
+	var left: bool = await _wait_seconds(func() -> bool: return he.left, 2.0)
+	assert_true(left, "after the load the normal limit applies")
+	_cleanup(pair)
 
 
 func test_handshake_rpcs_keep_the_lowest_ids() -> void:

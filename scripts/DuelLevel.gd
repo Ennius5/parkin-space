@@ -146,6 +146,7 @@ func new_ledger() -> ShiftLedger:
 func on_guest_loaded() -> void:
 	if _phase != Phase.WAITING:
 		return
+	session.loading = false  # both lots are up: the normal silence limit applies again
 	sync.send(&"go", [])
 	_phase = Phase.COUNTDOWN
 	_countdown_left = COUNTDOWN
@@ -413,6 +414,7 @@ func _leave_for_mode_select(notice: String) -> void:
 ## The match is over: both scores go to the Online Result screen.
 func _show_online_result(my_score: int, rival_score: int) -> void:
 	GameState.duel_result = {"mine": my_score, "rival": rival_score}
+	session.loading = true  # the result screen, then maybe a rematch reload (see NetSession.loading)
 	if change_scene_on_end:
 		get_tree().change_scene_to_file.call_deferred(ONLINE_RESULT)
 

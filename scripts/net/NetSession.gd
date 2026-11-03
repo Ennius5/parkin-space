@@ -13,7 +13,9 @@ const PORT := 24557
 const PROTOCOL_VERSION := 3  # bump whenever any RPC (here or on NetSync) or a message layout changes
 const JOIN_TIMEOUT := 5.0
 const SILENCE_LIMIT := 3.0
+const LOAD_SILENCE_LIMIT := 10.0  # while either phone may be loading a duel or result scene
 const KEEPALIVE_INTERVAL := 0.5
+const MAX_SILENCE_STEP := 0.25  # the most one frame adds to the watchdog (a long frame is this phone stalling)
 const MSG_UNREACHABLE := "Cannot reach host. Check that you are on the same Wi-Fi."
 const MSG_VERSION := "Your rival has a different version of the game."
 
@@ -22,6 +24,11 @@ var join_timeout := JOIN_TIMEOUT  # tests may lower it
 var silence_limit := SILENCE_LIMIT  # tests may lower it
 var duel_minutes := 3  # the host's choice, sent in the handshake
 var rival_wants_rematch := false  # the rival asked for a rematch since the last match started
+## True while either phone may be blocked loading a scene (change_scene_to_file stalls the main
+## thread, so no keep-alive goes out): the watchdog waits LOAD_SILENCE_LIMIT instead. Set on
+## connect and when a duel ends (the lobby / result screen then load the duel lot or the result
+## screen); cleared when the duel's countdown starts on this phone (host: guest loaded; guest: go).
+var loading := false
 
 var _peer: ENetMultiplayerPeer
 var _api: MultiplayerAPI  # the API the peer was set on
@@ -88,6 +95,7 @@ func close() -> void:
 	_connected = false
 	_rival_id = 0
 	rival_wants_rematch = false
+	loading = false
 	set_process(false)
 
 
@@ -178,8 +186,8 @@ func _process(delta: float) -> void:
 		return
 	if not _connected:
 		return
-	_silence += delta
-	if _silence >= silence_limit:
+	_silence += minf(delta, MAX_SILENCE_STEP)
+	if _silence >= (maxf(silence_limit, LOAD_SILENCE_LIMIT) if loading else silence_limit):
 		_lose_rival()
 		return
 	_keepalive += delta
@@ -209,6 +217,7 @@ func _start_match(rival: int) -> void:
 	rival_wants_rematch = false
 	_joining = false
 	_connected = true
+	loading = true  # both phones open the duel lot next
 	_silence = 0.0
 	_keepalive = 0.0
 	connected.emit()
