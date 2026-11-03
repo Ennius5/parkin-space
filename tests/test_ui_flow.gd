@@ -172,12 +172,36 @@ func test_mode_select_has_credits() -> void:
 	screen.free()
 
 
+func test_mode_select_how_to_play_opens_the_guide() -> void:
+	var screen: Control = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	screen.change_scenes = false
+	tree.root.add_child(screen)
+	var button := screen.get_node_or_null("%HowToPlay") as Button
+	assert_true(button != null, "How to Play button")
+	if button:
+		assert_eq(button.text, "How to Play")
+		assert_eq(button.get_index() + 1, screen.get_node("%Credits").get_index(), "just above Credits")
+		button.pressed.emit()
+		assert_eq(screen.last_target, "res://scenes/ui/Guide.tscn")
+	screen.free()
+
+
+func test_mode_select_fits_the_screen() -> void:
+	var screen: Control = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	tree.root.add_child(screen)
+	await tree.process_frame
+	var box := screen.get_node("Center/Box") as Control
+	assert_true(box.get_combined_minimum_size().y <= 720.0, str(box.get_combined_minimum_size()))
+	screen.free()
+
+
 func test_back_gesture_goes_somewhere_on_every_menu() -> void:
 	var expected := {
 		"res://scenes/ui/Title.tscn": "",  # quits the app
 		"res://scenes/ui/ModeSelect.tscn": "res://scenes/ui/Title.tscn",
 		"res://scenes/ui/LevelSelect.tscn": "res://scenes/ui/ModeSelect.tscn",
 		"res://scenes/ui/Credits.tscn": "res://scenes/ui/ModeSelect.tscn",
+		"res://scenes/ui/Guide.tscn": "res://scenes/ui/ModeSelect.tscn",
 		"res://scenes/ui/Result.tscn": "res://scenes/ui/LevelSelect.tscn",
 		"res://scenes/ui/Lobby.tscn": "res://scenes/ui/ModeSelect.tscn",
 		"res://scenes/ui/OnlineResult.tscn": "res://scenes/ui/ModeSelect.tscn",

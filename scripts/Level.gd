@@ -942,9 +942,12 @@ func close_pause() -> void:
 	Sound.play("close")
 
 
-## Android's back gesture opens the pause menu during a shift, and closes it again.
+## Android's back gesture opens the pause menu during a shift, and closes it again
+## (closing How to Play first when it's open over the menu).
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if _pause_menu.close_guide():
+			return
 		if _pause_menu.is_open():
 			close_pause()
 		else:
