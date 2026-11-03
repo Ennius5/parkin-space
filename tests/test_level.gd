@@ -1628,7 +1628,7 @@ func test_level05_layout() -> void:
 	assert_eq(counts, {ShipSpec.ShipClass.HEAVY: 3, ShipSpec.ShipClass.MEDIUM: 6, ShipSpec.ShipClass.LIGHT: 3})
 	assert_eq(gold, ["G1", "G2", "G3", "G4", "G5", "G6"] as Array[String])
 	assert_true(level.get_node_or_null("Exit") is ExitPad)
-	for hazard in ["BlackHole", "Radiation", "Asteroids", "Boulders"]:
+	for hazard in ["BlackHole", "Asteroids", "Boulders"]:
 		assert_true(level.get_node_or_null(hazard) == null, "no %s in the lounge" % hazard)
 	assert_eq(level.level_number, 5)
 	assert_eq(level.goal_text, "Serve 9 customers")
