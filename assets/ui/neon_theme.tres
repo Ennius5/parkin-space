@@ -1,74 +1,80 @@
-[gd_resource type="Theme" format=3]
+[gd_resource type="Theme" format=3 uid="uid://cfawtanqfufof"]
 
-[ext_resource type="Script" path="res://scripts/ui/HexStyle.gd" id="1_hex"]
-
-[sub_resource type="StyleBox" id="normal"]
-script = ExtResource("1_hex")
-color = Color(0.25, 0.95, 1, 1)
-fill = Color(0.02, 0.06, 0.1, 0.75)
-glow = 0.35
-content_margin_left = 44.0
-content_margin_top = 12.0
-content_margin_right = 44.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBox" id="hover"]
-script = ExtResource("1_hex")
-color = Color(0.55, 1, 1, 1)
-fill = Color(0.02, 0.06, 0.1, 0.75)
-glow = 0.6
-content_margin_left = 44.0
-content_margin_top = 12.0
-content_margin_right = 44.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBox" id="pressed"]
-script = ExtResource("1_hex")
-color = Color(1, 0.3, 0.85, 1)
-fill = Color(0.25, 0.04, 0.2, 0.8)
-glow = 0.7
-content_margin_left = 44.0
-content_margin_top = 12.0
-content_margin_right = 44.0
-content_margin_bottom = 12.0
+[ext_resource type="Script" uid="uid://m65138h7pdnn" path="res://scripts/ui/HexStyle.gd" id="1_hex"]
 
 [sub_resource type="StyleBox" id="disabled"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 44.0
+content_margin_top = 12.0
+content_margin_right = 44.0
+content_margin_bottom = 12.0
 script = ExtResource("1_hex")
 color = Color(0.35, 0.55, 0.6, 0.55)
 fill = Color(0.02, 0.04, 0.06, 0.5)
 glow = 0.1
+
+[sub_resource type="StyleBoxEmpty" id="focus"]
+
+[sub_resource type="StyleBox" id="hover"]
+resource_local_to_scene = false
+resource_name = ""
 content_margin_left = 44.0
 content_margin_top = 12.0
 content_margin_right = 44.0
 content_margin_bottom = 12.0
+script = ExtResource("1_hex")
+color = Color(0.55, 1, 1, 1)
+glow = 0.6
+
+[sub_resource type="StyleBox" id="pressed"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 44.0
+content_margin_top = 12.0
+content_margin_right = 44.0
+content_margin_bottom = 12.0
+script = ExtResource("1_hex")
+color = Color(1, 0.3, 0.85, 1)
+fill = Color(0.25, 0.04, 0.2, 0.8)
+glow = 0.7
+
+[sub_resource type="StyleBox" id="normal"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 44.0
+content_margin_top = 12.0
+content_margin_right = 44.0
+content_margin_bottom = 12.0
+script = ExtResource("1_hex")
 
 [sub_resource type="StyleBox" id="selected"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 44.0
+content_margin_top = 12.0
+content_margin_right = 44.0
+content_margin_bottom = 12.0
 script = ExtResource("1_hex")
 color = Color(0.55, 1, 1, 1)
 fill = Color(0.04, 0.16, 0.2, 0.85)
 glow = 0.75
-content_margin_left = 44.0
-content_margin_top = 12.0
-content_margin_right = 44.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBoxEmpty" id="focus"]
 
 [resource]
 Button/colors/font_color = Color(0.25, 0.95, 1, 1)
-Button/colors/font_hover_color = Color(0.55, 1, 1, 1)
-Button/colors/font_pressed_color = Color(1, 0.3, 0.85, 1)
-Button/colors/font_hover_pressed_color = Color(1, 0.3, 0.85, 1)
-Button/colors/font_focus_color = Color(0.25, 0.95, 1, 1)
 Button/colors/font_disabled_color = Color(0.45, 0.6, 0.65, 0.7)
-Button/styles/normal = SubResource("normal")
-Button/styles/hover = SubResource("hover")
-Button/styles/pressed = SubResource("pressed")
-Button/styles/hover_pressed = SubResource("pressed")
+Button/colors/font_focus_color = Color(0.25, 0.95, 1, 1)
+Button/colors/font_hover_color = Color(0.55, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(1, 0.3, 0.85, 1)
+Button/colors/font_pressed_color = Color(1, 0.3, 0.85, 1)
 Button/styles/disabled = SubResource("disabled")
 Button/styles/focus = SubResource("focus")
+Button/styles/hover = SubResource("hover")
+Button/styles/hover_pressed = SubResource("pressed")
+Button/styles/normal = SubResource("normal")
+Button/styles/pressed = SubResource("pressed")
 ToggleHexButton/base_type = &"Button"
-ToggleHexButton/colors/font_pressed_color = Color(0.55, 1, 1, 1)
 ToggleHexButton/colors/font_hover_pressed_color = Color(0.55, 1, 1, 1)
-ToggleHexButton/styles/pressed = SubResource("selected")
+ToggleHexButton/colors/font_pressed_color = Color(0.55, 1, 1, 1)
 ToggleHexButton/styles/hover_pressed = SubResource("selected")
+ToggleHexButton/styles/pressed = SubResource("selected")

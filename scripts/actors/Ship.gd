@@ -11,8 +11,9 @@ const ROTATE_ACTIONS: PackedStringArray = ["rotate_left", "rotate_right"]
 const GLOW_COLOR := Color(1.0, 0.85, 0.3)  # outline of a ship whose owner wants it back
 const ORPHAN_TINT := Color(0.65, 0.65, 0.7)
 const BUMP_SOUND_SPEED := 20.0  # px/s; gentler contacts (resting, nudging) stay silent
-const GLOW_SCALE := 1.7  # the soft light around a ship, relative to its longest side
-const HEADLIGHT_SCALE := 1.6
+const GLOW_SCALE := 1.8  # the soft light around a ship, relative to its longest side
+const HEADLIGHT_SCALE := 1.9
+const HEADLIGHT_SETBACK := 20.0
 const RING_WIDTH := 3.0  # the driver ring in a duel
 const RING_GAP := 5.0  # how far the ring sits outside the hull
 const HEADLIGHT_COLORS: Array[Color] = [Color(1.0, 0.9, 0.3), Color(0.4, 1.0, 0.45), Color(1.0, 0.45, 0.8), Color(0.3, 0.95, 1.0)]  # yellow, green, pink, cyan
@@ -113,9 +114,9 @@ func _add_lights() -> void:
 	head.name = "Headlight"
 	head.texture = Lighting.cone_texture()
 	head.texture_scale = HEADLIGHT_SCALE
-	head.energy = 1.4
+	head.energy = 1.9
 	head.color = HEADLIGHT_COLORS[headlight_index] if headlight_index >= 0 else HEADLIGHT_COLORS.pick_random()
-	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE)
+	head.position = Vector2(0, -spec.hull_size.y / 2.0 - Lighting.CONE_APEX * HEADLIGHT_SCALE + HEADLIGHT_SETBACK)
 	add_child(head)
 	var glow := PointLight2D.new()
 	glow.name = "Glow"
